@@ -46,8 +46,8 @@ impl Ramp {
         }
         else {
             self.interp = 0.0;
-            let sample_length = 1.0 / unsafe { SAMPLE_RATE };
-            self.step_size = ramp_duration_secs * sample_length;
+            self.step_size =
+                1.0 / (ramp_duration_secs * unsafe { SAMPLE_RATE });
         }
     }
 
@@ -81,9 +81,11 @@ impl Ramp {
 
         // is the ramp finished?
         if self.interp > 1.0 {
+            println!("ramp finished interpolating");
             self.interp = 1.0;
             self.step_size = 0.0;
             self.current_value = self.target_value;
+            self.last_value = self.current_value;
         }
         else {
             self.set_current_value();
@@ -113,17 +115,15 @@ impl Ramp {
     }
 
     /// Returns the current value of the ramp.
+    #[must_use]
     pub fn current_value(&self) -> f64 {
         self.current_value
     }
 
     /// Returns whether the ramp is active, i.e. still interpolating.
+    #[must_use]
     pub fn is_active(&self) -> bool {
-        if self.current_value.abs() <= f64::EPSILON {
-            println!("value == {}", self.current_value);
-            return true;
-        }
-        false
+        !within_tolerance(self.interp, 1.0, f64::EPSILON)
     }
 
     fn set_current_value(&mut self) {

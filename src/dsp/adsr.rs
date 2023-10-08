@@ -66,7 +66,7 @@ impl AdsrEnvelope {
 
         // has the ramp finished?
         if !self.ramp.is_active() {
-            // self.progress_stage();
+            self.progress_stage();
         }
 
         self.ramp.next()
@@ -253,52 +253,61 @@ mod tests {
         let samples_as_ms = 10.0 / unsafe { SAMPLE_RATE } * 1000.0;
         env.set_parameters(samples_as_ms, samples_as_ms, 0.5, samples_as_ms);
 
+        // starts idle?
         assert!(matches!(env.get_stage(), AdsrStage::Idle));
 
         for _ in 0..5 {
             env.next(true);
         }
 
+        // attack stage at first?
         assert!(matches!(env.get_stage(), AdsrStage::Attack));
 
         for _ in 0..10 {
             env.next(true);
         }
 
+        // decay after attack?
         assert!(matches!(env.get_stage(), AdsrStage::Decay));
 
         for _ in 0..10 {
             env.next(true);
         }
 
+        // sustain after decay?
         assert!(matches!(env.get_stage(), AdsrStage::Sustain));
 
         for _ in 0..10000 {
             env.next(true);
         }
 
+        // holds sustain whilst still triggered?
         assert!(matches!(env.get_stage(), AdsrStage::Sustain));
 
         env.next(false);
 
+        // enters release after sustain?
         assert!(matches!(env.get_stage(), AdsrStage::Release));
 
         for _ in 0..5 {
             env.next(true);
         }
 
+        // enters attack if triggered during release?
         assert!(matches!(env.get_stage(), AdsrStage::Attack));
 
         for _ in 0..5 {
             env.next(false);
         }
 
+        // enters release if not triggered during attack?
         assert!(matches!(env.get_stage(), AdsrStage::Release));
 
-        for _ in 0..5 {
+        for _ in 0..6 {
             env.next(false);
         }
 
+        // returns to idle after release?
         assert!(matches!(env.get_stage(), AdsrStage::Idle));
     }
 }

@@ -1,7 +1,10 @@
+//! Global utility functions — these are publicly re-exported in `prelude.rs`.
+
+use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
+
 pub mod interp;
 pub mod smoothed_float;
 pub mod xfer;
-use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 
 /// Calculates the frequency value of the provided MIDI note value.
 pub fn note_to_freq(note_value: f64) -> f64 {

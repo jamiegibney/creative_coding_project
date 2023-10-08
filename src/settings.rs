@@ -1,10 +1,10 @@
 // NOTE: there are some mutable static variables in this file, which are generally
 // dangerous and not recommended for safety, particularly in a multi-threaded
 // applications where data races are possible. The rationale for using these is that
-// they are read far, far more often than they are written (if they are written at
-// all), and it is very convenient to have global access to this data, particularly
-// for experimentation. It also allows me to play around with race conditions if I
-// want, which is good practice :)
+// they are read far, far more often than they are overwritten (if they are overwritten 
+// at all), and it is very convenient to have global access to this data, particularly
+// for playing around and  experimentation. It also allows me to play around with race 
+// conditions if I want, which seems like good practice...
 
 /// The global sample rate, set to 44.1 kHz as default.
 ///
