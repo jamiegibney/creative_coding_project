@@ -11,6 +11,8 @@ doctest = false
 [dependencies]
 anyhow = "1.0.75" # Error handling
 earcutr = "0.4.2" # Mesh triangulation
+egui = "0.23.0" # egui - GUI library
+egui_wgpu_backend = "0.14"
 nannou = "0.18.1" # Creative coding library
 nannou_audio = "0.18.0" # Audio stuff
 rand = "0.8.5" # RNG

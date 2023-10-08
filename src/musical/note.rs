@@ -1,5 +1,12 @@
 use nannou::prelude::*;
+
+// this is OK - there is no intention of changing the variants of this enum.
 use Note::*;
+use Octave::*;
+
+pub fn midi_note_value_from(octave: Octave, note: Note) -> i32 {
+    octave.starting_midi_note() + note.note_value()
+}
 
 #[derive(Debug, Clone, Copy, Default)]
 pub enum Octave {
@@ -29,7 +36,94 @@ pub enum Octave {
 }
 
 impl Octave {
-    // 
+    /// Returns the value of the starting note of this octave.
+    pub fn starting_midi_note(&self) -> i32 {
+        match self {
+            Cneg1 => 0,
+            C0 => 12,
+            C1 => 24,
+            C2 => 36,
+            C3 => 48,
+            C4 => 60,
+            C5 => 72,
+            C6 => 84,
+            C7 => 96,
+            C8 => 108,
+            C9 => 120,
+        }
+    }
+
+    /// Returns the `Octave` which covers the provided MIDI note.o
+    ///
+    /// # Panics
+    ///
+    /// Panics if `note` is outside of the range `0` to `132`.
+    pub fn from_note(note: i32) -> Self {
+        match note {
+            0..=11 => Cneg1,
+            12..=23 => C0,
+            24..=35 => C1,
+            36..=47 => C2,
+            48..=59 => C3,
+            60..=71 => C4,
+            72..=83 => C5,
+            84..=95 => C6,
+            96..=107 => C7,
+            108..=119 => C8,
+            120..=131 => C9,
+            _ => panic!(
+                "value provided ({note}) is outside of the acceptible range"
+            ),
+        }
+    }
+
+    /// Increases the octave by one. Does not exceed C9.
+    pub fn increase(&mut self) {
+        *self = match self {
+            Cneg1 => C0,
+            C0 => C1,
+            C1 => C2,
+            C2 => C3,
+            C3 => C4,
+            C4 => C5,
+            C5 => C6,
+            C6 => C7,
+            C7 => C8,
+            C8 => C9,
+            C9 => C9,
+        };
+    }
+
+    /// Increases the octave by `amount`. Does not exceed C9.
+    pub fn increase_by(&mut self, amount: i32) {
+        for _ in 0..amount {
+            self.increase();
+        }
+    }
+
+    /// Decreases the octave by one. Does not exceed C-1.
+    pub fn decrease(&mut self) {
+        *self = match self {
+            Cneg1 => Cneg1,
+            C0 => Cneg1,
+            C1 => C0,
+            C2 => C1,
+            C3 => C2,
+            C4 => C3,
+            C5 => C4,
+            C6 => C5,
+            C7 => C6,
+            C8 => C7,
+            C9 => C8,
+        };
+    }
+
+    /// Decreases the octave by `amount`. Does not exceed C-1.
+    pub fn decrease_by(&mut self, amount: i32) {
+        for _ in 0..amount {
+            self.decrease();
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -102,7 +196,15 @@ impl Note {
         }
     }
 
-    fn from_value(value: i32) -> Self {
+    /// Returns the note associated with the provided MIDI note value.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `value` is out of the range `0` to `132`.
+    pub fn from_value(value: i32) -> Self {
+        assert!((0..=132).contains(&value));
+
+        let value = value % 12;
         match value {
             0 => C,
             1 => Cs,
@@ -116,11 +218,13 @@ impl Note {
             9 => A,
             10 => As,
             11 => B,
+            // this will never happen but might as well panic!
             _ => panic!("unknown note value: {value}"),
         }
     }
 }
 
+// TODO is this needed?
 pub const KEYBOARD_MUSICAL_NOTES: [Key; 16] = [
     Key::A,
     Key::S,
@@ -140,7 +244,11 @@ pub const KEYBOARD_MUSICAL_NOTES: [Key; 16] = [
     Key::P,
 ];
 
+/// The intervals of notes in a major scale for a single octave.
 pub const MAJOR_SCALE_INTERVALS: [u32; 7] = [0, 2, 4, 5, 7, 9, 11];
+/// The intervals of notes in a minor scale for a single octave.
 pub const MINOR_SCALE_INTERVALS: [u32; 7] = [0, 2, 3, 5, 7, 8, 10];
+/// The intervals of notes in a major pentatonic scale for a single octave.
 pub const MAJOR_PENTATONIC_SCALE_INTERVALS: [u32; 5] = [0, 2, 4, 7, 9];
+/// The intervals of notes in a minor pentatonic scale for a single octave.
 pub const MINOR_PENTATONIC_SCALE_INTERVALS: [u32; 5] = [0, 3, 5, 7, 10];

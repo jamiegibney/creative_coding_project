@@ -3,8 +3,8 @@ use nannou::prelude::*;
 use nannou::LoopMode::RefreshSync;
 use nannou_audio;
 use nannou_audio::Buffer;
-use rand::rngs::SmallRng;
-use rand::{Rng, SeedableRng};
+use nannou::rand::rngs::SmallRng;
+use nannou::rand::{Rng, SeedableRng};
 
 mod audio;
 mod key;

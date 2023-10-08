@@ -16,3 +16,8 @@ pub mod settings;
 
 // Musical systems and structures
 pub mod musical;
+
+// GUI stuff
+pub mod gui;
+
+pub use nannou::rand as rand;

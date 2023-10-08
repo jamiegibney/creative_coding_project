@@ -48,6 +48,6 @@ pub fn model(app: &App) -> Model {
         _window,
         audio_senders,
         note: None,
-        octave: Octave::C3,
+        octave: Octave::default(), // C3 - B3
     }
 }

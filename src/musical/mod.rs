@@ -1,2 +1,2 @@
 pub mod note;
-pub use note::{Note, Octave};
+pub use note::*;
