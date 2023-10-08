@@ -1,0 +1,114 @@
+use std::f64::consts::PI;
+use super::map;
+
+/// Returns an s-curve function.
+///
+/// Negative tension values produce curves which "skew inwards" (like y = x²),
+/// whereas positive values produce curves which "skew outwards", like an s-curve.
+///
+/// `input` and `tension` are clamped between `-1.0` and `1.0`.
+pub fn s_curve(input: f64, tension: f64) -> f64 {
+    let x = input.clamp(-1.0, 1.0);
+
+    if tension < 0.0 {
+        let c = map(tension.clamp(-1.0, 0.0), -1.0, 0.0, 0.05, 1.0);
+
+        if x < 0.0 {
+            -(-x).powf(1.0 / c)
+        } else {
+            x.powf(1.0 / c)
+        }
+    } else {
+        let c = map(tension.clamp(0.0, 1.0), 0.0, 1.0, 1.0, 0.05);
+
+        if x < 0.0 {
+            (x + 1.0).powf(1.0 / c) - 1.0
+        } else {
+            -(1.0 - x).powf(1.0 / c) + 1.0
+        }
+    }
+}
+
+/// Returns a rounded s-curve function with a linear centre.
+///
+/// `input` is clamped between `-1.0` and `1.0`.
+///
+/// `tension` is clamped between `0.0` and `1.0`.
+pub fn s_curve_linear_centre(input: f64, tension: f64) -> f64 {
+    let x = input.clamp(-1.0, 1.0);
+    let c = tension.clamp(0.0, 1.0);
+
+    let x2 = 2.0 * x;
+    let sq = x * x;
+    let k = 1.0 - c;
+    let t_min1_sq = (c - 1.0) * (c - 1.0);
+
+    if k < x && x <= 1.0 {
+        (sq - x2 + t_min1_sq) / (c * (c - 2.0))
+    } else if -1.0 <= x && x <= -k {
+        (sq + x2 + t_min1_sq) / (c * (2.0 - c))
+    } else {
+        x
+    }
+}
+
+/// Returns a more round s-curve function.
+///
+/// Negative `tension` values produce curves which "skew inwards" (like y = x²),
+/// whereas positive values produce curves which "skew outwards", like an s-curve.
+///
+/// `input` and `tension` are clamped between `-1.0` and `1.0`.
+pub fn s_curve_round(input: f64, tension: f64) -> f64 {
+    let x = input.clamp(-1.0, 1.0);
+
+    // this maps the curvature similarly for positive and negative inputs
+    let c = if tension < 0.0 {
+        tension.clamp(-1.0, 0.0) * 0.907
+    } else {
+        tension.clamp(0.0, 1.0) * 10.0
+    };
+
+    if 0.0 < x && x <= 1.0 {
+        x * (1.0 + c) / (c * x + 1.0)
+    } else {
+        -x * (1.0 + c) / (c * x - 1.0)
+    }
+}
+
+/* TODO check these sine functions for correctness */
+/// Returns a whole sine function `(-π -> π)`. The output is normalised.
+///
+/// `input` is clamped between `0.0` and `1.0`.
+pub fn sine(input: f64) -> f64 {
+    let input = input.clamp(0.0, 1.0);
+    ((input * PI + PI).cos() + 1.0) * 0.5
+}
+
+/// Returns the "upper part" of a sine function `(0 -> π)`. The output is normalised.
+///
+/// `input` is clamped between `0.0` and `1.0`.
+pub fn sine_upper(input: f64) -> f64 {
+    let input = input.clamp(0.0, 1.0);
+    (input * PI / 2.0).sin()
+}
+
+/// Returns the "lower part" of a sine function `(-π -> 0)`. The output is normalised.
+///
+/// `input` is clamped between `0.0` and `1.0`.
+pub fn sine_lower(input: f64) -> f64 {
+    let input = input.clamp(0.0, 1.0);
+    (input * PI / 2.0 + PI).cos() + 1.0
+}
+
+/// Returns a hyperbolic tangent curve function.
+///
+/// `tension` is clamped between `0.0` and `1.0`, and is mapd between
+/// `1.0` and `10.0` for a more natural range of curves.
+///
+/// `input` is clamped between `-1.0` and `1.0`.
+pub fn tanh(input: f64, tension: f64) -> f64 {
+    let x = input.clamp(-1.0, 1.0);
+    let c = map(tension.clamp(0.0, 1.0), 0.0, 1.0, 1.0, 10.0);
+
+    (x * c).tanh()
+}
