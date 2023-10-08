@@ -8,7 +8,6 @@ use rand::{Rng, SeedableRng};
 
 mod audio;
 mod key;
-mod key_release;
 mod model;
 mod mouse;
 mod view;

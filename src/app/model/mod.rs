@@ -1,13 +1,17 @@
-use super::audio::AudioModel;
+use super::audio::*;
 use super::view::view;
 use super::*;
+use crate::musical::*;
+use crate::prelude::*;
 use std::sync::mpsc;
 
 /// The app's model, i.e. its general state.
 pub struct Model {
     pub audio_stream: nannou_audio::Stream<AudioModel>,
-    pub envelope_sender: mpsc::Sender<bool>,
+    pub audio_senders: AudioSenders,
     _window: window::Id,
+    pub note: Option<Note>,
+    pub octave: Octave,
 }
 
 pub fn model(app: &App) -> Model {
@@ -24,7 +28,7 @@ pub fn model(app: &App) -> Model {
     let audio_host = nannou_audio::Host::new();
 
     let mut audio_model = AudioModel::new();
-    let envelope_sender = audio_model.initialise();
+    let audio_senders = audio_model.initialize();
 
     let sample_rate = audio_model.sample_rate();
 
@@ -39,5 +43,11 @@ pub fn model(app: &App) -> Model {
 
     stream.play().unwrap();
 
-    Model { audio_stream: stream, _window, envelope_sender }
+    Model {
+        audio_stream: stream,
+        _window,
+        audio_senders,
+        note: None,
+        octave: Octave::C3,
+    }
 }

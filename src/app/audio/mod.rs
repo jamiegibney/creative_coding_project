@@ -1,10 +1,17 @@
 use super::*;
 use crate::dsp::adsr::AdsrEnvelope;
-use crate::{dsp::filters::biquad::*, prelude::*};
-use std::sync::{mpsc, Arc, Mutex};
+use crate::dsp::filters::biquad::*;
+use std::sync::mpsc::{channel, Receiver, Sender};
 
-type Sender<T> = Arc<Mutex<mpsc::Sender<T>>>;
-type Receiver<T> = Arc<Mutex<mpsc::Receiver<T>>>;
+/// A struct containing the channel senders returned by
+/// `AudioModel::initialize()`.
+///
+/// The fields of this struct are used to communicate directly
+/// with the audio thread.
+pub struct AudioSenders {
+    pub envelope_trigger: Sender<bool>,
+    pub filter_freq: Sender<f64>,
+}
 
 /// The audio state for the whole program.
 pub struct AudioModel {
@@ -14,11 +21,13 @@ pub struct AudioModel {
     pub filter: BiquadFilter,
     pub filter_2: BiquadFilter,
 
+    filter_freq: f64,
+    filter_freq_receiver: Option<Receiver<f64>>,
     volume: f64,
 
     envelope: AdsrEnvelope,
     envelope_trigger: bool,
-    envelope_trigger_receiver: Option<mpsc::Receiver<bool>>,
+    envelope_trigger_receiver: Option<Receiver<bool>>,
 }
 
 impl AudioModel {
@@ -30,6 +39,9 @@ impl AudioModel {
             filter: BiquadFilter::new(sample_rate),
             filter_2: BiquadFilter::new(sample_rate),
 
+            filter_freq: 440.0,
+            filter_freq_receiver: None,
+
             volume: db_to_level(-18.0),
 
             envelope: AdsrEnvelope::new(),
@@ -38,9 +50,9 @@ impl AudioModel {
         }
     }
 
-    pub fn initialise(&mut self) -> mpsc::Sender<bool> {
+    pub fn initialize(&mut self) -> AudioSenders {
         let params = FilterParams {
-            freq: 500.0,
+            freq: self.filter_freq,
             gain: 10.0,
             q: 10.0,
             filter_type: FilterType::Lowpass,
@@ -50,13 +62,15 @@ impl AudioModel {
         self.filter_2.set_type(FilterType::Highpass);
         self.envelope.set_parameters(10.0, 500.0, 0.2, 1000.0);
 
-        let (sender, receiver) = mpsc::channel();
-        // let sender = Arc::new(Mutex::new(sender));
-
+        let (envelope_trigger_sender, receiver) = channel();
         self.envelope_trigger_receiver = Some(receiver);
+        let (filter_freq_sender, receiver) = channel();
+        self.filter_freq_receiver = Some(receiver);
 
-        // Arc::clone(&sender)
-        sender
+        AudioSenders {
+            envelope_trigger: envelope_trigger_sender,
+            filter_freq: filter_freq_sender,
+        }
     }
 
     pub fn sample_rate(&self) -> f64 {
