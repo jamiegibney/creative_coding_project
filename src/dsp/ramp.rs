@@ -81,7 +81,6 @@ impl Ramp {
 
         // is the ramp finished?
         if self.interp > 1.0 {
-            println!("ramp finished interpolating");
             self.interp = 1.0;
             self.step_size = 0.0;
             self.current_value = self.target_value;

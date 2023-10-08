@@ -40,6 +40,10 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         _ => None,
     };
 
+    if key == Key::G {
+        model.envelope_sender.send(true).unwrap();
+    }
+
     model
         .audio_stream
         .send(move |model: &mut AudioModel| {
@@ -49,4 +53,11 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             }
         })
         .unwrap();
+}
+
+/// Function for handling key releases.
+pub fn key_released(_app: &App, model: &mut Model, key: Key) {
+    if key == Key::G {
+        model.envelope_sender.send(false).unwrap();
+    }
 }

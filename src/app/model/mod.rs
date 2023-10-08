@@ -1,10 +1,12 @@
-use super::*;
 use super::audio::AudioModel;
 use super::view::view;
+use super::*;
+use std::sync::mpsc;
 
 /// The app's model, i.e. its general state.
 pub struct Model {
     pub audio_stream: nannou_audio::Stream<AudioModel>,
+    pub envelope_sender: mpsc::Sender<bool>,
     _window: window::Id,
 }
 
@@ -12,7 +14,8 @@ pub fn model(app: &App) -> Model {
     let _window = app
         .new_window()
         .size(1400, 800)
-        .key_pressed(key_press::key_pressed)
+        .key_released(key::key_released)
+        .key_pressed(key::key_pressed)
         .mouse_moved(mouse::mouse_moved)
         .view(view)
         .build()
@@ -21,7 +24,7 @@ pub fn model(app: &App) -> Model {
     let audio_host = nannou_audio::Host::new();
 
     let mut audio_model = AudioModel::new();
-    audio_model.initialise();
+    let envelope_sender = audio_model.initialise();
 
     let sample_rate = audio_model.sample_rate();
 
@@ -36,5 +39,5 @@ pub fn model(app: &App) -> Model {
 
     stream.play().unwrap();
 
-    Model { audio_stream: stream, _window }
+    Model { audio_stream: stream, _window, envelope_sender }
 }

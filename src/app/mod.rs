@@ -6,9 +6,10 @@ use nannou_audio::Buffer;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
-mod model;
 mod audio;
-mod key_press;
+mod key;
+mod key_release;
+mod model;
 mod mouse;
 mod view;
 

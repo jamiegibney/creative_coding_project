@@ -248,6 +248,8 @@ mod tests {
     }
 
     #[test]
+    // yes thank you clippy, very cool
+    #[allow(clippy::cognitive_complexity)]
     fn correct_stages() {
         let mut env = AdsrEnvelope::new();
         let samples_as_ms = 10.0 / unsafe { SAMPLE_RATE } * 1000.0;

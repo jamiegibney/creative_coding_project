@@ -1,9 +1,10 @@
 #![allow(clippy::module_name_repetitions)]
-use crate::util;
+use crate::{prelude::SAMPLE_RATE, util};
 use std::f64::consts::{FRAC_1_SQRT_2, PI, TAU};
+use util::db_to_level;
 use FilterType as FT;
 
-// TODO see if the wikipedia biquad implementation works better:
+// TODO see if the wikipedia biquad implementation works any better?
 // https://en.wikipedia.org/wiki/Digital_biquad_filter#Transposed_direct_form_2
 
 /// An enum which covers the available filter types.
@@ -16,6 +17,10 @@ pub enum FilterType {
     Peak,
     Lowpass,
     Highpass,
+    // these implementations currently aren't working as expected, so are
+    // unavailable for now
+    // Lowshelf,
+    // Highshelf,
     Bandpass,
     Notch,
     Allpass,
@@ -105,7 +110,7 @@ impl BiquadFilter {
     /// after a call to this method.
     ///
     /// Alternatively, adjusting any of the filter parameters via the `set_q()`,
-    /// `set_type()`, `set_gain()`, `set_freq()`, `reset_sample_rate()`, or 
+    /// `set_type()`, `set_gain()`, `set_freq()`, `reset_sample_rate()`, or
     /// `set_params()` methods will also "resume" the filter's processing.
     ///
     /// Note that this function does not alter its filter parameters.
@@ -153,6 +158,8 @@ impl BiquadFilter {
                 FT::Peak => self.set_peak_coefs(),
                 FT::Lowpass => self.set_lowpass_coefs(),
                 FT::Highpass => self.set_highpass_coefs(),
+                // FT::Lowshelf => self.set_lowshelf_coefs(),
+                // FT::Highshelf => self.set_highshelf_coefs(),
                 FT::Bandpass => self.set_bandpass_coefs(),
                 FT::Notch => self.set_notch_coefs(),
                 FT::Allpass => self.set_allpass_coefs(),
@@ -254,6 +261,8 @@ impl BiquadFilter {
         self.params.freq / self.params.q
     }
 
+    /* PRIVATE METHODS */
+
     /// Sets the filter coefficients for a peak filter.
     fn set_peak_coefs(&mut self) {
         let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
@@ -304,6 +313,70 @@ impl BiquadFilter {
 
         *b2 = (q_2 - sin_phi) / (q_2 + sin_phi);
         *b1 = -(1.0 + *b2) * phi.cos();
+    }
+
+    /// Sets the filter coefficients for a lowshelf filter.
+    fn set_lowshelf_coefs(&mut self) {
+        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let FilterParams { freq, gain, .. } = self.params;
+        let sr = self.sample_rate;
+
+        let gain = db_to_level(gain);
+        let k2 = (PI * freq / sr).tan().powi(2);
+        let sqrt_2_g = (2.0 * gain).sqrt();
+        let sqrt_2_gk = sqrt_2_g * k2;
+
+        // TODO this is a total mess, can it be refactored for clarity?
+        if gain.is_sign_positive() {
+            // boost
+            let norm = 1.0 / (1.0 + sqrt_2_g + k2);
+            *a0 = gain.mul_add(k2, 1.0 + sqrt_2_gk) * norm;
+            *a1 = 2.0 * gain.mul_add(k2, -1.0) * norm;
+            *a2 = gain.mul_add(k2, 1.0 - sqrt_2_gk) * norm;
+            *b1 = 2.0 * (k2 - 1.0) * norm;
+            *b2 = (1.0 - sqrt_2_g + k2) * norm;
+        }
+        else {
+            // cut
+            let norm = 1.0 / gain.mul_add(k2, 1.0 + sqrt_2_gk);
+            *a0 = (1.0 + sqrt_2_g + k2) * norm;
+            *a1 = 2.0 * (k2 - 1.0) * norm;
+            *a2 = (1.0 - sqrt_2_g + k2) * norm;
+            *b1 = 2.0 * gain.mul_add(k2, -1.0) * norm;
+            *b2 = gain.mul_add(k2, 1.0 - sqrt_2_gk) * norm;
+        }
+    }
+
+    /// Sets the filter coefficients for a highshelf filter.
+    fn set_highshelf_coefs(&mut self) {
+        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let FilterParams { freq, q, gain, .. } = self.params;
+        let sr = &self.sample_rate;
+
+        let gain = db_to_level(gain);
+        let k2 = (PI * freq / sr).tan().powi(2);
+        let sqrt_2_g = (2.0 * gain).sqrt();
+        let sqrt_2_gk = sqrt_2_g * k2;
+
+        // TODO this is also a total mess, can it be refactored for clarity?
+        if gain.is_sign_positive() {
+            // boost
+            let norm = 1.0 / (1.0 + sqrt_2_g + k2);
+            *a0 = (gain + sqrt_2_gk + k2) * norm;
+            *a1 = 2.0 * (k2 - gain) * norm;
+            *a2 = (gain - sqrt_2_gk + k2) * norm;
+            *b1 = 2.0 * (k2 - 1.0) * norm;
+            *b2 = (1.0 - sqrt_2_g + k2) * norm;
+        }
+        else {
+            // cut
+            let norm = 1.0 / (gain + sqrt_2_gk + k2);
+            *a0 = (1.0 + sqrt_2_g + k2) * norm;
+            *a1 = 2.0 * (k2 - 1.0) * norm;
+            *a2 = (1.0 - sqrt_2_g + k2) * norm;
+            *b1 = 2.0 * (k2 - gain) * norm;
+            *b2 = (gain - sqrt_2_gk + k2) * norm;
+        }
     }
 
     /// Sets the filter coefficients for a bandpass filter.
@@ -370,6 +443,7 @@ impl BiquadFilter {
                 // TODO do some tests with this, as it seems like it may not be necessary
                 debug_assert!(freq < (q * sr) / 4.0);
             }
+            _ => (),
         }
     }
 }
