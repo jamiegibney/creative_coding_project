@@ -1,7 +1,7 @@
+pub mod interp;
 pub mod smoothed_float;
 pub mod xfer;
-pub mod interp;
-use crate::settings::TUNING_FREQ_HZ;
+use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 
 /// Calculates the frequency value of the provided MIDI note value.
 pub fn note_to_freq(note_value: f64) -> f64 {
@@ -50,6 +50,11 @@ pub fn normalise(value: f64, min: f64, max: f64) -> f64 {
 
 /// Returns whether the absolute value of `value` is less than the provided
 /// `tolerance` value. Useful for checking approximate equality.
-pub fn within_tolerance(value: f64, tolerance: f64) -> bool {
-    value.abs() <= tolerance
+pub fn within_tolerance(value: f64, target: f64, tolerance: f64) -> bool {
+    (value - target).abs() <= tolerance
+}
+
+/// Returns the length of one sample in seconds, based on the current sample rate.
+pub fn sample_length() -> f64 {
+    unsafe { SAMPLE_RATE }.recip()
 }

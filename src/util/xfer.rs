@@ -1,5 +1,5 @@
-use std::f64::consts::PI;
 use super::map;
+use std::f64::consts::PI;
 
 /// Returns an s-curve function.
 ///
@@ -15,15 +15,18 @@ pub fn s_curve(input: f64, tension: f64) -> f64 {
 
         if x < 0.0 {
             -(-x).powf(1.0 / c)
-        } else {
+        }
+        else {
             x.powf(1.0 / c)
         }
-    } else {
+    }
+    else {
         let c = map(tension.clamp(0.0, 1.0), 0.0, 1.0, 1.0, 0.05);
 
         if x < 0.0 {
             (x + 1.0).powf(1.0 / c) - 1.0
-        } else {
+        }
+        else {
             -(1.0 - x).powf(1.0 / c) + 1.0
         }
     }
@@ -45,9 +48,11 @@ pub fn s_curve_linear_centre(input: f64, tension: f64) -> f64 {
 
     if k < x && x <= 1.0 {
         (sq - x2 + t_min1_sq) / (c * (c - 2.0))
-    } else if -1.0 <= x && x <= -k {
+    }
+    else if -1.0 <= x && x <= -k {
         (sq + x2 + t_min1_sq) / (c * (2.0 - c))
-    } else {
+    }
+    else {
         x
     }
 }
@@ -64,13 +69,15 @@ pub fn s_curve_round(input: f64, tension: f64) -> f64 {
     // this maps the curvature similarly for positive and negative inputs
     let c = if tension < 0.0 {
         tension.clamp(-1.0, 0.0) * 0.907
-    } else {
+    }
+    else {
         tension.clamp(0.0, 1.0) * 10.0
     };
 
     if 0.0 < x && x <= 1.0 {
         x * (1.0 + c) / (c * x + 1.0)
-    } else {
+    }
+    else {
         -x * (1.0 + c) / (c * x - 1.0)
     }
 }
@@ -111,4 +118,39 @@ pub fn tanh(input: f64, tension: f64) -> f64 {
     let c = map(tension.clamp(0.0, 1.0), 0.0, 1.0, 1.0, 10.0);
 
     (x * c).tanh()
+}
+
+/// Clamps the input range between `0.0` and `1.0`.
+pub fn gentle_under(mut input: f64) -> f64 {
+    input.clamp(0.0, 1.0);
+
+    1.0 - ((PI / 2.0) * (1.0 - input)).sin()
+}
+
+/// Clamps the input range between `0.0` and `1.0`.
+pub fn gentle_over(mut input: f64) -> f64 {
+    input.clamp(0.0, 1.0);
+    
+    (PI / 2.0 * input).sin()
+}
+
+/// Clamps the input range between `0.0` and `1.0`.
+pub fn strong_under(mut input: f64) -> f64 {
+    input.clamp(0.0, 1.0);
+
+    input.powi(3)
+}
+
+/// Clamps the input range between `0.0` and `1.0`.
+pub fn strong_over(mut input: f64) -> f64 {
+    input.clamp(0.0, 1.0);
+
+    1.0 - (1.0 - input).powi(3)
+}
+
+/// Clamps the input range between `0.0` and `1.0`.
+pub fn skewed_sine(mut input: f64) -> f64 {
+    input.clamp(0.0, 1.0);
+    
+    0.5 + 0.5 * (PI * (input.powi(2) - 0.5)).sin()
 }
