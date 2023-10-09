@@ -29,6 +29,7 @@ pub fn model(app: &App) -> Model {
 
     let mut audio_model = AudioModel::new();
     let audio_senders = audio_model.initialize();
+    // audio_senders.drive_amount.send(0.5).unwrap();
 
     let sample_rate = unsafe { SAMPLE_RATE };
 

@@ -27,6 +27,7 @@ pub enum SmoothingType {
 /// whereas positive values produce curves which "skew outwards", like an s-curve.
 ///
 /// `input` and `tension` are clamped between `-1.0` and `1.0`.
+#[must_use]
 pub fn s_curve(mut input: f64, tension: f64) -> f64 {
     input = input.clamp(-1.0, 1.0);
     let c = scale(tension, 1.0, 0.05).recip();
@@ -54,6 +55,7 @@ pub fn s_curve(mut input: f64, tension: f64) -> f64 {
 /// `input` is clamped between `-1.0` and `1.0`.
 ///
 /// `tension` is clamped between `0.0` and `1.0`.
+#[must_use]
 pub fn s_curve_linear_centre(input: f64, tension: f64) -> f64 {
     let x = input.clamp(-1.0, 1.0);
     let c = tension.clamp(0.0, 1.0);
@@ -80,6 +82,7 @@ pub fn s_curve_linear_centre(input: f64, tension: f64) -> f64 {
 /// whereas positive values produce curves which "skew outwards", like an s-curve.
 ///
 /// `input` and `tension` are clamped between `-1.0` and `1.0`.
+#[must_use]
 pub fn s_curve_round(input: f64, tension: f64) -> f64 {
     let x = input.clamp(-1.0, 1.0);
 
@@ -103,14 +106,16 @@ pub fn s_curve_round(input: f64, tension: f64) -> f64 {
 /// Returns a whole sine function `(-π -> π)`. The output is normalised.
 ///
 /// `input` is clamped between `0.0` and `1.0`.
+#[must_use]
 pub fn sine(input: f64) -> f64 {
     let input = input.clamp(0.0, 1.0);
-    ((input * PI + PI).cos() + 1.0) * 0.5
+    (input.mul_add(PI, PI).cos() + 1.0) * 0.5
 }
 
 /// Returns the "upper part" of a sine function `(0 -> π)`. The output is normalised.
 ///
 /// `input` is clamped between `0.0` and `1.0`.
+#[must_use]
 pub fn sine_upper(input: f64) -> f64 {
     let input = input.clamp(0.0, 1.0);
     (input * PI / 2.0).sin()
@@ -119,6 +124,7 @@ pub fn sine_upper(input: f64) -> f64 {
 /// Returns the "lower part" of a sine function `(-π -> 0)`. The output is normalised.
 ///
 /// `input` is clamped between `0.0` and `1.0`.
+#[must_use]
 pub fn sine_lower(input: f64) -> f64 {
     let input = input.clamp(0.0, 1.0);
     (input * PI / 2.0 + PI).cos() + 1.0
@@ -130,6 +136,7 @@ pub fn sine_lower(input: f64) -> f64 {
 /// `1.0` and `10.0` for a more natural range of curves.
 ///
 /// `input` is clamped between `-1.0` and `1.0`.
+#[must_use]
 pub fn tanh(input: f64, tension: f64) -> f64 {
     let x = input.clamp(-1.0, 1.0);
     let c = map(tension.clamp(0.0, 1.0), 0.0, 1.0, 1.0, 10.0);
@@ -138,36 +145,41 @@ pub fn tanh(input: f64, tension: f64) -> f64 {
 }
 
 /// Clamps the input range between `0.0` and `1.0`.
+#[must_use]
 pub fn gentle_under(mut input: f64) -> f64 {
-    input.clamp(0.0, 1.0);
+    input = input.clamp(0.0, 1.0);
 
     1.0 - ((PI / 2.0) * (1.0 - input)).sin()
 }
 
 /// Clamps the input range between `0.0` and `1.0`.
+#[must_use]
 pub fn gentle_over(mut input: f64) -> f64 {
-    input.clamp(0.0, 1.0);
+    input = input.clamp(0.0, 1.0);
 
     (PI / 2.0 * input).sin()
 }
 
 /// Clamps the input range between `0.0` and `1.0`.
+#[must_use]
 pub fn strong_under(mut input: f64) -> f64 {
-    input.clamp(0.0, 1.0);
+    input = input.clamp(0.0, 1.0);
 
     input.powi(3)
 }
 
 /// Clamps the input range between `0.0` and `1.0`.
+#[must_use]
 pub fn strong_over(mut input: f64) -> f64 {
-    input.clamp(0.0, 1.0);
+    input = input.clamp(0.0, 1.0);
 
     1.0 - (1.0 - input).powi(3)
 }
 
 /// Clamps the input range between `0.0` and `1.0`.
+#[must_use]
 pub fn skewed_sine(mut input: f64) -> f64 {
-    input.clamp(0.0, 1.0);
+    input = input.clamp(0.0, 1.0);
 
-    0.5 + 0.5 * (PI * (input.powi(2) - 0.5)).sin()
+    0.5f64.mul_add((PI * input.mul_add(input, -0.5)).sin(), 0.5)
 }

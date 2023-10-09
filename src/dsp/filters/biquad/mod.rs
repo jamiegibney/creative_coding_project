@@ -26,7 +26,7 @@ mod tests {
         let sample_rate = 44100.0;
         let mut filter = BiquadFilter::new(sample_rate);
 
-        filter.set_params(&FilterParams {
+        filter.set_params(&BiquadParams {
             freq: sample_rate / 2.0 + 0.00001,
             ..Default::default()
         });
@@ -51,7 +51,7 @@ mod tests {
     #[test]
     fn test_half_power_points() {
         let mut filter = BiquadFilter::new(44100.0);
-        filter.set_params(&FilterParams {
+        filter.set_params(&BiquadParams {
             freq: 1000.0,
             gain: 0.0,
             q: 1.0,
@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn test_bandwidth() {
         let mut filter = BiquadFilter::new(44100.0);
-        filter.set_params(&FilterParams {
+        filter.set_params(&BiquadParams {
             freq: 1000.0,
             gain: 0.0,
             q: 1.0,

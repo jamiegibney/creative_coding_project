@@ -40,6 +40,7 @@ impl RingBuffer {
 
             smoothing_type: SmoothingType::default(),
             smoothing_time_secs: DEFAULT_SMOOTHING_TIME,
+
         }
     }
 

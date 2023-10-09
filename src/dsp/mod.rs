@@ -14,3 +14,4 @@ pub use filters::{
 };
 pub use ramp::Ramp;
 pub use ring_buffer::RingBuffer;
+pub use distortion::Waveshaper;
