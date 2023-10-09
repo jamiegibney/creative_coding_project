@@ -20,4 +20,7 @@ pub mod musical;
 // GUI stuff
 pub mod gui;
 
+// L-system related
+pub mod l_system;
+
 pub use nannou::rand as rand;
