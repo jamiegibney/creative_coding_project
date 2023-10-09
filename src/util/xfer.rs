@@ -1,6 +1,25 @@
 use super::map;
 use std::f64::consts::PI;
 
+#[derive(Debug, Copy, Clone, Default)]
+pub enum SmoothingType {
+    /// Linear mapping from `a -> b`
+    #[default]
+    Linear,
+    /// Cosine function mapping from `a -> b`
+    Cosine,
+    /// Quarter-sine function mapping from `a -> b`, biased towards b
+    SineTop,
+    /// Quarter-sine function mapping from `a -> b`, biased towards a
+    SineBottom,
+    /// Standard curve mapping from `a -> b` with tension argument
+    CurveNormal(f64),
+    /// Curved mapping from `a -> b` with tension argument and a linear start
+    CurveLinearStart(f64),
+    /// Rounder curve mapping from `a -> b` with tension argument
+    CurveRounder(f64),
+}
+
 /// Returns an s-curve function.
 ///
 /// Negative tension values produce curves which "skew inwards" (like y = x²),

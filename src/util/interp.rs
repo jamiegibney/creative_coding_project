@@ -1,9 +1,10 @@
 use std::f64::consts::PI;
 
 /// Various interpolation types, including `NoInterp`.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum InterpolationType {
     NoInterp,
+    #[default]
     Linear,
     Cosine,
     DefaultCubic,
@@ -42,7 +43,7 @@ pub fn linear_unclamped(a: f64, b: f64, t: f64) -> f64 {
 
 /// "Inverse linear interpolation": finds the interpolation value
 /// within a range.
-pub fn i_lerp(a: f64, b: f64, val: f64) -> f64 {
+pub fn ilerp(a: f64, b: f64, val: f64) -> f64 {
     if b == a {
         return 0.0;
     }

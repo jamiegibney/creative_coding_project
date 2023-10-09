@@ -87,7 +87,7 @@ impl Default for FilterParams {
 /// Note that certain filter types do not use all parameters which can be
 /// passed to the filter. These values are ignored during processing, but
 /// updating them will still signal the filter to recompute.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct BiquadFilter {
     coefs: Coefs,
     delayed: (f64, f64),

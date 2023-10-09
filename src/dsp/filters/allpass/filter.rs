@@ -1,4 +1,3 @@
-// hello?
-pub fn hello() {
-    println!("Hello world");
+pub struct Allpass {
+    //
 }

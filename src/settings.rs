@@ -16,7 +16,7 @@
 pub static mut SAMPLE_RATE: f64 = 44100.0;
 
 // TODO this is constant for now, but should be variable later.
-pub const BUFFER_SIZE: usize = 512;
+pub const BUFFER_SIZE: usize = 256;
 
 /// The global tuning frequency, set to 440 Hz as default.
 ///
@@ -27,3 +27,4 @@ pub const BUFFER_SIZE: usize = 512;
 /// this to be, for example, `-423947.4623`). Small adjustments are recommended,
 /// if you need to change this at all.
 pub static mut TUNING_FREQ_HZ: f64 = 440.0;
+

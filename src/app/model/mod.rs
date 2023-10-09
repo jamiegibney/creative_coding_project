@@ -30,7 +30,7 @@ pub fn model(app: &App) -> Model {
     let mut audio_model = AudioModel::new();
     let audio_senders = audio_model.initialize();
 
-    let sample_rate = audio_model.sample_rate();
+    let sample_rate = unsafe { SAMPLE_RATE };
 
     let stream = audio_host
         .new_output_stream(audio_model)

@@ -28,9 +28,16 @@ pub enum AdsrStage {
 #[derive(Debug)]
 pub struct AdsrEnvelope {
     attack_time_ms: f64,
+    attack_level: f64,
+    attack_curve: f64,
+
     decay_time_ms: f64,
+    decay_curve: f64,
+
     sustain_level: f64,
+
     release_time_ms: f64,
+    release_curve: f64,
 
     ramp: Ramp,
     stage: AdsrStage,
@@ -49,9 +56,17 @@ impl AdsrEnvelope {
     pub fn new() -> Self {
         Self {
             attack_time_ms: DEFAULT_ATTACK_TIME_MS,
+            attack_level: 1.0,
+            attack_curve: 0.7,
+
             decay_time_ms: DEFAULT_DECAY_TIME_MS,
+            decay_curve: 0.7,
+
             sustain_level: DEFAULT_SUSTAIN_LEVEL,
+
             release_time_ms: DEFAULT_RELEASE_TIME_MS,
+            release_curve: 0.7,
+
             ramp: Ramp::new(0.0, 0.0),
             stage: AdsrStage::Idle,
         }
@@ -177,13 +192,18 @@ impl AdsrEnvelope {
     /// Internally sets the envelope to its attack state.
     fn set_attack_stage(&mut self) {
         // target attack level, attack time ramping
-        self.ramp.reset(ATTACK_LEVEL, self.attack_time_ms / 1000.0);
+        self.ramp
+            .set_smoothing_type(SmoothingType::CurveNormal(self.attack_curve));
+        self.ramp
+            .reset(self.attack_level, self.attack_time_ms / 1000.0);
         self.stage = AS::Attack;
     }
 
     /// Internally sets the envelope to its decay state.
     fn set_decay_stage(&mut self) {
         // target sustain level, decay time ramping
+        self.ramp
+            .set_smoothing_type(SmoothingType::CurveNormal(self.decay_curve));
         self.ramp
             .reset(self.sustain_level, self.decay_time_ms / 1000.0);
         self.stage = AS::Decay;
@@ -199,6 +219,8 @@ impl AdsrEnvelope {
     /// Internally sets the envelope to its release state.
     fn set_release_stage(&mut self) {
         // target 0.0, release time ramping
+        self.ramp
+            .set_smoothing_type(SmoothingType::CurveNormal(self.release_curve));
         self.ramp.reset(0.0, self.release_time_ms / 1000.0);
         self.stage = AS::Release;
     }

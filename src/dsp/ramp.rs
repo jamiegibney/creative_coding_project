@@ -3,7 +3,7 @@ use crate::prelude::*;
 
 /// A ramp (i.e. linear segment) generator. Useful for smoothing values over time,
 /// or as the internal system of an envelope.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ramp {
     current_value: f64,
     last_value: f64,
@@ -12,6 +12,7 @@ pub struct Ramp {
     step_size: f64,
     // the internal interpolation amount
     interp: f64,
+    smoothing_type: SmoothingType,
 }
 
 impl Ramp {
@@ -23,6 +24,7 @@ impl Ramp {
             target_value,
             step_size: 0.0,
             interp: 0.0,
+            smoothing_type: SmoothingType::default(),
         };
 
         s.reset(target_value, ramp_duration_secs);
@@ -63,6 +65,10 @@ impl Ramp {
         self.reset(target_value, ramp_duration_secs);
     }
 
+    pub fn set_smoothing_type(&mut self, smoothing_type: SmoothingType) {
+        self.smoothing_type = smoothing_type;
+    }
+
     /// Clears the ramp, resetting it completely. Call the `reset()` method to
     /// re-initialize the ramp after calling this.
     pub fn clear(&mut self) {
@@ -87,7 +93,7 @@ impl Ramp {
             self.last_value = self.current_value;
         }
         else {
-            self.set_current_value();
+            self.calculate_current_value();
         }
 
         self.current_value
@@ -102,7 +108,7 @@ impl Ramp {
         if self.step_size.mul_add(steps as f64, self.interp) > 1.0 {
             self.interp = 1.0;
             self.step_size = 0.0;
-            self.set_current_value();
+            self.calculate_current_value();
         }
         else {
             for _ in 0..steps {
@@ -125,9 +131,28 @@ impl Ramp {
         !within_tolerance(self.interp, 1.0, f64::EPSILON)
     }
 
-    fn set_current_value(&mut self) {
-        self.current_value =
-            scale(self.interp, self.last_value, self.target_value);
+    fn calculate_current_value(&mut self) -> f64 {
+        let (a, b, t) = (self.last_value, self.target_value, self.interp);
+
+        self.current_value = match self.smoothing_type {
+            SmoothingType::Linear => interp::lerp(a, b, t),
+            SmoothingType::Cosine => interp::cosine(a, b, t),
+            SmoothingType::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
+            SmoothingType::SineBottom => {
+                interp::lerp(a, b, xfer::sine_lower(t))
+            }
+            SmoothingType::CurveNormal(tension) => {
+                interp::lerp(a, b, xfer::s_curve(t, tension))
+            }
+            SmoothingType::CurveLinearStart(tension) => {
+                interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
+            }
+            SmoothingType::CurveRounder(tension) => {
+                interp::lerp(a, b, xfer::s_curve_round(t, tension))
+            }
+        };
+
+        self.current_value
     }
 }
 

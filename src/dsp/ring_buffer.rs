@@ -1,46 +1,64 @@
+use super::Ramp;
+use crate::prelude::*;
 use crate::util::interp;
 use crate::util::interp::InterpolationType as InterpType;
-use crate::util::smoothed_float::*;
 
 /// A ring buffer (AKA circular buffer) module, particularly useful for delays.
 ///
 /// Implements delay time smoothing and sample interpolation.
-///
-/// Potentially over-engineered for simple usage. See `dsp::RingBufferSimple`
-/// for a simpler implementation.
+#[derive(Debug, Clone)]
 pub struct RingBuffer {
-    sample_rate: f64,
     size_samples: usize,
     write_pos: usize,
     buffer: Vec<f64>,
     interpolation_type: InterpType,
-    delay_time: SmoothedValue,
+    delay_time_secs: Ramp,
     smoothing_type: SmoothingType,
+    smoothing_time_secs: f64,
 }
 
 impl RingBuffer {
     /// Returns a new, initialised `RingBuffer` instance.
-    pub fn new() -> Self {
+    #[must_use]
+    pub fn new(size_samples: usize) -> Self {
         Self {
-            sample_rate: 0.0,
-            size_samples: 0,
+            size_samples,
             write_pos: 0,
-            buffer: Vec::new(),
-            interpolation_type: InterpType::Linear,
-            delay_time: SmoothedValue::new(),
-            smoothing_type: SmoothingType::Linear,
+            buffer: vec![0.0; size_samples],
+            interpolation_type: InterpType::default(),
+            delay_time_secs: Ramp::new(0.0, 0.0),
+            smoothing_type: SmoothingType::Cosine,
+            smoothing_time_secs: 0.03,
         }
     }
 
+    pub fn dbg_print(&self) {
+        let Self {
+            size_samples,
+            write_pos,
+            interpolation_type,
+            delay_time_secs,
+            smoothing_type,
+            smoothing_time_secs,
+            ..
+        } = self;
+
+        dbg!(size_samples);
+        dbg!(write_pos);
+        dbg!(interpolation_type);
+        dbg!(delay_time_secs);
+        dbg!(smoothing_type);
+        dbg!(smoothing_time_secs);
+    }
+
     /// Prepares the buffer with `size_samples` samples. Also prepares the delay smoothing.
+    ///
+    /// # Panics
     pub fn prepare_with_samples(
         &mut self,
-        sample_rate: f64,
         size_samples: usize,
-        smoothing_time: f64,
+        smoothing_time_secs: f64,
     ) {
-        assert!(sample_rate >= 0.0, "passed a negative sample rate");
-        self.sample_rate = sample_rate;
         self.buffer.clear();
 
         if size_samples != self.size_samples {
@@ -49,35 +67,41 @@ impl RingBuffer {
             self.write_pos = 0;
         }
 
-        self.delay_time.prepare(sample_rate, 0.0, smoothing_time);
+        self.delay_time_secs.reset(0.0, smoothing_time_secs);
         self.set_smoothing_type(self.smoothing_type);
     }
 
     /// Prepares the buffer with enough samples to hold `size_seconds` amount of time at
     /// the given sample rate. Also prepares the delay smoothing.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `size_seconds` is negative.
     pub fn prepare_with_time(
         &mut self,
-        sample_rate: f64,
         size_seconds: f64,
         smoothing_time: f64,
     ) {
         assert!(size_seconds >= 0.0, "passed a negative size value");
-        assert!(sample_rate >= 0.0, "passed a negative sample rate");
 
-        let num_samples = (sample_rate * size_seconds).ceil() as usize;
+        let num_samples =
+            (unsafe { SAMPLE_RATE } * size_seconds).ceil() as usize;
 
-        self.prepare_with_samples(sample_rate, num_samples, smoothing_time);
+        self.prepare_with_samples(num_samples, smoothing_time);
     }
 
     /// Sets the buffer's delay time in seconds.
     pub fn set_delay_time(&mut self, delay_seconds: f64) {
-        self.delay_time.set_target_value(delay_seconds);
+        self.delay_time_secs
+            .reset(delay_seconds, self.smoothing_time_secs);
     }
 
     /// Sets the buffer's delay time in samples.
     pub fn set_delay_samples(&mut self, delay_samples: usize) {
-        self.delay_time
-            .set_target_value(delay_samples as f64 / self.sample_rate);
+        self.delay_time_secs.reset(
+            delay_samples as f64 / unsafe { SAMPLE_RATE },
+            self.smoothing_time_secs,
+        );
     }
 
     /// Pushes a sample to the buffer, incrementing the write position.
@@ -88,12 +112,14 @@ impl RingBuffer {
 
     /// Pushes a vector of samples to the buffer.
     ///
+    /// # Panics
+    ///
     /// `panic!`s if the vector passed is too large to store in the buffer.
     pub fn push_vec(&mut self, samples: Vec<f64>) {
         assert!(self.size_samples >= samples.len(),
                 "{}", format!("passed a vector with too many samples: capacity: {}, given: {}",
-                              self.size_samples.to_string(),
-                              samples.len().to_string()));
+                              self.size_samples,
+                              samples.len()));
 
         for sample in samples {
             self.buffer[self.write_pos] = sample;
@@ -137,12 +163,12 @@ impl RingBuffer {
     /// Sets the smoothing function to use for delay time changes.
     pub fn set_smoothing_type(&mut self, smoothing_type: SmoothingType) {
         self.smoothing_type = smoothing_type;
-        self.delay_time.set_smoothing_type(self.smoothing_type);
+        self.delay_time_secs.set_smoothing_type(self.smoothing_type);
     }
 
     /// Returns the size of the buffer in seconds.
     pub fn size_as_seconds(&self) -> f64 {
-        self.size_samples as f64 / self.sample_rate
+        self.size_samples as f64 / unsafe { SAMPLE_RATE }
     }
 
     /// # Internal method
@@ -156,7 +182,8 @@ impl RingBuffer {
     ///
     /// Returns four read positions as an array, and the inter-sample remainder, as a tuple.
     fn read_pos_and_interp(&mut self) -> ([usize; 4], f64) {
-        let delay_samples = self.delay_time.next() * self.sample_rate;
+        let delay_samples =
+            self.delay_time_secs.next() * unsafe { SAMPLE_RATE };
         let floor_samples = delay_samples.floor();
         let remainder_time = delay_samples - floor_samples;
 
@@ -169,7 +196,7 @@ impl RingBuffer {
     /// and two after it. Accounts for buffer wrapping.
     const fn get_read_positions(&self, delay_samples: usize) -> [usize; 4] {
         let r1 = if delay_samples >= self.write_pos {
-            self.size_samples - delay_samples + self.write_pos
+            (delay_samples + self.write_pos) % self.size_samples
         }
         else {
             self.write_pos - delay_samples
@@ -182,4 +209,3 @@ impl RingBuffer {
         [r0, r1, r2, r3]
     }
 }
-

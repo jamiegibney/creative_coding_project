@@ -3,8 +3,11 @@
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 
 pub mod interp;
-pub mod smoothed_float;
 pub mod xfer;
+
+pub use interp::InterpolationType as InterpType;
+pub use interp::{ilerp, lerp};
+pub use xfer::SmoothingType;
 
 /// Calculates the frequency value of the provided MIDI note value.
 pub fn note_to_freq(note_value: f64) -> f64 {
