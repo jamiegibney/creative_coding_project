@@ -8,6 +8,7 @@ pub use filters::{
     allpass::Allpass,
     biquad::{BiquadFilter, FilterParams, FilterType},
     comb::{FirCombFilter, IirCombFilter},
+    Filter,
 };
 pub use ramp::Ramp;
 pub use ring_buffer::RingBuffer;

@@ -27,18 +27,18 @@ impl Ramp {
             smoothing_type: SmoothingType::default(),
         };
 
-        s.reset(target_value, ramp_duration_secs);
+        s.set(target_value, ramp_duration_secs);
 
         s
     }
 
-    /// Resets the target value and duration of the ramp generator, retaining
+    /// Sets the target value and duration of the ramp generator, retaining
     /// its last value (i.e. it will interpolate from its current value to the
     /// new target).
     ///
     /// If you change the sample rate, this is the function to call to update
     /// the ramp's timing.
-    pub fn reset(&mut self, target_value: f64, ramp_duration_secs: f64) {
+    pub fn set(&mut self, target_value: f64, ramp_duration_secs: f64) {
         self.last_value = self.current_value;
         self.target_value = target_value;
 
@@ -53,25 +53,25 @@ impl Ramp {
         }
     }
 
-    /// The same as reset, but sets the value of the ramp before resetting it,
+    /// The same as `set()`, but sets the value of the ramp before resetting it,
     /// meaning that it will progress from that value.
-    pub fn reset_with_value(
+    pub fn set_with_value(
         &mut self,
         start_value: f64,
         target_value: f64,
         ramp_duration_secs: f64,
     ) {
         self.current_value = start_value;
-        self.reset(target_value, ramp_duration_secs);
+        self.set(target_value, ramp_duration_secs);
     }
 
     pub fn set_smoothing_type(&mut self, smoothing_type: SmoothingType) {
         self.smoothing_type = smoothing_type;
     }
 
-    /// Clears the ramp, resetting it completely. Call the `reset()` method to
+    /// Resets the ramp, resetting it completely. Call the `init()` method to
     /// re-initialize the ramp after calling this.
-    pub fn clear(&mut self) {
+    pub fn reset(&mut self) {
         self.current_value = 0.0;
         self.last_value = 0.0;
         self.target_value = 0.0;

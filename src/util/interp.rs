@@ -3,13 +3,20 @@ use std::f64::consts::PI;
 /// Various interpolation types, including `NoInterp`.
 #[derive(Debug, Clone, Copy, Default)]
 pub enum InterpolationType {
+    /// No interpolation.
     NoInterp,
+    /// Linear interpolation from a -> b.
     #[default]
     Linear,
+    /// Cosine interpolation from a -> b.
     Cosine,
+    /// Standard cubic interpolation from b -> c, given samples a, b, c and d.
     DefaultCubic,
+    /// Catmull-Rom cubic interpolation from b -> c, given samples a, b, c and d.
     CatmullCubic,
-    HermiteCubic,
+    /// Hermite cubic interpolation from b -> c, given samples a, b, c and d.
+    /// The values correspond to `tension` and `bias` arguments.
+    HermiteCubic(f64, f64),
 }
 
 /// Shorthand for the `Interp::linear` function.
@@ -187,4 +194,36 @@ pub fn cubic_hermite_vec(
     }
 
     cubic_hermite(points[0], points[1], points[2], points[3], t, tension, bias)
+}
+
+// TODO: unit tests for interpolation algorithms...
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_linear_interp() {
+        todo!()
+    }
+
+    #[test]
+    fn test_cosine_interp() {
+        todo!()
+    }
+
+    #[test]
+    fn test_cubic_interp() {
+        todo!()
+    }
+
+    #[test]
+    fn test_camull_rom_interp() {
+        todo!()
+    }
+
+    #[test]
+    fn test_hermite_interp() {
+        todo!()
+    }
 }

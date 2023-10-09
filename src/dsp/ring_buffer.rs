@@ -1,211 +1,199 @@
 use super::Ramp;
 use crate::prelude::*;
 use crate::util::interp;
-use crate::util::interp::InterpolationType as InterpType;
 
-/// A ring buffer (AKA circular buffer) module, particularly useful for delays.
-///
-/// Implements delay time smoothing and sample interpolation.
+const DEFAULT_SMOOTHING_TIME: f64 = 0.01;
+
+/// A resizable ring buffer which supports interpolation and parameter
+/// smoothing (for delay time).
 #[derive(Debug, Clone)]
 pub struct RingBuffer {
-    size_samples: usize,
+    /// The internal data buffer.
+    data: Vec<f64>,
+    /// The write position of the buffer.
     write_pos: usize,
-    buffer: Vec<f64>,
+
+    /// The smoothed delay time parameter.
+    delay_secs: Ramp,
+
+    /// The kind of interpolation to use.
     interpolation_type: InterpType,
-    delay_time_secs: Ramp,
+
     smoothing_type: SmoothingType,
     smoothing_time_secs: f64,
 }
 
 impl RingBuffer {
-    /// Returns a new, initialised `RingBuffer` instance.
+    /// Returns a new, initialised `RingBuffer` which holds `size` elements.
+    ///
+    /// Defaults to linear smoothing (see `set_smoothing()`) and interpolation
+    /// (see `set_interpolation()`).
     #[must_use]
-    pub fn new(size_samples: usize) -> Self {
+    pub fn new(size: usize) -> Self {
         Self {
-            size_samples,
+            data: vec![0.0; size],
             write_pos: 0,
-            buffer: vec![0.0; size_samples],
-            interpolation_type: InterpType::default(),
-            delay_time_secs: Ramp::new(0.0, 0.0),
-            smoothing_type: SmoothingType::Cosine,
-            smoothing_time_secs: 0.03,
+
+            delay_secs: Ramp::new(0.0, DEFAULT_SMOOTHING_TIME),
+
+            interpolation_type: InterpType::default(), // linear
+
+            smoothing_type: SmoothingType::default(),
+            smoothing_time_secs: DEFAULT_SMOOTHING_TIME,
         }
     }
 
-    pub fn dbg_print(&self) {
-        let Self {
-            size_samples,
-            write_pos,
-            interpolation_type,
-            delay_time_secs,
-            smoothing_type,
-            smoothing_time_secs,
-            ..
-        } = self;
-
-        dbg!(size_samples);
-        dbg!(write_pos);
-        dbg!(interpolation_type);
-        dbg!(delay_time_secs);
-        dbg!(smoothing_type);
-        dbg!(smoothing_time_secs);
-    }
-
-    /// Prepares the buffer with `size_samples` samples. Also prepares the delay smoothing.
-    ///
-    /// # Panics
-    pub fn prepare_with_samples(
-        &mut self,
-        size_samples: usize,
-        smoothing_time_secs: f64,
-    ) {
-        self.buffer.clear();
-
-        if size_samples != self.size_samples {
-            self.size_samples = size_samples;
-            self.buffer.resize(size_samples, 0.0);
-            self.write_pos = 0;
-        }
-
-        self.delay_time_secs.reset(0.0, smoothing_time_secs);
-        self.set_smoothing_type(self.smoothing_type);
-    }
-
-    /// Prepares the buffer with enough samples to hold `size_seconds` amount of time at
-    /// the given sample rate. Also prepares the delay smoothing.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `size_seconds` is negative.
-    pub fn prepare_with_time(
-        &mut self,
-        size_seconds: f64,
-        smoothing_time: f64,
-    ) {
-        assert!(size_seconds >= 0.0, "passed a negative size value");
-
-        let num_samples =
-            (unsafe { SAMPLE_RATE } * size_seconds).ceil() as usize;
-
-        self.prepare_with_samples(num_samples, smoothing_time);
-    }
-
-    /// Sets the buffer's delay time in seconds.
-    pub fn set_delay_time(&mut self, delay_seconds: f64) {
-        self.delay_time_secs
-            .reset(delay_seconds, self.smoothing_time_secs);
-    }
-
-    /// Sets the buffer's delay time in samples.
-    pub fn set_delay_samples(&mut self, delay_samples: usize) {
-        self.delay_time_secs.reset(
-            delay_samples as f64 / unsafe { SAMPLE_RATE },
-            self.smoothing_time_secs,
-        );
-    }
-
-    /// Pushes a sample to the buffer, incrementing the write position.
-    pub fn push(&mut self, sample: f64) {
-        self.buffer[self.write_pos] = sample;
+    /// Pushes `element` to the `RingBuffer`.
+    pub fn push(&mut self, element: f64) {
+        self.data[self.write_pos] = element;
         self.increment_write_pos();
     }
 
-    /// Pushes a vector of samples to the buffer.
+    /// Reads the delayed element from the `RingBuffer`.
+    pub fn read(&mut self) -> f64 {
+        use InterpType as IT;
+        let (read_pos, interp) = self.get_read_pos_and_interp();
+        // r1 is the same as read_pos
+        let (r0, r1, r2, r3) =
+            if matches!(self.interpolation_type, IT::NoInterp) {
+                (0, read_pos, 0, 0)
+            }
+            else {
+                self.get_cubic_read_positions(read_pos)
+            };
+
+        match self.interpolation_type {
+            IT::NoInterp => self.data[r1],
+            IT::Linear => lerp(self.data[r1], self.data[r2], interp),
+            IT::Cosine => interp::cosine(self.data[r1], self.data[r2], interp),
+            IT::DefaultCubic => interp::cubic(
+                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
+                interp,
+            ),
+            IT::CatmullCubic => interp::cubic_catmull(
+                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
+                interp,
+            ),
+            IT::HermiteCubic(tension, bias) => interp::cubic_hermite(
+                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
+                interp, tension, bias,
+            ),
+        }
+    }
+
+    /// Sets the delay time of the `RingBuffer` in seconds.
     ///
     /// # Panics
     ///
-    /// `panic!`s if the vector passed is too large to store in the buffer.
-    pub fn push_vec(&mut self, samples: Vec<f64>) {
-        assert!(self.size_samples >= samples.len(),
-                "{}", format!("passed a vector with too many samples: capacity: {}, given: {}",
-                              self.size_samples,
-                              samples.len()));
-
-        for sample in samples {
-            self.buffer[self.write_pos] = sample;
-            self.increment_write_pos();
-        }
+    /// Panics in debug mode if `delay_secs` is greater than the maximum
+    /// delay time of the `RingBuffer` in seconds to avoid buffer overruns. Use
+    /// `set_delay_time_unchecked()` to bypass this.
+    pub fn set_delay_time(&mut self, delay_secs: f64) {
+        debug_assert!(delay_secs <= self.max_delay_secs());
+        self.delay_secs.set(delay_secs, self.smoothing_time_secs);
     }
 
-    /// Returns the (interpolated) delayed value relative to the write position.
-    pub fn read(&mut self) -> f64 {
-        let (read_pos, interp) = self.read_pos_and_interp();
-
-        let samples: [f64; 4] = [
-            self.buffer[read_pos[0]], self.buffer[read_pos[1]],
-            self.buffer[read_pos[2]], self.buffer[read_pos[3]],
-        ];
-
-        match self.interpolation_type {
-            InterpType::NoInterp => samples[1],
-            InterpType::Linear => interp::lerp(samples[1], samples[2], interp),
-            InterpType::Cosine => {
-                interp::cosine(samples[1], samples[2], interp)
-            }
-            InterpType::DefaultCubic => interp::cubic(
-                samples[0], samples[1], samples[2], samples[3], interp,
-            ),
-            InterpType::CatmullCubic => interp::cubic_catmull(
-                samples[0], samples[1], samples[2], samples[3], interp,
-            ),
-            InterpType::HermiteCubic => interp::cubic_hermite(
-                samples[0], samples[1], samples[2], samples[3], interp, -0.5,
-                0.2,
-            ),
-        }
+    /// Sets the delay time of the `RingBuffer` in seconds without checking
+    /// for buffer overruns.
+    pub fn set_delay_time_unchecked(&mut self, delay_secs: f64) {
+        self.delay_secs.set(delay_secs, self.smoothing_time_secs);
     }
 
-    /// Sets the interpolation method to use for delay values that lie between samples.
-    pub fn set_interpolation_type(&mut self, interpolation_type: InterpType) {
+    /// Sets the smoothing method and time for the `RingBuffer`. This affects
+    /// how the buffer responds to changes in delay time.
+    pub fn set_smoothing(
+        &mut self,
+        smoothing_type: SmoothingType,
+        smoothing_time_secs: f64,
+    ) {
+        self.delay_secs.set_smoothing_type(smoothing_type);
+
+        self.smoothing_type = smoothing_type;
+        self.smoothing_time_secs = smoothing_time_secs;
+    }
+
+    /// Sets the interpolation method for the `RingBuffer`. This affects how
+    /// the buffer handles delay times which lie between samples.
+    pub fn set_interpolation(&mut self, interpolation_type: InterpType) {
         self.interpolation_type = interpolation_type;
     }
 
-    /// Sets the smoothing function to use for delay time changes.
-    pub fn set_smoothing_type(&mut self, smoothing_type: SmoothingType) {
-        self.smoothing_type = smoothing_type;
-        self.delay_time_secs.set_smoothing_type(self.smoothing_type);
+    /// Resets the `RingBuffer` to its default settings. Does not allocate.
+    pub fn reset(&mut self) {
+        self.data.clear();
+        self.write_pos = 0;
+        self.delay_secs
+            .set_with_value(0.0, 0.0, DEFAULT_SMOOTHING_TIME);
+        self.interpolation_type = InterpType::default();
+        self.smoothing_type = SmoothingType::default();
+        self.smoothing_time_secs = DEFAULT_SMOOTHING_TIME;
     }
 
-    /// Returns the size of the buffer in seconds.
-    pub fn size_as_seconds(&self) -> f64 {
-        self.size_samples as f64 / unsafe { SAMPLE_RATE }
+    /// Clears the contents of the buffer, i.e. sets its contents to `0.0`.
+    pub fn clear(&mut self) {
+        self.data.iter_mut().for_each(|x| *x = 0.0);
     }
 
-    /// # Internal method
+    /// # Safety
     ///
-    /// Increments the write pointer position, wrapping it around the buffer.
-    fn increment_write_pos(&mut self) {
-        self.write_pos = (self.write_pos + 1) % self.size_samples;
+    /// This may reallocate memory, so you should not call this on the audio
+    /// thread or in real-time usage.
+    pub fn resize(&mut self, new_size: usize) {
+        self.data.resize(new_size, 0.0);
     }
 
-    /// # Internal method
-    ///
-    /// Returns four read positions as an array, and the inter-sample remainder, as a tuple.
-    fn read_pos_and_interp(&mut self) -> ([usize; 4], f64) {
-        let delay_samples =
-            self.delay_time_secs.next() * unsafe { SAMPLE_RATE };
-        let floor_samples = delay_samples.floor();
-        let remainder_time = delay_samples - floor_samples;
-
-        (self.get_read_positions(floor_samples as usize), remainder_time)
+    /// Returns the number of elements held by the `RingBuffer`.
+    #[must_use]
+    pub fn size(&self) -> usize {
+        self.data.len()
     }
 
-    /// # Internal method
-    ///
-    /// Returns four read positions: one before the read position, the read position itself,
-    /// and two after it. Accounts for buffer wrapping.
-    const fn get_read_positions(&self, delay_samples: usize) -> [usize; 4] {
-        let r1 = if delay_samples >= self.write_pos {
-            (delay_samples + self.write_pos) % self.size_samples
+    /// Returns the maximum delay time possible for the current sample rate.
+    fn max_delay_secs(&self) -> f64 {
+        let size = self.size() as f64;
+        size / unsafe { SAMPLE_RATE }
+    }
+
+    fn get_read_pos_and_interp(&mut self) -> (usize, f64) {
+        let delay_samples = unsafe { SAMPLE_RATE } * self.delay_secs.next();
+        // the exact delay sample, i.e. read position
+        let samples_exact = delay_samples.floor();
+        // the interpolation between this sample and the next
+        let interp = delay_samples - samples_exact;
+
+        let samples_exact = samples_exact as usize;
+        let read_pos = if samples_exact > self.write_pos {
+            let overrun = self.size() + self.write_pos;
+            overrun - samples_exact
         }
         else {
-            self.write_pos - delay_samples
+            self.write_pos - samples_exact
         };
 
-        let r0 = if r1 == 0 { self.size_samples - 1 } else { r1 - 1 };
-        let r2 = (r1 + 1) % self.size_samples;
-        let r3 = (r2 + 1) % self.size_samples;
+        (read_pos, interp)
+    }
 
-        [r0, r1, r2, r3]
+    /// Returns the read positions +1, at, -1, and -2 relative to the read
+    /// position, used for interpolation.
+    // TODO: try to account for delay time less than 2 samples?
+    fn get_cubic_read_positions(
+        &self,
+        read_pos: usize,
+    ) -> (usize, usize, usize, usize) {
+        let size = self.size();
+        let r0 = (read_pos + 1) % size;
+        let r2 = if read_pos == 0 { size - 1 } else { read_pos - 1 };
+        let r3 = if read_pos <= 1 { size - 2 + read_pos } else { read_pos - 2 };
+
+        (r0, read_pos, r2, r3)
+    }
+
+    fn increment_write_pos(&mut self) {
+        let size = self.size();
+
+        self.write_pos += 1;
+        if size <= self.write_pos {
+            self.write_pos = 0;
+        }
     }
 }

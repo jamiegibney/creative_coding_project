@@ -1,5 +1,4 @@
 use super::*;
-use crate::dsp::ramp;
 use crate::dsp::*;
 use crate::dsp::{adsr::AdsrEnvelope, ramp::Ramp};
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -79,7 +78,7 @@ impl AudioModel {
 
         for comb in &mut self.filter_comb {
             comb.set_positive_polarity(true);
-            comb.set_interpolation(InterpType::CatmullCubic);
+            comb.set_interpolation(InterpType::Linear);
             comb.set_gain_db(-0.2);
         }
     }
@@ -154,7 +153,7 @@ impl AudioModel {
         // filter frequency
         if let Some(freq) = &self.filter_freq_receiver {
             if let Ok(msg) = freq.try_recv() {
-                self.filter_freq.reset(msg, 0.01);
+                self.filter_freq.set(msg, 0.01);
             }
         }
     }

@@ -1,10 +1,23 @@
-use super::filter::CombFilter;
+use super::filter::*;
+use crate::dsp::Filter;
 use crate::prelude::*;
 
 /// A FIR (Finite Impulse Response) comb filter.
+///
+/// Supports frequencies as low as 10 Hz.
 #[derive(Debug, Clone)]
 pub struct FirCombFilter {
     filter: CombFilter,
+}
+
+impl Filter for FirCombFilter {
+    /// Processes a single sample of the comb filter, returning the new sample.
+    fn process(&mut self, sample: f64) -> f64 {
+        self.filter.buffer.push(sample);
+
+        sample
+            .mul_add(self.filter.a0, self.filter.buffer.read() * self.filter.bd)
+    }
 }
 
 impl FirCombFilter {
@@ -14,23 +27,17 @@ impl FirCombFilter {
         Self { filter: CombFilter::new(interpolation) }
     }
 
-    /// Processes a single sample of the comb filter, returning the new sample.
-    pub fn process(&mut self, sample: f64) -> f64 {
-        self.filter.buffer.push(sample);
-
-        sample * self.filter.a0 + self.filter.buffer.read() * self.filter.bd
-    }
-
     /// Use this if you change the sample rate to reallocate the internal buffer.
     pub fn reset_sample_rate(&mut self) {
         self.filter.reset_sample_rate();
     }
 
-    /// Sets the frequency of the comb filter.
+    /// Sets the frequency of the comb filter. Must be between 10 Hz and half
+    /// the sample rate.
     ///
     /// # Panics
     ///
-    /// Panics if `freq` is less than 1 or greater than half of the sample rate.
+    /// Panics if `freq` is less than 10 or greater than half of the sample rate.
     pub fn set_freq(&mut self, freq: f64) {
         self.filter.set_freq(freq);
     }
@@ -60,4 +67,3 @@ impl FirCombFilter {
         self.filter.set_interpolation(interpolation_type);
     }
 }
-

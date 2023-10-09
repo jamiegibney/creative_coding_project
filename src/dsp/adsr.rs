@@ -204,7 +204,7 @@ impl AdsrEnvelope {
     /// Internally sets the envelope to its idle state.
     fn set_idle_stage(&mut self) {
         /// target 0.0, no ramping
-        self.ramp.reset(0.0, 0.0);
+        self.ramp.set(0.0, 0.0);
         self.stage = AS::Idle;
     }
 
@@ -214,7 +214,7 @@ impl AdsrEnvelope {
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.attack_curve));
         self.ramp
-            .reset(self.attack_level, self.attack_time_ms / 1000.0);
+            .set(self.attack_level, self.attack_time_ms / 1000.0);
         self.stage = AS::Attack;
     }
 
@@ -224,14 +224,14 @@ impl AdsrEnvelope {
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.decay_curve));
         self.ramp
-            .reset(self.sustain_level, self.decay_time_ms / 1000.0);
+            .set(self.sustain_level, self.decay_time_ms / 1000.0);
         self.stage = AS::Decay;
     }
 
     /// Internally sets the envelope to its sustain state.
     fn set_sustain_stage(&mut self) {
         // target sustain level, no ramping
-        self.ramp.reset(self.sustain_level, 0.0);
+        self.ramp.set(self.sustain_level, 0.0);
         self.stage = AS::Sustain;
     }
 
@@ -240,7 +240,7 @@ impl AdsrEnvelope {
         // target 0.0, release time ramping
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.release_curve));
-        self.ramp.reset(0.0, self.release_time_ms / 1000.0);
+        self.ramp.set(0.0, self.release_time_ms / 1000.0);
         self.stage = AS::Release;
     }
 

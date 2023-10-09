@@ -3,6 +3,7 @@ use crate::{prelude::SAMPLE_RATE, util};
 use std::f64::consts::{FRAC_1_SQRT_2, PI, TAU};
 use util::db_to_level;
 use FilterType as FT;
+use super::*;
 
 // TODO see if the wikipedia biquad implementation works any better?
 // https://en.wikipedia.org/wiki/Digital_biquad_filter#Transposed_direct_form_2
@@ -66,6 +67,44 @@ impl Default for FilterParams {
             gain: 0.0,
         }
     }
+}
+
+impl Filter for BiquadFilter {
+    /// Processes a single sample of the filter and returns the new sample.
+    ///
+    /// Note that this filter will lazily update its coefficients; if there is
+    /// no parameter change between calls to this method, only the sample output
+    /// is computed — not the filter coefficients. In other words, this method
+    /// will compute much faster if there is no parameter change between calls.
+    fn process(&mut self, sample: f64) -> f64 {
+        let Coefs { a0, a1, a2, b1, b2 } = self.coefs;
+        let (z1, z2) = self.delayed;
+
+        if self.needs_recompute {
+            match self.params.filter_type {
+                FT::Peak => self.set_peak_coefs(),
+                FT::Lowpass => self.set_lowpass_coefs(),
+                FT::Highpass => self.set_highpass_coefs(),
+                // FT::Lowshelf => self.set_lowshelf_coefs(),
+                // FT::Highshelf => self.set_highshelf_coefs(),
+                FT::Bandpass => self.set_bandpass_coefs(),
+                FT::Notch => self.set_notch_coefs(),
+                FT::Allpass => self.set_allpass_coefs(),
+            };
+
+            self.needs_recompute = false;
+        }
+
+        let output = sample.mul_add(a0, z1);
+
+        self.delayed = (
+            a1.mul_add(sample, -b1 * output) + z2,
+            a2.mul_add(sample, -b2 * output),
+        );
+
+        output
+    }
+
 }
 
 /// A biquadratic filter implementation, which offers all of the filter types
@@ -141,41 +180,6 @@ impl BiquadFilter {
     /// `suspend()`.
     pub fn force_recompute(&mut self) {
         self.needs_recompute = true;
-    }
-
-    /// Processes a single sample of the filter and returns the new sample.
-    ///
-    /// Note that this filter will lazily update its coefficients; if there is
-    /// no parameter change between calls to this method, only the sample output
-    /// is computed — not the filter coefficients. In other words, this method
-    /// will compute much faster if there is no parameter change between calls.
-    pub fn process(&mut self, sample: f64) -> f64 {
-        let Coefs { a0, a1, a2, b1, b2 } = self.coefs;
-        let (z1, z2) = self.delayed;
-
-        if self.needs_recompute {
-            match self.params.filter_type {
-                FT::Peak => self.set_peak_coefs(),
-                FT::Lowpass => self.set_lowpass_coefs(),
-                FT::Highpass => self.set_highpass_coefs(),
-                // FT::Lowshelf => self.set_lowshelf_coefs(),
-                // FT::Highshelf => self.set_highshelf_coefs(),
-                FT::Bandpass => self.set_bandpass_coefs(),
-                FT::Notch => self.set_notch_coefs(),
-                FT::Allpass => self.set_allpass_coefs(),
-            };
-
-            self.needs_recompute = false;
-        }
-
-        let output = sample.mul_add(a0, z1);
-
-        self.delayed = (
-            a1.mul_add(sample, -b1 * output) + z2,
-            a2.mul_add(sample, -b2 * output),
-        );
-
-        output
     }
 
     /// Sets the parameters of the filter all at once.
