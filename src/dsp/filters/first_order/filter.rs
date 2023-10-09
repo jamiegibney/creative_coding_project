@@ -67,21 +67,24 @@ impl FirstOrderFilter {
 
     pub fn set_freq(&mut self, freq: f64) {
         self.freq = freq;
+        self.debug_assertions();
     }
 
-    pub fn set_type(&mut self, filter_type: FilterType) {}
+    pub fn set_type(&mut self, filter_type: FilterType) {
+        self.filter_type = filter_type;
+    }
 
     fn set_lowpass_coefs(&mut self) {
-        let Coefs { a0, a1, b1 } = &mut self.coefs;
         self.set_common_coefs();
+        let Coefs { a0, a1, b1 } = &mut self.coefs;
 
         *a0 = (1.0 + *b1) / 2.0;
         *a1 = *a0;
     }
 
     fn set_highpass_coefs(&mut self) {
-        let Coefs { a0, a1, b1 } = &mut self.coefs;
         self.set_common_coefs();
+        let Coefs { a0, a1, b1 } = &mut self.coefs;
 
         *a0 = (1.0 - *b1) / 2.0;
         *a1 = -(*a0);

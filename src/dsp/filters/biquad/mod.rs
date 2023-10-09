@@ -9,34 +9,6 @@ pub use filter::*;
 mod tests {
     use super::{filter::*, *};
 
-    #[test]
-    fn test_midi_freq_conversion() {
-        let e6 = 88.0;
-        let freq = util::note_to_freq(e6);
-        assert!(util::within_tolerance(freq, 1318.51, 0.001));
-        assert!(util::within_tolerance(
-            util::freq_to_note(freq),
-            e6,
-            f64::EPSILON
-        ));
-    }
-
-    #[test]
-    fn test_amplitude_conversion() {
-        let level = 0.5;
-        let db = util::level_to_db(level);
-        assert!(util::within_tolerance(
-            db,
-            -6.020_599_913_279_624,
-            f64::EPSILON
-        ));
-        assert!(util::within_tolerance(
-            util::db_to_level(db),
-            level,
-            f64::EPSILON
-        ));
-    }
-
     // filter bounds tests
 
     #[test]

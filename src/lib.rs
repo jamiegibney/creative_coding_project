@@ -1,4 +1,4 @@
-#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::module_name_repetitions, clippy::wildcard_imports)]
 // GUI and program related
 pub mod app;
 
@@ -23,4 +23,5 @@ pub mod gui;
 // L-system related
 pub mod l_system;
 
-pub use nannou::rand as rand;
+// RNG utility functions
+pub use nannou::rand;

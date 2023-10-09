@@ -64,3 +64,24 @@ pub fn within_tolerance(value: f64, target: f64, tolerance: f64) -> bool {
 pub fn sample_length() -> f64 {
     unsafe { SAMPLE_RATE }.recip()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_midi_freq_conversion() {
+        let e6 = 88.0;
+        let freq = note_to_freq(e6);
+        assert!(within_tolerance(freq, 1318.51, 0.001));
+        assert!(within_tolerance(freq_to_note(freq), e6, f64::EPSILON));
+    }
+
+    #[test]
+    fn test_amplitude_conversion() {
+        let level = 0.5;
+        let db = level_to_db(level);
+        assert!(within_tolerance(db, -6.020_599_913_279_624, f64::EPSILON));
+        assert!(within_tolerance(db_to_level(db), level, f64::EPSILON));
+    }
+}
