@@ -39,7 +39,7 @@ impl AudioModel {
         let mut comb = IirCombFilter::with_interpolation(true);
 
         let mut comb_peak = BiquadFilter::new(sample_rate);
-        comb_peak.set_params(&FilterParams {
+        comb_peak.set_params(&BiquadParams {
             freq: 326.0,
             gain: 4.0,
             q: 0.3,
@@ -47,7 +47,7 @@ impl AudioModel {
         });
 
         let mut comb_lp = BiquadFilter::new(sample_rate);
-        comb_lp.set_params(&FilterParams {
+        comb_lp.set_params(&BiquadParams {
             freq: 1652.0,
             gain: 0.0,
             q: 2.0,
@@ -107,7 +107,7 @@ impl AudioModel {
     }
 
     pub fn set_filters(&mut self) {
-        let params = FilterParams {
+        let params = BiquadParams {
             freq: 440.0,
             gain: 0.0,
             q: 12.0,

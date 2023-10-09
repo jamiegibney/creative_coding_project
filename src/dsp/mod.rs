@@ -8,7 +8,7 @@ use crate::prelude::*;
 pub use adsr::AdsrEnvelope;
 pub use filters::{
     allpass::Allpass,
-    biquad::{BiquadFilter, FilterParams},
+    biquad::{BiquadFilter, BiquadParams},
     comb::{FirCombFilter, IirCombFilter},
     Filter, BUTTERWORTH_Q, FilterType
 };
