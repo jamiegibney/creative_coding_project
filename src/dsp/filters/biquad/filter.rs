@@ -178,7 +178,7 @@ impl BiquadFilter {
     pub fn set_params(&mut self, params: &BiquadParams) {
         self.params = *params;
         self.needs_recompute = true;
-        self.debug_assertions();
+        self.assertions();
     }
 
     /// Sets the frequency of the filter.
@@ -191,14 +191,14 @@ impl BiquadFilter {
     pub fn set_freq(&mut self, freq: f64) {
         self.params.freq = freq;
         self.needs_recompute = true;
-        self.debug_assertions();
+        self.assertions();
     }
 
     /// Sets the gain of the filter.
     pub fn set_gain(&mut self, gain: f64) {
         self.params.gain = gain;
         self.needs_recompute = true;
-        self.debug_assertions();
+        self.assertions();
     }
 
     /// Sets the Q of the filter.
@@ -208,7 +208,7 @@ impl BiquadFilter {
     pub fn set_q(&mut self, q: f64) {
         self.params.q = q;
         self.needs_recompute = true;
-        self.debug_assertions();
+        self.assertions();
     }
 
     /// Sets the filter type of the filter.
@@ -219,7 +219,7 @@ impl BiquadFilter {
     pub fn set_type(&mut self, filter_type: FilterType) {
         self.params.filter_type = filter_type;
         self.needs_recompute = true;
-        self.debug_assertions();
+        self.assertions();
     }
 
     /// Returns the half-power points (-3 dB gain) of the bandpass/notch filter.
@@ -420,7 +420,7 @@ impl BiquadFilter {
     }
 
     /// Debug assertions used whenever a parameter is changed.
-    fn debug_assertions(&self) {
+    fn assertions(&self) {
         let BiquadParams { freq, q, filter_type, .. } = self.params;
         let sr = self.sample_rate;
 
@@ -433,8 +433,9 @@ impl BiquadFilter {
         match self.params.filter_type {
             FT::Lowpass | FT::Highpass => debug_assert!(q >= 0.5f64.sqrt()),
             FT::Allpass | FT::Peak | FT::Bandpass | FT::Notch => {
-                // TODO do some tests with this, as it seems like it may not be necessary
-                debug_assert!(freq < (q * sr) / 4.0);
+                // for some reason the filter outright dies if this is violated,
+                // hence why this is not a debug assertion
+                assert!(freq < (q * sr) / 4.0);
             }
             _ => (),
         }

@@ -159,7 +159,7 @@ impl AudioModel {
         }
 
         for comb in &mut self.filter_comb {
-            comb.set_positive_polarity(false);
+            comb.set_positive_polarity(true);
             comb.set_interpolation(InterpType::Linear);
             comb.set_gain_db(-10.0);
         }

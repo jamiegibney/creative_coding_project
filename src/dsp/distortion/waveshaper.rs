@@ -2,7 +2,7 @@ use std::ops::RangeInclusive;
 
 use super::*;
 
-const MAX_DIST_MULT: f64 = 20.0;
+const MAX_DIST_MULT: f64 = 50.0;
 
 /// A waveshaper which dynamically accepts any transfer function and asymmetric
 /// drive levels.
