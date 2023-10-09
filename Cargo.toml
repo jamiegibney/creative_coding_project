@@ -10,6 +10,7 @@ doctest = false
 
 [dependencies]
 anyhow = "1.0.75" # Error handling
+dyn-clone = "1.0.14"
 earcutr = "0.4.2" # Mesh triangulation
 egui = "0.23.0" # egui - GUI library
 egui_wgpu_backend = "0.14"

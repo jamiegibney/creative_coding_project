@@ -1,31 +1,12 @@
 #![allow(clippy::module_name_repetitions)]
+use super::*;
 use crate::{prelude::SAMPLE_RATE, util};
 use std::f64::consts::{FRAC_1_SQRT_2, PI, TAU};
 use util::db_to_level;
 use FilterType as FT;
-use super::*;
 
 // TODO see if the wikipedia biquad implementation works any better?
 // https://en.wikipedia.org/wiki/Digital_biquad_filter#Transposed_direct_form_2
-
-/// An enum which covers the available filter types.
-///
-/// Currently, peak, lowpass, highpass, bandpass, notch, and allpass biquad
-/// filters are implemented.
-#[derive(Debug, Clone, Copy, Default)]
-pub enum FilterType {
-    #[default]
-    Peak,
-    Lowpass,
-    Highpass,
-    // these implementations currently aren't working as expected, so are
-    // unavailable for now
-    // Lowshelf,
-    // Highshelf,
-    Bandpass,
-    Notch,
-    Allpass,
-}
 
 #[derive(Debug, Clone, Copy)]
 struct Coefs {
@@ -69,44 +50,6 @@ impl Default for FilterParams {
     }
 }
 
-impl Filter for BiquadFilter {
-    /// Processes a single sample of the filter and returns the new sample.
-    ///
-    /// Note that this filter will lazily update its coefficients; if there is
-    /// no parameter change between calls to this method, only the sample output
-    /// is computed — not the filter coefficients. In other words, this method
-    /// will compute much faster if there is no parameter change between calls.
-    fn process(&mut self, sample: f64) -> f64 {
-        let Coefs { a0, a1, a2, b1, b2 } = self.coefs;
-        let (z1, z2) = self.delayed;
-
-        if self.needs_recompute {
-            match self.params.filter_type {
-                FT::Peak => self.set_peak_coefs(),
-                FT::Lowpass => self.set_lowpass_coefs(),
-                FT::Highpass => self.set_highpass_coefs(),
-                // FT::Lowshelf => self.set_lowshelf_coefs(),
-                // FT::Highshelf => self.set_highshelf_coefs(),
-                FT::Bandpass => self.set_bandpass_coefs(),
-                FT::Notch => self.set_notch_coefs(),
-                FT::Allpass => self.set_allpass_coefs(),
-            };
-
-            self.needs_recompute = false;
-        }
-
-        let output = sample.mul_add(a0, z1);
-
-        self.delayed = (
-            a1.mul_add(sample, -b1 * output) + z2,
-            a2.mul_add(sample, -b2 * output),
-        );
-
-        output
-    }
-
-}
-
 /// A biquadratic filter implementation, which offers all of the filter types
 /// available in `FilterType`.
 ///
@@ -126,7 +69,7 @@ impl Filter for BiquadFilter {
 /// Note that certain filter types do not use all parameters which can be
 /// passed to the filter. These values are ignored during processing, but
 /// updating them will still signal the filter to recompute.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct BiquadFilter {
     coefs: Coefs,
     delayed: (f64, f64),
@@ -134,6 +77,48 @@ pub struct BiquadFilter {
 
     params: FilterParams,
     sample_rate: f64,
+}
+
+impl Filter for BiquadFilter {
+    /// Processes a single sample of the filter and returns the new sample.
+    ///
+    /// Note that this filter will lazily update its coefficients; if there is
+    /// no parameter change between calls to this method, only the sample output
+    /// is computed — not the filter coefficients. In other words, this method
+    /// will compute much faster if there is no parameter change between calls.
+    fn process(&mut self, sample: f64) -> f64 {
+        let Coefs { a0, a1, a2, b1, b2 } = self.coefs;
+        let (z1, z2) = self.delayed;
+
+        if self.needs_recompute {
+            match self.params.filter_type {
+                FT::Peak => self.set_peak_coefs(),
+                FT::Lowpass => self.set_lowpass_coefs(),
+                FT::Highpass => self.set_highpass_coefs(),
+                FT::Lowshelf | FT::Highshelf => {
+                    dbg!(
+                        self.params.filter_type,
+                        "shelf filters not yet implemented for biquads",
+                    );
+                    self.suspend();
+                }
+                FT::Bandpass => self.set_bandpass_coefs(),
+                FT::Notch => self.set_notch_coefs(),
+                FT::Allpass => self.set_allpass_coefs(),
+            };
+
+            self.needs_recompute = false;
+        }
+
+        let output = a0.mul_add(sample, z1);
+
+        self.delayed = (
+            a1.mul_add(sample, output * -b1) + z2,
+            a2.mul_add(sample, output * -b2),
+        );
+
+        output
+    }
 }
 
 impl BiquadFilter {
@@ -227,6 +212,10 @@ impl BiquadFilter {
     }
 
     /// Sets the filter type of the filter.
+    ///
+    /// # Note
+    ///
+    /// Note that the shelving filters are not yet implemented.
     pub fn set_type(&mut self, filter_type: FilterType) {
         self.params.filter_type = filter_type;
         self.needs_recompute = true;

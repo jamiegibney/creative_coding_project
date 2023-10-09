@@ -6,9 +6,9 @@ pub mod ring_buffer;
 pub use adsr::AdsrEnvelope;
 pub use filters::{
     allpass::Allpass,
-    biquad::{BiquadFilter, FilterParams, FilterType},
+    biquad::{BiquadFilter, FilterParams},
     comb::{FirCombFilter, IirCombFilter},
-    Filter,
+    Filter, BUTTERWORTH_Q, FilterType
 };
 pub use ramp::Ramp;
 pub use ring_buffer::RingBuffer;

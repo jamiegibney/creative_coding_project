@@ -3,7 +3,10 @@
 - Get spectrogram working with nannou. See `nannou/examples/draw/draw_mesh.rs` for
 an example of a mesh being created in nannou.
 
+- Fix envelope values not responding to `0.0`
+- Fix glissando issue (ramp problem it seems)
 - Fix ring buffer (probably best to re-implement from scratch)
+
 - Convert the spectrogram to nannou from egui, which will require:
     - Mesh implementation
     - Gradient implementation

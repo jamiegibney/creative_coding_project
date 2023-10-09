@@ -5,16 +5,23 @@ use crate::prelude::*;
 /// A IIR (Infinite Impulse Response) comb filter.
 ///
 /// Supports frequencies as low as 10 Hz.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct IirCombFilter {
     filter: CombFilter,
+    internal_filters: Vec<Box<dyn Filter>>,
 }
 
 impl Filter for IirCombFilter {
     /// Processes a single sample of the comb filter, returning the new sample.
     fn process(&mut self, mut sample: f64) -> f64 {
         sample *= self.filter.a0;
-        let output = self.filter.buffer.read().mul_add(self.filter.bd, sample);
+        let mut output =
+            self.filter.buffer.read().mul_add(self.filter.bd, sample);
+
+        for filter in &mut self.internal_filters {
+            output = filter.process(output);
+        }
+
         self.filter.buffer.push(output);
         output
     }
@@ -24,7 +31,10 @@ impl IirCombFilter {
     /// Creates a new, initialized filter with an internal buffer holding
     /// one second of samples.
     pub fn with_interpolation(interpolation: bool) -> Self {
-        Self { filter: CombFilter::new(interpolation) }
+        Self {
+            filter: CombFilter::new(interpolation),
+            internal_filters: vec![],
+        }
     }
 
     /// Use this if you change the sample rate to reallocate the internal buffer.
@@ -53,7 +63,7 @@ impl IirCombFilter {
         let level = db_to_level(gain_db);
         let polarity = if self.filter.positive_polarity { 1.0 } else { -1.0 };
         self.filter.bd = level * polarity;
-        // self.filter.a0 = 1.0 - self.filter.bd.abs();
+        self.filter.a0 = 1.0 - self.filter.bd.abs();
     }
 
     /// Sets the polarity of the comb filter.
@@ -65,5 +75,15 @@ impl IirCombFilter {
     /// Sets whether the comb filter should interpolate between samples.
     pub fn set_interpolation(&mut self, interpolation_type: InterpType) {
         self.filter.set_interpolation(interpolation_type);
+    }
+
+    /// Moves `filters` into the comb filter, which will process them in its
+    /// `process()` method. The state of the filters you pass into the comb filter
+    /// should be set before moving them into this method.
+    ///
+    /// The processing chain follows the order of this vector, i.e. element `0`
+    /// is processed first.
+    pub fn set_internal_filters(&mut self, filters: Vec<Box<dyn Filter>>) {
+        self.internal_filters = filters;
     }
 }

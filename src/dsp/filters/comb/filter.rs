@@ -1,5 +1,5 @@
-use crate::util::interp::InterpolationType as InterpType;
 use super::*;
+use crate::util::interp::InterpolationType as InterpType;
 
 #[derive(Debug, Clone)]
 pub struct CombFilter {
@@ -66,7 +66,9 @@ impl CombFilter {
         debug_assert!(
             10.0 <= self.freq
                 && self.freq <= unsafe { SAMPLE_RATE } / 2.0
-                && self.gain_db <= 0.0
+                && self.gain_db <= 0.0,
+            "{}",
+            self.freq
         );
     }
 }

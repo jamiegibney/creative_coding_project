@@ -1,6 +1,6 @@
 use super::model::model;
 use super::{audio::AudioModel, *};
-use crate::dsp::filters::biquad::FilterType;
+use crate::dsp::filters::FilterType;
 use crate::musical::*;
 
 /// Function for handling keypresses.

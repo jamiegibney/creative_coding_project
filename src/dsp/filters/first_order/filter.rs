@@ -1,0 +1,106 @@
+use super::*;
+use crate::prelude::*;
+use std::f64::consts::TAU;
+
+#[derive(Debug, Clone)]
+struct Coefs {
+    a0: f64,
+    a1: f64,
+    b1: f64,
+}
+
+impl Coefs {
+    pub fn identity() -> Self {
+        Self { a0: 1.0, a1: 0.0, b1: 0.0 }
+    }
+}
+
+impl Default for Coefs {
+    fn default() -> Self {
+        Self::identity()
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct FirstOrderFilter {
+    coefs: Coefs,
+    z1: f64,
+
+    freq: f64,
+    filter_type: FilterType,
+    sample_rate: f64,
+}
+
+impl Filter for FirstOrderFilter {
+    fn process(&mut self, sample: f64) -> f64 {
+        let Coefs { a0, a1, b1 } = self.coefs;
+
+        match self.filter_type {
+            FilterType::Lowpass => self.set_lowpass_coefs(),
+            FilterType::Highpass => self.set_highpass_coefs(),
+            _ => {
+                self.identity();
+                dbg!(&self.filter_type,
+                     "only low/highpass filters are implemented for first order filters");
+            }
+        }
+
+        let output = a0.mul_add(sample, self.z1);
+        self.z1 = a1.mul_add(sample, -b1 * output);
+
+        output
+    }
+}
+
+impl FirstOrderFilter {
+    pub fn new(sample_rate: f64) -> Self {
+        Self { sample_rate, ..Self::default() }
+    }
+
+    pub fn reset_sample_rate(&mut self, new_sample_rate: f64) {
+        self.sample_rate = new_sample_rate;
+    }
+
+    pub fn identity(&mut self) {
+        self.coefs = Coefs::identity();
+    }
+
+    pub fn set_freq(&mut self, freq: f64) {
+        self.freq = freq;
+    }
+
+    pub fn set_type(&mut self, filter_type: FilterType) {}
+
+    fn set_lowpass_coefs(&mut self) {
+        let Coefs { a0, a1, b1 } = &mut self.coefs;
+        self.set_common_coefs();
+
+        *a0 = (1.0 + *b1) / 2.0;
+        *a1 = *a0;
+    }
+
+    fn set_highpass_coefs(&mut self) {
+        let Coefs { a0, a1, b1 } = &mut self.coefs;
+        self.set_common_coefs();
+
+        *a0 = (1.0 - *b1) / 2.0;
+        *a1 = -(*a0);
+    }
+
+    fn set_common_coefs(&mut self) {
+        let freq = self.freq;
+        let sr = self.sample_rate;
+        let b1 = &mut self.coefs.b1;
+
+        let phi = (TAU * freq) / sr;
+
+        *b1 = (-phi.cos()) / (1.0 + phi.sin());
+    }
+
+    fn debug_assertions(&self) {
+        let freq = self.freq;
+        let sr = self.sample_rate;
+
+        debug_assert!(freq.is_sign_positive() && freq <= sr / 2.0);
+    }
+}
