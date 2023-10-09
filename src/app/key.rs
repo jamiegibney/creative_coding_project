@@ -27,10 +27,17 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
     model.note = note;
 
     if let Some(note) = note {
+        let octave = if matches!(key, Key::K | Key::O | Key::L | Key::P) {
+            model.octave.transpose(1)
+        }
+        else {
+            model.octave
+        };
+
         model
             .audio_senders
             .filter_freq
-            .send(note_to_freq(midi_note_value_from(model.octave, note) as f64))
+            .send(note_to_freq(midi_note_value_from(octave, note) as f64))
             .unwrap();
         model.audio_senders.envelope_trigger.send(true).unwrap();
     }

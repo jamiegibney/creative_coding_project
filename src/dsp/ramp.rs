@@ -1,7 +1,10 @@
+//! Module for a ramp generator.
 #![allow(clippy::should_implement_trait)]
 use crate::prelude::*;
 
-/// A ramp (i.e. linear segment) generator. Useful for smoothing values over time,
+// TODO add the ability to have a custom transfer function in here.
+
+/// A ramp generator. Useful for smoothing values over time,
 /// or as the internal system of an envelope.
 #[derive(Debug, Clone)]
 pub struct Ramp {

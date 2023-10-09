@@ -37,6 +37,7 @@ pub enum Octave {
 
 impl Octave {
     /// Returns the value of the starting note of this octave.
+    #[must_use]
     pub fn starting_midi_note(&self) -> i32 {
         match self {
             Cneg1 => 0,
@@ -58,6 +59,7 @@ impl Octave {
     /// # Panics
     ///
     /// Panics if `note` is outside of the range `0` to `132`.
+    #[must_use]
     pub fn from_note(note: i32) -> Self {
         match note {
             0..=11 => Cneg1,
@@ -89,8 +91,7 @@ impl Octave {
             C5 => C6,
             C6 => C7,
             C7 => C8,
-            C8 => C9,
-            C9 => C9,
+            C8 | C9 => C9,
         };
     }
 
@@ -104,8 +105,7 @@ impl Octave {
     /// Decreases the octave by one. Does not exceed C-1.
     pub fn decrease(&mut self) {
         *self = match self {
-            Cneg1 => Cneg1,
-            C0 => Cneg1,
+            Cneg1 | C0 => Cneg1,
             C1 => C0,
             C2 => C1,
             C3 => C2,
@@ -123,6 +123,14 @@ impl Octave {
         for _ in 0..amount {
             self.decrease();
         }
+    }
+
+    /// Transposes the octave, returning the new octave.
+    #[must_use]
+    pub fn transpose(&self, num_octaves: i32) -> Self {
+        let mut s = *self;
+        s.increase_by(num_octaves);
+        s
     }
 }
 

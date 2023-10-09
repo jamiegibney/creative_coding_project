@@ -1,3 +1,4 @@
+//! Module for an ADSR envelope generator.
 #![allow(unused)]
 use super::ramp::Ramp;
 use crate::prelude::*;
@@ -267,7 +268,6 @@ impl AdsrEnvelope {
     }
 
     /// Debug assertions to ensure the provided parameters are within the appropriate ranges.
-    #[cfg(debug_assertions)]
     fn debug_parameter_assertions(&self) {
         let Self {
             attack_time_ms: att,

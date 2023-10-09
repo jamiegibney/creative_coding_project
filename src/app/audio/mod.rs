@@ -51,33 +51,36 @@ impl AudioModel {
             filter_type: FilterType::Peak,
         });
 
-        let mut comb_lp = BiquadFilter::new(sample_rate);
-        comb_lp.set_params(&BiquadParams {
-            freq: 1652.0,
-            gain: 0.0,
-            q: 2.0,
-            filter_type: FilterType::Lowpass,
-        });
+        // let mut comb_lp = BiquadFilter::new(sample_rate);
+        // comb_lp.set_params(&BiquadParams {
+        //     freq: 2652.0,
+        //     gain: 0.0,
+        //     q: 2.0,
+        //     filter_type: FilterType::Lowpass,
+        // });
+
+        let mut comb_lp = FirstOrderFilter::new(sample_rate);
+        comb_lp.set_type(FilterType::Lowpass);
+        comb_lp.set_freq(1000.0);
+
         let mut comb_comb = IirCombFilter::with_interpolation(true);
-        comb_comb.set_freq(236.0);
+        comb_comb.set_freq(6324.0);
         comb_comb.set_gain_db(-6.0);
 
-        let filters = vec![
-            Box::new(comb_peak) as Box<dyn Filter>,
-            Box::new(comb_comb) as Box<dyn Filter>,
-            Box::new(comb_lp) as Box<dyn Filter>,
-        ];
-        comb.set_internal_filters(filters);
+        comb.set_internal_filters(vec![
+            Box::new(comb_peak),
+            Box::new(comb_comb),
+            Box::new(comb_lp),
+        ]);
 
         let glide_time = 0.001;
 
         let mut waveshaper = [Waveshaper::new(), Waveshaper::new()];
 
         for ws in &mut waveshaper {
-            ws.set_curve(0.9);
+            ws.set_curve(1.0);
             ws.set_asymmetric(true);
-            ws.set_drive(0.85);
-            ws.set_drive_lower(0.15);
+            ws.set_drive(1.0);
             ws.set_xfer_function(xfer::s_curve_round);
         }
 
@@ -107,9 +110,11 @@ impl AudioModel {
     pub fn initialize(&mut self) -> AudioSenders {
         self.set_filters();
 
-        self.envelope.set_parameters(500.0, 2000.0, 0.6, 80.0);
+        // ENVELOPE PARAMETERS
+        // self.envelope.set_parameters(500.0, 2000.0, 0.6, 80.0);
+        self.envelope.set_parameters(1.0, 60.0, 0.0, 60.0);
         self.envelope.set_decay_curve(0.9);
-        self.envelope.set_attack_curve(-1.0);
+        // self.envelope.set_attack_curve(-1.0);
 
         self.filter_freq.set_smoothing_type(SmoothingType::Linear);
 
@@ -272,10 +277,11 @@ pub fn audio(audio: &mut AudioModel, output: &mut Buffer) {
         }
 
         let output = (noise() * volume, noise() * volume);
-        let output = audio.process_filters(output);
-        let output = audio.process_distortion(output);
-        let output = audio.process_comb_filters(output);
-        let output = audio.process_post_peak_filters(output);
+        let output = audio.process_filters(output); // peak filtering
+        let output = audio.process_distortion(output); // waveshaping
+        let output = audio.process_comb_filters(output); // main comb filters, which contain a
+                                                         // peak, highpass, and comb filter
+        let output = audio.process_post_peak_filters(output); // wide peak filtering
 
         f[0] = output.0 as f32;
         f[1] = output.1 as f32;
