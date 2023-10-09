@@ -2,7 +2,9 @@ pub mod adsr;
 pub mod filters;
 pub mod ramp;
 pub mod ring_buffer;
+pub mod distortion;
 
+use crate::prelude::*;
 pub use adsr::AdsrEnvelope;
 pub use filters::{
     allpass::Allpass,

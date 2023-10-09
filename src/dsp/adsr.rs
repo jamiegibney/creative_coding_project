@@ -22,8 +22,6 @@ pub enum AdsrStage {
 }
 
 /// An envelope generator with attack, decay, sustain, and release (ADSR) stages.
-///
-/// TODO: add the ability to provide a transfer function to each stage?
 #[derive(Debug)]
 pub struct AdsrEnvelope {
     attack_time_ms: f64,
@@ -45,10 +43,10 @@ pub struct AdsrEnvelope {
 impl AdsrEnvelope {
     /// Creates a new ADSR envelope with the following default settings:
     ///
-    /// Attack:  10.0 ms
-    /// Decay:   100.0 ms
-    /// Sustain: 50.0 %
-    /// Release: 50.0 ms
+    /// - Attack:  `10.0 ms`
+    /// - Decay:   `100.0 ms`
+    /// - Sustain: `50.0 %`
+    /// - Release: `50.0 ms`
     ///
     /// The envelope starts in an idle state.
     #[must_use]
@@ -116,11 +114,23 @@ impl AdsrEnvelope {
         self.debug_parameter_assertions();
     }
     
+    /// Sets the attack level of the envelope.
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug mode if the provided level is outside the range of
+    /// `0.0` to `1.0`.
     pub fn set_attack_level(&mut self, attack_level: f64) {
         self.attack_level = attack_level;
         self.debug_parameter_assertions();
     }
     
+    /// Sets the attack curve of the envelope. Positive values "skew upwards".
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug mode if the provided value is outside the range of
+    /// `-1.0` to `1.0`.
     pub fn set_attack_curve(&mut self, curve_amount: f64) {
         self.attack_curve = curve_amount;
         self.debug_parameter_assertions();
@@ -136,6 +146,12 @@ impl AdsrEnvelope {
         self.debug_parameter_assertions();
     }
     
+    /// Sets the decay curve of the envelope. Positive values "skew upwards".
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug mode if the provided value is outside the range of
+    /// `-1.0` to `1.0`.
     pub fn set_decay_curve(&mut self, curve_amount: f64) {
         self.decay_curve = curve_amount;
         self.debug_parameter_assertions();
@@ -162,6 +178,12 @@ impl AdsrEnvelope {
         self.debug_parameter_assertions();
     }
     
+    /// Sets the decay curve of the envelope. Positive values "skew upwards".
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug mode if the provided value is outside the range of
+    /// `-1.0` to `1.0`.
     pub fn set_release_curve(&mut self, curve_amount: f64) {
         self.release_curve = curve_amount;
         self.debug_parameter_assertions();

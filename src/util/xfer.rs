@@ -1,4 +1,5 @@
 use super::map;
+use crate::prelude::*;
 use std::f64::consts::PI;
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -26,27 +27,24 @@ pub enum SmoothingType {
 /// whereas positive values produce curves which "skew outwards", like an s-curve.
 ///
 /// `input` and `tension` are clamped between `-1.0` and `1.0`.
-pub fn s_curve(input: f64, tension: f64) -> f64 {
-    let x = input.clamp(-1.0, 1.0);
+pub fn s_curve(mut input: f64, tension: f64) -> f64 {
+    input = input.clamp(-1.0, 1.0);
+    let c = scale(tension, 1.0, 0.05).recip();
 
-    if tension < 0.0 {
-        let c = map(tension.clamp(-1.0, 0.0), -1.0, 0.0, 0.05, 1.0);
-
-        if x < 0.0 {
-            -(-x).powf(1.0 / c)
+    if tension.is_sign_positive() {
+        if input.is_sign_positive() {
+            -(1.0 - input).powf(c) + 1.0
         }
         else {
-            x.powf(1.0 / c)
+            (input + 1.0).powf(c) - 1.0
         }
     }
     else {
-        let c = map(tension.clamp(0.0, 1.0), 0.0, 1.0, 1.0, 0.05);
-
-        if x < 0.0 {
-            (x + 1.0).powf(1.0 / c) - 1.0
+        if input.is_sign_positive() {
+            input.powf(c)
         }
         else {
-            -(1.0 - x).powf(1.0 / c) + 1.0
+            1.0 - (-input).powf(c) - 1.0
         }
     }
 }
@@ -149,7 +147,7 @@ pub fn gentle_under(mut input: f64) -> f64 {
 /// Clamps the input range between `0.0` and `1.0`.
 pub fn gentle_over(mut input: f64) -> f64 {
     input.clamp(0.0, 1.0);
-    
+
     (PI / 2.0 * input).sin()
 }
 
@@ -170,6 +168,6 @@ pub fn strong_over(mut input: f64) -> f64 {
 /// Clamps the input range between `0.0` and `1.0`.
 pub fn skewed_sine(mut input: f64) -> f64 {
     input.clamp(0.0, 1.0);
-    
+
     0.5 + 0.5 * (PI * (input.powi(2) - 0.5)).sin()
 }
