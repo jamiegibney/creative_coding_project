@@ -35,7 +35,7 @@ pub fn model(app: &App) -> Model {
 
     let stream = audio_host
         .new_output_stream(audio_model)
-        .render(audio::audio)
+        .render(audio::process)
         .channels(2)
         .sample_rate(sample_rate as u32)
         .frames_per_buffer(BUFFER_SIZE)

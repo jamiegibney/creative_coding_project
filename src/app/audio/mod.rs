@@ -1,7 +1,9 @@
 use super::*;
 use crate::dsp::*;
-use crate::dsp::{adsr::AdsrEnvelope, ramp::Ramp};
 use std::sync::mpsc::{channel, Receiver, Sender};
+
+// pub mod note;
+pub mod voice;
 
 /// A struct containing the channel senders returned by
 /// `AudioModel::initialize()`.
@@ -37,6 +39,7 @@ pub struct AudioModel {
 }
 
 impl AudioModel {
+    /// Creates a new `AudioModel`.
     pub fn new() -> Self {
         let sample_rate = unsafe { SAMPLE_RATE };
         let biquad = BiquadFilter::new(sample_rate);
@@ -107,6 +110,8 @@ impl AudioModel {
         }
     }
 
+    /// Initializes the `AudioModel`, returning an `AudioSenders` instance containing
+    /// the channel senders used to communicate with the audio thread.
     pub fn initialize(&mut self) -> AudioSenders {
         self.set_filters();
 
@@ -134,6 +139,7 @@ impl AudioModel {
         }
     }
 
+    /// Sets the initial state of the filters.
     pub fn set_filters(&mut self) {
         let params = BiquadParams {
             freq: 440.0,
@@ -172,6 +178,7 @@ impl AudioModel {
         }
     }
 
+    /// Sets the filter frequency for all filters.
     pub fn set_filter_freq(&mut self, mut freq: f64) {
         freq = freq.clamp(10.0, unsafe { SAMPLE_RATE } / 2.0);
         for ch in 0..2 {
@@ -183,6 +190,7 @@ impl AudioModel {
         }
     }
 
+    /// Processes the selected filters.
     pub fn process_filters(
         &mut self,
         (sample_l, sample_r): (f64, f64),
@@ -197,6 +205,7 @@ impl AudioModel {
         (l, r)
     }
 
+    /// Processes the "post" peak filters.
     pub fn process_post_peak_filters(
         &mut self,
         (sample_l, sample_r): (f64, f64),
@@ -207,6 +216,7 @@ impl AudioModel {
         (l, r)
     }
 
+    /// Processes the comb filters.
     pub fn process_comb_filters(
         &mut self,
         (sample_l, sample_r): (f64, f64),
@@ -217,6 +227,7 @@ impl AudioModel {
         (l, r)
     }
 
+    /// Processes the waveshaper.
     pub fn process_distortion(
         &mut self,
         (sample_l, sample_r): (f64, f64),
@@ -227,6 +238,9 @@ impl AudioModel {
         (l, r)
     }
 
+    /// Tries to receive messages from the corresponding `Senders`. Non-blocking.
+    ///
+    /// Will update internal values upon successfully receiving from a channel.
     pub fn try_receive(&mut self) {
         // envelope trigger
         if let Some(trigger) = &self.envelope_trigger_receiver {
@@ -262,12 +276,11 @@ impl Default for AudioModel {
 }
 
 /// The main audio processing callback.
-pub fn audio(audio: &mut AudioModel, output: &mut Buffer) {
+pub fn process(audio: &mut AudioModel, output: &mut Buffer) {
     for f in output.frames_mut() {
-        let noise = || nannou::rand::random_f64().mul_add(2.0, -1.0);
-
         let env_level = audio.envelope.next(audio.envelope_trigger);
         let volume = audio.volume * (env_level);
+        let noise = || nannou::rand::random_f64().mul_add(2.0, -1.0) * volume;
 
         audio.try_receive();
         let freq = audio.filter_freq.current_value();
@@ -276,7 +289,7 @@ pub fn audio(audio: &mut AudioModel, output: &mut Buffer) {
             audio.set_filter_freq(freq);
         }
 
-        let output = (noise() * volume, noise() * volume);
+        let output = (noise(), noise());
         let output = audio.process_filters(output); // peak filtering
         let output = audio.process_distortion(output); // waveshaping
         let output = audio.process_comb_filters(output); // main comb filters, which contain a

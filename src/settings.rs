@@ -15,9 +15,6 @@
 /// are recommended, if you need to change this at all.
 pub static mut SAMPLE_RATE: f64 = 44100.0;
 
-// TODO this is constant for now, but should be variable later.
-pub const BUFFER_SIZE: usize = 256;
-
 /// The global tuning frequency, set to 440 Hz as default.
 ///
 /// # Safety
@@ -28,3 +25,13 @@ pub const BUFFER_SIZE: usize = 256;
 /// if you need to change this at all.
 pub static mut TUNING_FREQ_HZ: f64 = 440.0;
 
+/// The maximum number of simultaneous polyphonic voices.
+pub const NUM_VOICES: u32 = 16;
+
+/// The maximum size of an audio block. When processing audio, the buffer is
+/// broken down into blocks which are this big, unless the buffer size is 
+/// smaller.
+pub const MAX_BLOCK_SIZE: usize = 1 << 6; // 64
+
+// TODO this is constant for now, but should be variable later.
+pub const BUFFER_SIZE: usize = 256;
