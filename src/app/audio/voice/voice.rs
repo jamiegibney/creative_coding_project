@@ -2,6 +2,7 @@ use nannou_audio::Buffer;
 use std::sync::{Arc, Mutex};
 
 use super::note::NoteHandler;
+use crate::dsp::synthesis::Phasor;
 use crate::dsp::*;
 use crate::prelude::*;
 
@@ -13,6 +14,7 @@ pub struct Voice {
     /// The MIDI note of the voice.
     pub note: u8,
 
+    /// The voice's ADSR envelope.
     pub envelope: AdsrEnvelope,
 
     /// Whether or not the voice is currently releasing, which contains
@@ -66,7 +68,7 @@ impl VoiceHandler {
 
     pub fn process_block(
         &mut self,
-        buffer: &mut Buffer,
+        buffer: &mut Buffer<f64>,
         block_start: usize,
         block_end: usize,
         gain: [f64; MAX_BLOCK_SIZE],
@@ -75,21 +77,21 @@ impl VoiceHandler {
         let mut voice_amp_envelope = [0.0; MAX_BLOCK_SIZE];
 
         for voice in self.voices.iter_mut().filter_map(|v| v.as_mut()) {
-            for x in voice_amp_envelope.iter_mut().take(block_len) {
-                todo!("implement generator envelope here");
-                // *x = voice.generator.envelope.next();
-            }
+            voice
+                .envelope
+                .next_block(&mut voice_amp_envelope, block_len);
 
             for (value_idx, sample_idx) in (block_start..block_end).enumerate()
             {
+                // println!("{sample_idx}");
                 let amp = gain[value_idx] * voice_amp_envelope[value_idx];
-                let (sample_l, sample_r) = (0.0, 0.0);
-                todo!("add voice generator processing method");
-                // let (sample_l, sample_r) = voice.generator.process();
+                // let amp = 1.0;
 
-                // * 2 because the samples are interleaved
-                buffer[sample_idx * 2] += sample_l;
-                buffer[sample_idx * 2 + 1] += sample_r;
+                let (sample_l, sample_r) = voice.generator.process();
+
+                // * 2 because the channels are interleaved
+                buffer[sample_idx * 2] += sample_l * amp;
+                buffer[sample_idx * 2 + 1] += sample_r * amp;
             }
         }
     }
@@ -104,12 +106,12 @@ impl VoiceHandler {
         let mut new_voice = Voice {
             id: self.next_voice_id(),
             note,
-            envelope: envelope.unwrap_or(AdsrEnvelope::new()),
+            envelope: envelope.unwrap_or_else(AdsrEnvelope::default),
             releasing: false,
-            generator: todo!(),
+            generator: Generator::Saw(Phasor::new(note_to_freq(note as f64))),
         };
 
-        new_voice.envelope.trigger(true);
+        new_voice.envelope.set_trigger(true);
 
         // is there a free voice?
         if let Some(free_idx) =
@@ -146,7 +148,7 @@ impl VoiceHandler {
                     || note == *candidate_note =>
                 {
                     *releasing = true;
-                    envelope.trigger(false);
+                    envelope.set_trigger(false);
                 }
                 _ => (),
             }
@@ -166,7 +168,8 @@ impl VoiceHandler {
         }
     }
 
-    fn next_voice_id(&self) -> u64 {
-        self.id_counter.wrapping_add(1)
+    fn next_voice_id(&mut self) -> u64 {
+        self.id_counter = self.id_counter.wrapping_add(1);
+        self.id_counter
     }
 }

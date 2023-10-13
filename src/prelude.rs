@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 use crate::app::audio::NoteHandler;
 
+pub use std::f64::consts::{PI, TAU};
 pub use crate::settings::*;
 pub use crate::util::*;
 pub use crate::app::audio::NoteEvent;

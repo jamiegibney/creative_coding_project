@@ -4,7 +4,7 @@ use super::audio::*;
 use super::view::view;
 use super::*;
 use crate::musical::*;
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, collections::HashMap};
 
 /// The app's model, i.e. its general state.
 pub struct Model {
@@ -15,6 +15,8 @@ pub struct Model {
 
     pub octave: Octave,
     pub note_handler: NoteHandlerRef,
+
+    pub pressed_keys: HashMap<Key, bool>,
 }
 
 impl Model {
@@ -40,6 +42,8 @@ impl Model {
             octave: Octave::default(), // C3 - B3
 
             note_handler: Arc::clone(&note_handler),
+
+            pressed_keys: build_pressed_keys_map(),
         }
     }
 }
@@ -69,4 +73,14 @@ fn build_audio_system() -> (Stream<AudioModel>, AudioSenders, NoteHandlerRef) {
     stream.play().unwrap();
 
     (stream, audio_senders, note_handler)
+}
+
+fn build_pressed_keys_map() -> HashMap<Key, bool> {
+    let mut map = HashMap::new();
+
+    for k in KEYBOARD_MUSICAL_NOTES {
+        map.insert(k, false);
+    }
+
+    map
 }

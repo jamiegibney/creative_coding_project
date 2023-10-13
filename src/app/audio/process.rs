@@ -2,7 +2,7 @@ use super::*;
 
 /// The main audio processing callback.
 #[allow(clippy::missing_panics_doc)]
-pub fn process(audio: &mut AudioModel, buffer: &mut Buffer) {
+pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // This works by breaking down the buffer into smaller discrete blocks.
     // For each block, it first processes incoming note events, which are
     // obtained from the `NoteHandler`. The block size is set to min({samples
@@ -25,8 +25,10 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer) {
                 Some(event) if (event.timing() as usize) <= block_start => {
                     match event {
                         NoteEvent::NoteOn { note, .. } => {
-                            voice_handler
-                                .start_voice(note, todo!("add new envelope!"));
+                            voice_handler.start_voice(
+                                note,
+                                Some(audio.amp_envelope.clone()),
+                            );
                         }
                         NoteEvent::NoteOff { note, .. } => {
                             voice_handler.start_release_for_voice(None, note);
@@ -43,22 +45,28 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer) {
             }
         }
 
-        // * 2 used because the channels are interleaved
-        buffer[block_start..block_end * 2].fill(0.0);
-
         let block_len = block_end - block_start;
+
+        // buffer.fill(0.0);
+
+        // for i in block_start..block_end {
+        //     let sample = audio.phase.sin();
+        //     let sample_halved = sample / 2.0;
+        //     audio.phase += (100.0 / unsafe { SAMPLE_RATE }) * TAU_F64;
+        //
+        //     buffer[i * 2] = sample;
+        //     buffer[i * 2 + 1] = sample_halved;
+        // }
+
         let mut gain = [0.0; MAX_BLOCK_SIZE];
-        // TODO: have "next_block" method for Ramp
-        for x in gain.iter_mut().take(block_len) {
-            *x = audio.gain.next();
-        }
+        audio.gain.next_block(&mut gain, block_len);
 
         voice_handler.process_block(buffer, block_start, block_end, gain);
 
         voice_handler.terminate_finished_voices();
 
         block_start = block_end;
-        block_end = (block_start + MAX_BLOCK_SIZE).min(buffer_len);
+        block_end = (block_end + MAX_BLOCK_SIZE).min(buffer_len);
     }
 
     drop(note_handler_guard);
@@ -66,10 +74,11 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer) {
     // effects go here...
 
     for output in buffer.frames_mut() {
-        // let (l, r) = audio.process_effects(ouput[0], output[1]);
-        //
-        // output[0] = l;
-        // output[1] = r;
+        let (l, r) = audio.process_comb_filters((output[0], output[1]));
+        // let (l, r) = audio.process_filters((l, r));
+
+        output[0] = l;
+        output[1] = r;
     }
 }
 

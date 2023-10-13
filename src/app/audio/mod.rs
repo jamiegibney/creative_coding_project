@@ -25,9 +25,11 @@ pub struct AudioSenders {
 
 /// The audio state for the whole program.
 pub struct AudioModel {
+    pub phase: f64,
     pub voice_handler: VoiceHandler,
     pub context: AudioContext,
     pub gain: Smoother<f64>,
+    pub amp_envelope: AdsrEnvelope,
 
     pub filter_lp: [BiquadFilter; 2],
     pub filter_hp: [BiquadFilter; 2],
@@ -40,10 +42,6 @@ pub struct AudioModel {
 
     pub waveshaper: [Waveshaper; 2],
     drive_amount_receiver: Option<Receiver<f64>>,
-
-    pub envelope: AdsrEnvelope,
-    envelope_trigger: bool,
-    envelope_trigger_receiver: Option<Receiver<bool>>,
 
     pub glide_time: f64,
     pub volume: f64,
@@ -58,22 +56,23 @@ impl AudioModel {
         let biquad = BiquadFilter::new(sample_rate);
 
         let mut comb = IirCombFilter::with_interpolation(true);
+        comb.set_freq(12.0);
 
         let mut comb_peak = BiquadFilter::new(sample_rate);
         comb_peak.set_params(&BiquadParams {
-            freq: 326.0,
+            freq: 726.0,
             gain: 4.0,
-            q: 0.3,
+            q: 0.4,
             filter_type: FilterType::Peak,
         });
 
-        // let mut comb_lp = BiquadFilter::new(sample_rate);
-        // comb_lp.set_params(&BiquadParams {
-        //     freq: 2652.0,
-        //     gain: 0.0,
-        //     q: 2.0,
-        //     filter_type: FilterType::Lowpass,
-        // });
+        let mut comb_lp = BiquadFilter::new(sample_rate);
+        comb_lp.set_params(&BiquadParams {
+            freq: 2652.0,
+            gain: 0.0,
+            q: 2.0,
+            filter_type: FilterType::Lowpass,
+        });
 
         let mut comb_lp = FirstOrderFilter::new(sample_rate);
         comb_lp.set_type(FilterType::Lowpass);
@@ -81,7 +80,7 @@ impl AudioModel {
 
         let mut comb_comb = IirCombFilter::with_interpolation(true);
         comb_comb.set_freq(6324.0);
-        comb_comb.set_gain_db(-6.0);
+        comb_comb.set_gain_db(-2.0);
 
         comb.set_internal_filters(vec![
             Box::new(comb_peak),
@@ -102,10 +101,14 @@ impl AudioModel {
 
         let note_handler_ref = context.note_handler_ref();
 
+        let mut amp_envelope = AdsrEnvelope::new();
+        amp_envelope.set_parameters(500.0, 1000.0, 1.0, 2000.0);
+
         Self {
+            phase: 0.0,
             voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
             context,
-            gain: Smoother::new(1.0, 0.03),
+            gain: Smoother::new(1.0, 0.3),
 
             filter_lp: [biquad.clone(), biquad.clone()],
             filter_hp: [biquad.clone(), biquad.clone()],
@@ -121,9 +124,7 @@ impl AudioModel {
 
             volume: db_to_level(-24.0),
 
-            envelope: AdsrEnvelope::new(),
-            envelope_trigger: false,
-            envelope_trigger_receiver: None,
+            amp_envelope,
 
             glide_time,
 
@@ -138,14 +139,13 @@ impl AudioModel {
 
         // ENVELOPE PARAMETERS
         // self.envelope.set_parameters(500.0, 2000.0, 0.6, 80.0);
-        self.envelope.set_parameters(1.0, 60.0, 0.0, 60.0);
-        self.envelope.set_decay_curve(0.9);
+        self.amp_envelope.set_parameters(1.0, 60.0, 0.0, 60.0);
+        self.amp_envelope.set_decay_curve(0.9);
         // self.envelope.set_attack_curve(-1.0);
 
         // self.filter_freq.set_smoothing_type(SmoothingType::Linear);
 
         let (envelope_trigger_sender, receiver) = channel();
-        self.envelope_trigger_receiver = Some(receiver);
 
         let (filter_freq_sender, receiver) = channel();
         self.filter_freq_receiver = Some(receiver);
@@ -186,9 +186,9 @@ impl AudioModel {
         }
 
         for comb in &mut self.filter_comb {
-            comb.set_positive_polarity(true);
+            comb.set_positive_polarity(false);
             comb.set_interpolation(InterpType::Linear);
-            comb.set_gain_db(-10.0);
+            comb.set_gain_db(-5.0);
         }
 
         for peak in &mut self.filter_peak_post {
@@ -220,8 +220,8 @@ impl AudioModel {
         //     self.filter_peak[0].process(self.filter_hp[0].process(sample_l));
         // let r =
         //     self.filter_peak[1].process(self.filter_hp[1].process(sample_r));
-        let l = self.filter_peak[0].process(sample_l);
-        let r = self.filter_peak[1].process(sample_r);
+        let l = self.filter_lp[0].process(sample_l);
+        let r = self.filter_lp[1].process(sample_r);
 
         (l, r)
     }
@@ -263,13 +263,6 @@ impl AudioModel {
     ///
     /// Will update internal values upon successfully receiving from a channel.
     pub fn try_receive(&mut self) {
-        // envelope trigger
-        if let Some(trigger) = &self.envelope_trigger_receiver {
-            if let Ok(msg) = trigger.try_recv() {
-                self.envelope_trigger = msg;
-            }
-        }
-
         // filter frequency
         if let Some(freq) = &self.filter_freq_receiver {
             if let Ok(msg) = freq.try_recv() {

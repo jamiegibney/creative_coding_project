@@ -23,6 +23,13 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         _ => (),
     };
 
+    if let Some(v) = model.pressed_keys.get_mut(&key) {
+        if *v {
+            return;
+        }
+        *v = true;
+    }
+
     // get midi note value from keyboard input
     let key_note_value = Note::key_value(&key);
 
@@ -47,6 +54,10 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
 pub fn key_released(_app: &App, model: &mut Model, key: Key) {
     // get midi note value from keyboard input
     let key_note_value = Note::key_value(&key);
+
+    if let Some(v) = model.pressed_keys.get_mut(&key) {
+        *v = false;
+    }
 
     if let Some(note) = key_note_value {
         // transpose octave if higher keys are pressed

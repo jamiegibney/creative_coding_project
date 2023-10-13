@@ -1,5 +1,5 @@
 //! Module for an ADSR envelope generator.
-#![allow(unused)]
+#![allow(unused, clippy::should_implement_trait)]
 use crate::prelude::*;
 use AdsrStage as AS;
 
@@ -86,8 +86,19 @@ impl AdsrEnvelope {
         self.ramp.next()
     }
 
+    pub fn next_block(&mut self, block: &mut [f64], block_len: usize) {
+        block
+            .iter_mut()
+            .take(block_len)
+            .for_each(|x| *x = self.next());
+    }
+
+    pub fn next_block_exact(&mut self, block: &mut [f64]) {
+        block.iter_mut().for_each(|x| *x = self.next());
+    }
+
     /// Sets the envelope's trigger.
-    pub fn trigger(&mut self, trigger: bool) {
+    pub fn set_trigger(&mut self, trigger: bool) {
         self.trigger = trigger;
     }
 
