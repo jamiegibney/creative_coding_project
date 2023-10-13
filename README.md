@@ -1,7 +1,6 @@
 # TODO
 
-- Get spectrogram working with nannou. See `nannou/examples/draw/draw_mesh.rs` for
-an example of a mesh being created in nannou.
+- Get spectrogram working with nannou. See `nannou/examples/draw/draw_mesh.rs` for an example of a mesh being created in nannou.
 
 ### Fixes
 - **PRIORITY** Fix envelope values not responding to `0.0`
@@ -12,10 +11,6 @@ an example of a mesh being created in nannou.
 
 ### Implementation
 - Expand the `Ramp` struct with more methods
-- **PRIORITY** Implement polyphony 
-    - Figure out how to represent each voice
-    - Look at other open-source synthesisers to see how they accomplish it
-    - `nih_plug` has a good example IIRC
 - Implement compression
 - Distortion
     - Implement downsampling
@@ -29,7 +24,6 @@ an example of a mesh being created in nannou.
 - Revise interpolation and transfer functions, as very few of them are tested
 
 ### Stuff to try
-- **PRIORITY** Try using `Arc<Mutex<T>>` instead of `mpsc` channels to interact with the audio thread?
 - Try to plot the frequency response of time-domain filters (try computing the impulse response, then performing an FFT?)
 - Try to process the spectrum on separate thread(s) 
 - **PRIORITY** Try having an "Effect" trait rather than just a "Filter" trait, and than have that implement DynClone. Perhaps it could have a
