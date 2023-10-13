@@ -1,11 +1,11 @@
 use nannou::prelude::*;
 
-// this is OK - there is no intention of changing the variants of this enum.
+// this is OK - there is no intention of changing the variants of these enums.
 use Note::*;
 use Octave::*;
 
 pub fn midi_note_value_from(octave: Octave, note: Note) -> u8 {
-    octave.starting_midi_note() as u8 + note.note_value() as u8
+    octave.starting_midi_note() + note.note_value() 
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -51,7 +51,7 @@ impl Octave {
         }
     }
 
-    /// Returns the `Octave` which covers the provided MIDI note.o
+    /// Returns the `Octave` which covers the provided MIDI note.
     ///
     /// # Panics
     ///
@@ -70,7 +70,7 @@ impl Octave {
             96..=107 => C7,
             108..=119 => C8,
             _ => panic!(
-                "value provided ({note}) is outside of the acceptible range"
+                "value provided ({note}) is outside of the acceptable range"
             ),
         }
     }
@@ -146,6 +146,7 @@ pub enum Note {
 
 impl Note {
     /// Returns the note with a given transposition.
+    #[must_use]
     pub fn transpose(&self, semitones: i32) -> Self {
         let mut value = (self.note_value() as i32 + semitones) % 12;
         while value < 0 {
@@ -158,10 +159,10 @@ impl Note {
     /// Returns the key associated with a specific key on the keyboard.
     pub fn from_key(key: &Key) -> Option<Self> {
         match key {
-            Key::A => Some(C),
-            Key::W => Some(Cs),
-            Key::S => Some(D),
-            Key::E => Some(Ds),
+            Key::A | Key::K => Some(C),
+            Key::W | Key::O => Some(Cs),
+            Key::S | Key::L => Some(D),
+            Key::E | Key::P => Some(Ds),
             Key::D => Some(E),
             Key::F => Some(F),
             Key::T => Some(Fs),
@@ -170,10 +171,6 @@ impl Note {
             Key::H => Some(A),
             Key::U => Some(As),
             Key::J => Some(B),
-            Key::K => Some(C),
-            Key::O => Some(Cs),
-            Key::L => Some(D),
-            Key::P => Some(Ds),
             _ => None,
         }
     }
@@ -211,6 +208,7 @@ impl Note {
     /// # Panics
     ///
     /// Panics if `value` is out of the range `0` to `132`.
+    #[must_use]
     pub fn from_value(value: i32) -> Self {
         assert!((0..=132).contains(&value));
 

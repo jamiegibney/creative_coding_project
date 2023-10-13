@@ -51,6 +51,7 @@ impl<T: Smoothable> Smoother<T> {
     ///
     /// Progresses the `Smoother` by `block_len` steps.
     pub fn next_block(&mut self, block: &mut [T], block_len: usize) {
+        debug_assert!(block_len <= block.len());
         self.next_block_exact(&mut block[..block_len]);
     }
 

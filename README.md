@@ -3,23 +3,23 @@
 - Get spectrogram working with nannou. See `nannou/examples/draw/draw_mesh.rs` for an example of a mesh being created in nannou.
 
 ### Fixes
-- **PRIORITY** Fix envelope values not responding to `0.0`
+- **PRIORITY** Envelopes note working correctly, could be a problem with `Smoother`.
 - **PRIORITY** Fix glissando issue (ramp problem it seems, related to above?)
 - Convert the spectrogram to nannou from egui
     - Mesh implementation
     - Gradient implementation
 
 ### Implementation
-- Expand the `Ramp` struct with more methods
+- **PRIORITY** implement note event timing (for sample-accurate note events)
 - Implement compression
 - Distortion
     - Implement downsampling
     - Implement frequency shifting
     - Implement ring modulation
-    - Implement EQ curves/nodes w nannou
-    - Implement stereo width controls
-- Implement a basic reverberator (use the comb filters)
-- Implement Perlin noise
+- Implement EQ curves/nodes w nannou
+- Implement stereo width controls
+- Implement a basic reverberator (use the comb filters?)
+- Implement Perlin noise (does nannou have it already?)
 - Reimplement musical note representation
 - Revise interpolation and transfer functions, as very few of them are tested
 
