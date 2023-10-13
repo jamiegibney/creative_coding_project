@@ -4,8 +4,8 @@ use nannou::prelude::*;
 use Note::*;
 use Octave::*;
 
-pub fn midi_note_value_from(octave: Octave, note: Note) -> i32 {
-    octave.starting_midi_note() + note.note_value()
+pub fn midi_note_value_from(octave: Octave, note: Note) -> u8 {
+    octave.starting_midi_note() as u8 + note.note_value() as u8
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -31,14 +31,12 @@ pub enum Octave {
     C7,
     /// Octave covering C8 - B8 (MIDI note range 108 - 119)
     C8,
-    /// Octave covering C9 - B9 (MIDI note range 120 - 131)
-    C9,
 }
 
 impl Octave {
     /// Returns the value of the starting note of this octave.
     #[must_use]
-    pub fn starting_midi_note(&self) -> i32 {
+    pub fn starting_midi_note(&self) -> u8 {
         match self {
             Cneg1 => 0,
             C0 => 12,
@@ -50,7 +48,6 @@ impl Octave {
             C6 => 84,
             C7 => 96,
             C8 => 108,
-            C9 => 120,
         }
     }
 
@@ -60,7 +57,7 @@ impl Octave {
     ///
     /// Panics if `note` is outside of the range `0` to `132`.
     #[must_use]
-    pub fn from_note(note: i32) -> Self {
+    pub fn from_note(note: u8) -> Self {
         match note {
             0..=11 => Cneg1,
             12..=23 => C0,
@@ -72,7 +69,6 @@ impl Octave {
             84..=95 => C6,
             96..=107 => C7,
             108..=119 => C8,
-            120..=131 => C9,
             _ => panic!(
                 "value provided ({note}) is outside of the acceptible range"
             ),
@@ -90,8 +86,7 @@ impl Octave {
             C4 => C5,
             C5 => C6,
             C6 => C7,
-            C7 => C8,
-            C8 | C9 => C9,
+            C7 | C8 => C8,
         };
     }
 
@@ -114,7 +109,6 @@ impl Octave {
             C6 => C5,
             C7 => C6,
             C8 => C7,
-            C9 => C8,
         };
     }
 
@@ -153,7 +147,7 @@ pub enum Note {
 impl Note {
     /// Returns the note with a given transposition.
     pub fn transpose(&self, semitones: i32) -> Self {
-        let mut value = (self.note_value() + semitones) % 12;
+        let mut value = (self.note_value() as i32 + semitones) % 12;
         while value < 0 {
             value += 12;
         }
@@ -187,7 +181,7 @@ impl Note {
     /// Returns the value of the note for any octave.
     ///
     /// `C` is represented as 0, and `B` as 11.
-    pub fn note_value(&self) -> i32 {
+    pub fn note_value(&self) -> u8 {
         match self {
             C => 0,
             Cs => 1,
@@ -202,6 +196,14 @@ impl Note {
             As => 10,
             B => 11,
         }
+    }
+
+    pub fn key_value(key: &Key) -> Option<u8> {
+        if let Some(note) = Self::from_key(key) {
+            return Some(note.note_value());
+        }
+
+        None
     }
 
     /// Returns the note associated with the provided MIDI note value.

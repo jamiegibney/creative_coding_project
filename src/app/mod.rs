@@ -6,7 +6,7 @@ use nannou_audio::Buffer;
 use nannou::rand::rngs::SmallRng;
 use nannou::rand::{Rng, SeedableRng};
 
-mod audio;
+pub mod audio;
 mod key;
 mod model;
 mod mouse;
@@ -16,7 +16,7 @@ pub use model::Model;
 
 /// Runs the app via Nannou.
 pub fn run_app() {
-    nannou::app(model::model)
+    nannou::app(model::Model::new)
         .loop_mode(RefreshSync)
         .update(update)
         .run();

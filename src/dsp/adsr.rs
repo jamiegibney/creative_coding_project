@@ -1,6 +1,5 @@
 //! Module for an ADSR envelope generator.
 #![allow(unused)]
-use super::ramp::Ramp;
 use crate::prelude::*;
 use AdsrStage as AS;
 
@@ -23,7 +22,7 @@ pub enum AdsrStage {
 }
 
 /// An envelope generator with attack, decay, sustain, and release (ADSR) stages.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AdsrEnvelope {
     attack_time_ms: f64,
     attack_level: f64,
@@ -37,8 +36,9 @@ pub struct AdsrEnvelope {
     release_time_ms: f64,
     release_curve: f64,
 
-    ramp: Ramp,
+    ramp: Smoother<f64>,
     stage: AdsrStage,
+    trigger: bool,
 }
 
 impl AdsrEnvelope {
@@ -65,8 +65,9 @@ impl AdsrEnvelope {
             release_time_ms: DEFAULT_RELEASE_TIME_MS,
             release_curve: DEFAULT_CURVE_AMOUNT,
 
-            ramp: Ramp::new(0.0, 0.0),
+            ramp: Smoother::new(0.0, 1.0),
             stage: AdsrStage::Idle,
+            trigger: false,
         }
     }
 
@@ -74,8 +75,8 @@ impl AdsrEnvelope {
     ///
     /// This method automatically updates the stage of the envelope based on the input
     /// trigger, and is intended to be called at the sample rate.
-    pub fn next(&mut self, trigger: bool) -> f64 {
-        self.update_stage(trigger);
+    pub fn next(&mut self) -> f64 {
+        self.update_stage(self.trigger);
 
         // has the ramp finished?
         if !self.ramp.is_active() {
@@ -85,7 +86,12 @@ impl AdsrEnvelope {
         self.ramp.next()
     }
 
-    /// Sets the main parameters of the envelope at once. 
+    /// Sets the envelope's trigger.
+    pub fn trigger(&mut self, trigger: bool) {
+        self.trigger = trigger;
+    }
+
+    /// Sets the main parameters of the envelope at once.
     ///
     /// # Panics
     ///
@@ -114,7 +120,7 @@ impl AdsrEnvelope {
         self.attack_time_ms = attack_time_ms;
         self.debug_parameter_assertions();
     }
-    
+
     /// Sets the attack level of the envelope.
     ///
     /// # Panics
@@ -125,7 +131,7 @@ impl AdsrEnvelope {
         self.attack_level = attack_level;
         self.debug_parameter_assertions();
     }
-    
+
     /// Sets the attack curve of the envelope. Positive values "skew upwards".
     ///
     /// # Panics
@@ -146,7 +152,7 @@ impl AdsrEnvelope {
         self.decay_time_ms = decay_time_ms;
         self.debug_parameter_assertions();
     }
-    
+
     /// Sets the decay curve of the envelope. Positive values "skew upwards".
     ///
     /// # Panics
@@ -178,7 +184,7 @@ impl AdsrEnvelope {
         self.release_time_ms = release_time_ms;
         self.debug_parameter_assertions();
     }
-    
+
     /// Sets the decay curve of the envelope. Positive values "skew upwards".
     ///
     /// # Panics
@@ -194,6 +200,11 @@ impl AdsrEnvelope {
     #[must_use]
     pub fn get_stage(&self) -> AdsrStage {
         self.stage
+    }
+
+    /// Returns whether the envelope is in an idle stage or not.
+    pub fn is_idle(&self) -> bool {
+        matches!(self.stage, AS::Idle)
     }
 
     /* PRIVATE METHODS */
@@ -227,7 +238,8 @@ impl AdsrEnvelope {
     /// Internally sets the envelope to its idle state.
     fn set_idle_stage(&mut self) {
         /// target 0.0, no ramping
-        self.ramp.set(0.0, 0.0);
+        self.ramp.set_target_value(0.0);
+        self.ramp.set_smoothing_period(0.0);
         self.stage = AS::Idle;
     }
 
@@ -236,8 +248,8 @@ impl AdsrEnvelope {
         // target attack level, attack time ramping
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.attack_curve));
-        self.ramp
-            .set(self.attack_level, self.attack_time_ms / 1000.0);
+        self.ramp.set_target_value(self.attack_level);
+        self.ramp.set_smoothing_period(self.attack_time_ms);
         self.stage = AS::Attack;
     }
 
@@ -246,15 +258,16 @@ impl AdsrEnvelope {
         // target sustain level, decay time ramping
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.decay_curve));
-        self.ramp
-            .set(self.sustain_level, self.decay_time_ms / 1000.0);
+        self.ramp.set_target_value(self.sustain_level);
+        self.ramp.set_smoothing_period(self.decay_time_ms);
         self.stage = AS::Decay;
     }
 
     /// Internally sets the envelope to its sustain state.
     fn set_sustain_stage(&mut self) {
         // target sustain level, no ramping
-        self.ramp.set(self.sustain_level, 0.0);
+        self.ramp.set_target_value(self.sustain_level);
+        self.ramp.finish();
         self.stage = AS::Sustain;
     }
 
@@ -263,7 +276,8 @@ impl AdsrEnvelope {
         // target 0.0, release time ramping
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.release_curve));
-        self.ramp.set(0.0, self.release_time_ms / 1000.0);
+        self.ramp.set_target_value(0.0);
+        self.ramp.set_smoothing_period(self.release_time_ms);
         self.stage = AS::Release;
     }
 
@@ -330,54 +344,54 @@ mod tests {
         assert!(matches!(env.get_stage(), AdsrStage::Idle));
 
         for _ in 0..5 {
-            env.next(true);
+            env.next();
         }
 
         // attack stage at first?
         assert!(matches!(env.get_stage(), AdsrStage::Attack));
 
         for _ in 0..10 {
-            env.next(true);
+            env.next();
         }
 
         // decay after attack?
         assert!(matches!(env.get_stage(), AdsrStage::Decay));
 
         for _ in 0..10 {
-            env.next(true);
+            env.next();
         }
 
         // sustain after decay?
         assert!(matches!(env.get_stage(), AdsrStage::Sustain));
 
         for _ in 0..10000 {
-            env.next(true);
+            env.next();
         }
 
         // holds sustain whilst still triggered?
         assert!(matches!(env.get_stage(), AdsrStage::Sustain));
 
-        env.next(false);
+        env.next();
 
         // enters release after sustain?
         assert!(matches!(env.get_stage(), AdsrStage::Release));
 
         for _ in 0..5 {
-            env.next(true);
+            env.next();
         }
 
         // enters attack if triggered during release?
         assert!(matches!(env.get_stage(), AdsrStage::Attack));
 
         for _ in 0..5 {
-            env.next(false);
+            env.next();
         }
 
         // enters release if not triggered during attack?
         assert!(matches!(env.get_stage(), AdsrStage::Release));
 
         for _ in 0..6 {
-            env.next(false);
+            env.next();
         }
 
         // returns to idle after release?

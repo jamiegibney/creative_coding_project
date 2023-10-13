@@ -1,29 +1,172 @@
-// use crate::dsp::Generator;
+use nannou_audio::Buffer;
+use std::sync::{Arc, Mutex};
 
-// TODO this may represent an audio generator, but the Generator trait as
-// above is a better option if multiple structs should be a type of generator.
-struct Generator;
+use super::note::NoteHandler;
+use crate::dsp::*;
+use crate::prelude::*;
 
+/// A struct to represent each individual voice.
+#[derive(Clone, Debug)]
 pub struct Voice {
     /// The voice's unique ID.
-    id: i32,
+    pub id: u64,
     /// The MIDI note of the voice.
-    note: u8,
+    pub note: u8,
 
-    /// The current phase of the voice.
-    phase: f64,
-    /// The phase increment to control the frequency of the voice. Derived
-    /// from the note value, this may be altered to change the voice's pitch.
-    // TODO should this be smoothed?
-    phase_increment: f64,
+    pub envelope: AdsrEnvelope,
 
     /// Whether or not the voice is currently releasing, which contains
     /// the number of samples left until the voice should be cleared.
-    releasing: Option<u32>,
+    pub releasing: bool,
 
     /// The audio generator stored within the voice.
-    generator: Generator,
-    // generator: Box<dyn Generator>,
+    pub generator: Generator,
+    // this may cause issues with constructing new voices...
 }
 
+impl Voice {
+    pub fn new(
+        id: u64,
+        note: u8,
+        generator: Generator,
+        envelope: Option<AdsrEnvelope>,
+    ) -> Self {
+        Self {
+            id,
+            note,
+            envelope: envelope.unwrap_or(AdsrEnvelope::new()),
+            releasing: false,
+            generator,
+        }
+    }
+}
 
+/// A struct to handle all voices, i.e. the spawning and termination of voices.
+pub struct VoiceHandler {
+    /// A reference to the note handler to obtain note events.
+    pub note_handler_ref: Arc<Mutex<NoteHandler>>,
+    /// The array of voices.
+    pub voices: [Option<Voice>; NUM_VOICES as usize],
+    /// Internal counter for assigning new IDs.
+    id_counter: u64,
+}
+
+impl VoiceHandler {
+    /// Builds a new `VoiceHandler` with a reference to the `NoteHandler`.
+    ///
+    /// The `NoteHandler` reference is used to obtain new note events
+    /// automatically.
+    pub fn build(note_handler_ref: Arc<Mutex<NoteHandler>>) -> Self {
+        Self {
+            note_handler_ref,
+            voices: std::array::from_fn(|_| None),
+            id_counter: 0,
+        }
+    }
+
+    pub fn process_block(
+        &mut self,
+        buffer: &mut Buffer,
+        block_start: usize,
+        block_end: usize,
+        gain: [f64; MAX_BLOCK_SIZE],
+    ) {
+        let block_len = block_end - block_start;
+        let mut voice_amp_envelope = [0.0; MAX_BLOCK_SIZE];
+
+        for voice in self.voices.iter_mut().filter_map(|v| v.as_mut()) {
+            for x in voice_amp_envelope.iter_mut().take(block_len) {
+                todo!("implement generator envelope here");
+                // *x = voice.generator.envelope.next();
+            }
+
+            for (value_idx, sample_idx) in (block_start..block_end).enumerate()
+            {
+                let amp = gain[value_idx] * voice_amp_envelope[value_idx];
+                let (sample_l, sample_r) = (0.0, 0.0);
+                todo!("add voice generator processing method");
+                // let (sample_l, sample_r) = voice.generator.process();
+
+                // * 2 because the samples are interleaved
+                buffer[sample_idx * 2] += sample_l;
+                buffer[sample_idx * 2 + 1] += sample_r;
+            }
+        }
+    }
+
+    /// Starts a new voice.
+    #[allow(clippy::missing_panics_doc)] // this function should not panic
+    pub fn start_voice(
+        &mut self,
+        note: u8,
+        envelope: Option<AdsrEnvelope>,
+    ) -> &mut Voice {
+        let mut new_voice = Voice {
+            id: self.next_voice_id(),
+            note,
+            envelope: envelope.unwrap_or(AdsrEnvelope::new()),
+            releasing: false,
+            generator: todo!(),
+        };
+
+        new_voice.envelope.trigger(true);
+
+        // is there a free voice?
+        if let Some(free_idx) =
+            self.voices.iter().position(|voice| voice.is_none())
+        {
+            self.voices[free_idx] = Some(new_voice);
+            return self.voices[free_idx].as_mut().unwrap();
+        }
+
+        // as we know voices are in use, we can use unwrap_unchecked()
+        // to avoid some unnecessary checks.
+        let oldest_voice = unsafe {
+            self.voices
+                .iter_mut()
+                .min_by_key(|voice| voice.as_ref().unwrap_unchecked().id)
+                .unwrap_unchecked()
+        };
+
+        *oldest_voice = Some(new_voice);
+        return oldest_voice.as_mut().unwrap();
+    }
+
+    /// Starts a voice's release stage.
+    pub fn start_release_for_voice(&mut self, voice_id: Option<u64>, note: u8) {
+        for voice in &mut self.voices {
+            match voice {
+                Some(Voice {
+                    id: candidate_id,
+                    note: candidate_note,
+                    releasing,
+                    envelope,
+                    ..
+                }) if voice_id == Some(*candidate_id)
+                    || note == *candidate_note =>
+                {
+                    *releasing = true;
+                    envelope.trigger(false);
+                }
+                _ => (),
+            }
+        }
+    }
+
+    /// Terminates all voices which are releasing and which have an
+    /// idle envelope.
+    pub fn terminate_finished_voices(&mut self) {
+        for voice in &mut self.voices {
+            match voice {
+                Some(v) if v.releasing && v.envelope.is_idle() => {
+                    *voice = None;
+                }
+                _ => (),
+            }
+        }
+    }
+
+    fn next_voice_id(&self) -> u64 {
+        self.id_counter.wrapping_add(1)
+    }
+}

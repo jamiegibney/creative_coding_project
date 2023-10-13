@@ -1,54 +1,72 @@
+use nannou_audio::Stream;
+
 use super::audio::*;
 use super::view::view;
 use super::*;
 use crate::musical::*;
-use crate::prelude::*;
-use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 
 /// The app's model, i.e. its general state.
 pub struct Model {
+    window: window::Id,
+
     pub audio_stream: nannou_audio::Stream<AudioModel>,
     pub audio_senders: AudioSenders,
-    _window: window::Id,
-    pub note: Option<Note>,
+
     pub octave: Octave,
+    pub note_handler: NoteHandlerRef,
 }
 
-pub fn model(app: &App) -> Model {
-    let _window = app
-        .new_window()
-        .size(1400, 800)
-        .key_released(key::key_released)
-        .key_pressed(key::key_pressed)
-        .mouse_moved(mouse::mouse_moved)
-        .view(view)
-        .build()
-        .unwrap();
+impl Model {
+    pub fn new(app: &App) -> Self {
+        let window = app
+            .new_window()
+            .size(1400, 800)
+            .key_pressed(key::key_pressed)
+            .key_released(key::key_released)
+            .mouse_moved(mouse::mouse_moved)
+            .view(view)
+            .build()
+            .expect("failed to build app window!");
 
-    let audio_host = nannou_audio::Host::new();
+        let (audio_stream, audio_senders, note_handler) = build_audio_system();
 
-    let mut audio_model = AudioModel::new();
+        Self {
+            window,
+
+            audio_stream,
+            audio_senders,
+
+            octave: Octave::default(), // C3 - B3
+
+            note_handler: Arc::clone(&note_handler),
+        }
+    }
+}
+
+/// Builds the audio stream, audio message channel senders, and input note
+/// handler.
+fn build_audio_system() -> (Stream<AudioModel>, AudioSenders, NoteHandlerRef) {
+    // setup audio structs
+    let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
+    let audio_context = AudioContext::build(Arc::clone(&note_handler));
+    let mut audio_model = AudioModel::new(audio_context);
+
+    // obtain audio message channels
     let audio_senders = audio_model.initialize();
-    // audio_senders.drive_amount.send(0.5).unwrap();
 
-    let sample_rate = unsafe { SAMPLE_RATE };
-
+    // setup audio stream
+    let audio_host = nannou_audio::Host::new();
     let stream = audio_host
         .new_output_stream(audio_model)
         .render(audio::process)
         .channels(2)
-        .sample_rate(sample_rate as u32)
+        .sample_rate(unsafe { SAMPLE_RATE } as u32)
         .frames_per_buffer(BUFFER_SIZE)
         .build()
         .unwrap();
 
     stream.play().unwrap();
 
-    Model {
-        audio_stream: stream,
-        _window,
-        audio_senders,
-        note: None,
-        octave: Octave::default(), // C3 - B3
-    }
+    (stream, audio_senders, note_handler)
 }

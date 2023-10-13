@@ -1,7 +1,5 @@
-//! Module for windowing functions.
-use crate::prelude::*;
+//! Module containing various window functions.
 use std::f64::consts::{PI, TAU};
-use nih_plug::prelude::Enum;
 
 // TODO simd?
 // TODO check that the final sample for each window is correct? might be

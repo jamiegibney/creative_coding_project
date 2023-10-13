@@ -1,9 +1,16 @@
 use super::*;
 use crate::dsp::*;
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::{Arc, Mutex};
 
-// pub mod note;
+// pub mod buffer;
+pub mod context;
+pub mod process;
 pub mod voice;
+
+pub use context::AudioContext;
+pub use process::process;
+pub use voice::*;
 
 /// A struct containing the channel senders returned by
 /// `AudioModel::initialize()`.
@@ -18,13 +25,17 @@ pub struct AudioSenders {
 
 /// The audio state for the whole program.
 pub struct AudioModel {
+    pub voice_handler: VoiceHandler,
+    pub context: AudioContext,
+    pub gain: Smoother<f64>,
+
     pub filter_lp: [BiquadFilter; 2],
     pub filter_hp: [BiquadFilter; 2],
     pub filter_peak: [BiquadFilter; 2],
     pub filter_peak_post: [BiquadFilter; 2],
     pub filter_comb: [IirCombFilter; 2],
 
-    pub filter_freq: Ramp,
+    // pub filter_freq: Smoother<f64>,
     filter_freq_receiver: Option<Receiver<f64>>,
 
     pub waveshaper: [Waveshaper; 2],
@@ -36,11 +47,13 @@ pub struct AudioModel {
 
     pub glide_time: f64,
     pub volume: f64,
+
+    timer: std::time::Instant,
 }
 
 impl AudioModel {
     /// Creates a new `AudioModel`.
-    pub fn new() -> Self {
+    pub fn new(context: AudioContext) -> Self {
         let sample_rate = unsafe { SAMPLE_RATE };
         let biquad = BiquadFilter::new(sample_rate);
 
@@ -87,7 +100,13 @@ impl AudioModel {
             ws.set_xfer_function(xfer::s_curve_round);
         }
 
+        let note_handler_ref = context.note_handler_ref();
+
         Self {
+            voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
+            context,
+            gain: Smoother::new(1.0, 0.03),
+
             filter_lp: [biquad.clone(), biquad.clone()],
             filter_hp: [biquad.clone(), biquad.clone()],
             filter_peak: [biquad.clone(), biquad.clone()],
@@ -97,16 +116,18 @@ impl AudioModel {
             waveshaper,
             drive_amount_receiver: None,
 
-            filter_freq: Ramp::new(440.0, glide_time),
+            // filter_freq: Ramp::new(440.0, glide_time),
             filter_freq_receiver: None,
 
             volume: db_to_level(-24.0),
-            // volume: db_to_level(-42.0),
+
             envelope: AdsrEnvelope::new(),
             envelope_trigger: false,
             envelope_trigger_receiver: None,
 
             glide_time,
+
+            timer: std::time::Instant::now(),
         }
     }
 
@@ -121,7 +142,7 @@ impl AudioModel {
         self.envelope.set_decay_curve(0.9);
         // self.envelope.set_attack_curve(-1.0);
 
-        self.filter_freq.set_smoothing_type(SmoothingType::Linear);
+        // self.filter_freq.set_smoothing_type(SmoothingType::Linear);
 
         let (envelope_trigger_sender, receiver) = channel();
         self.envelope_trigger_receiver = Some(receiver);
@@ -252,7 +273,7 @@ impl AudioModel {
         // filter frequency
         if let Some(freq) = &self.filter_freq_receiver {
             if let Ok(msg) = freq.try_recv() {
-                self.filter_freq.set(msg, self.glide_time);
+                // self.filter_freq.set(msg, self.glide_time);
             }
         }
 
@@ -265,38 +286,6 @@ impl AudioModel {
             }
         }
 
-        self.filter_freq.next();
-    }
-}
-
-impl Default for AudioModel {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// The main audio processing callback.
-pub fn process(audio: &mut AudioModel, output: &mut Buffer) {
-    for f in output.frames_mut() {
-        let env_level = audio.envelope.next(audio.envelope_trigger);
-        let volume = audio.volume * (env_level);
-        let noise = || nannou::rand::random_f64().mul_add(2.0, -1.0) * volume;
-
-        audio.try_receive();
-        let freq = audio.filter_freq.current_value();
-
-        if audio.filter_freq.is_active() {
-            audio.set_filter_freq(freq);
-        }
-
-        let output = (noise(), noise());
-        let output = audio.process_filters(output); // peak filtering
-        let output = audio.process_distortion(output); // waveshaping
-        let output = audio.process_comb_filters(output); // main comb filters, which contain a
-                                                         // peak, highpass, and comb filter
-        let output = audio.process_post_peak_filters(output); // wide peak filtering
-
-        f[0] = output.0 as f32;
-        f[1] = output.1 as f32;
+        // self.filter_freq.next();
     }
 }

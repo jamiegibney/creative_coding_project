@@ -1,4 +1,3 @@
-use super::Ramp;
 use crate::prelude::*;
 use crate::util::interp;
 
@@ -14,7 +13,7 @@ pub struct RingBuffer {
     write_pos: usize,
 
     /// The smoothed delay time parameter.
-    delay_secs: Ramp,
+    delay_secs: Smoother<f64>,
 
     /// The kind of interpolation to use.
     interpolation_type: InterpType,
@@ -34,13 +33,12 @@ impl RingBuffer {
             data: vec![0.0; size],
             write_pos: 0,
 
-            delay_secs: Ramp::new(0.0, DEFAULT_SMOOTHING_TIME),
+            delay_secs: Smoother::new(0.0, DEFAULT_SMOOTHING_TIME),
 
             interpolation_type: InterpType::default(), // linear
 
             smoothing_type: SmoothingType::default(),
             smoothing_time_secs: DEFAULT_SMOOTHING_TIME,
-
         }
     }
 
@@ -86,18 +84,22 @@ impl RingBuffer {
     ///
     /// # Panics
     ///
-    /// Panics in debug mode if `delay_secs` is greater than the maximum
-    /// delay time of the `RingBuffer` in seconds to avoid buffer overruns. Use
+    /// Panics in if `delay_secs` is greater than the maximum delay time
+    /// of the `RingBuffer` in seconds to avoid buffer overruns. Use
     /// `set_delay_time_unchecked()` to bypass this.
     pub fn set_delay_time(&mut self, delay_secs: f64) {
-        debug_assert!(delay_secs <= self.max_delay_secs());
-        self.delay_secs.set(delay_secs, self.smoothing_time_secs);
+        assert!(delay_secs <= self.max_delay_secs());
+        self.delay_secs.set_target_value(delay_secs);
+        self.delay_secs
+            .set_smoothing_period(self.smoothing_time_secs);
     }
 
     /// Sets the delay time of the `RingBuffer` in seconds without checking
     /// for buffer overruns.
     pub fn set_delay_time_unchecked(&mut self, delay_secs: f64) {
-        self.delay_secs.set(delay_secs, self.smoothing_time_secs);
+        self.delay_secs.set_target_value(delay_secs);
+        self.delay_secs
+            .set_smoothing_period(self.smoothing_time_secs);
     }
 
     /// Sets the smoothing method and time for the `RingBuffer`. This affects
@@ -122,10 +124,14 @@ impl RingBuffer {
     /// Resets the `RingBuffer` to its default settings. Does not allocate.
     pub fn reset(&mut self) {
         self.data.clear();
+
         self.write_pos = 0;
-        self.delay_secs
-            .set_with_value(0.0, 0.0, DEFAULT_SMOOTHING_TIME);
+
+        self.delay_secs.reset();
+        self.delay_secs.set_smoothing_period(DEFAULT_SMOOTHING_TIME);
+
         self.interpolation_type = InterpType::default();
+
         self.smoothing_type = SmoothingType::default();
         self.smoothing_time_secs = DEFAULT_SMOOTHING_TIME;
     }

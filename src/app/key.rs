@@ -1,11 +1,11 @@
-use super::model::model;
 use super::{audio::AudioModel, *};
-use crate::dsp::filters::FilterType;
 use crate::musical::*;
+// use crate::prelude::*;
 
 /// Function for handling keypresses.
 pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
     match key {
+        // stop audio playback
         Key::Space => {
             if model.audio_stream.is_playing() {
                 model.audio_stream.pause().unwrap();
@@ -23,29 +23,54 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         _ => (),
     };
 
-    let note = Note::from_key(&key);
-    model.note = note;
+    // get midi note value from keyboard input
+    let key_note_value = Note::key_value(&key);
 
-    if let Some(note) = note {
-        let octave = if matches!(key, Key::K | Key::O | Key::L | Key::P) {
-            model.octave.transpose(1)
-        }
-        else {
-            model.octave
-        };
+    if let Some(note) = key_note_value {
+        // transpose octave if higher keys are pressed
+        let octave = octave_from_key(model.octave, key);
 
-        model
-            .audio_senders
-            .filter_freq
-            .send(note_to_freq(midi_note_value_from(octave, note) as f64))
-            .unwrap();
-        model.audio_senders.envelope_trigger.send(true).unwrap();
+        // get the midi note value from octave and key note
+        let note = octave.starting_midi_note() + note;
+
+        // push note event to the note handler
+        let mut note_handler = model.note_handler.lock().unwrap();
+        note_handler.push_event(NoteEvent::NoteOn {
+            note,
+            // TODO: add proper timing here
+            timing: 0,
+        });
     }
 }
 
 /// Function for handling key releases.
 pub fn key_released(_app: &App, model: &mut Model, key: Key) {
-    if KEYBOARD_MUSICAL_NOTES.contains(&key) {
-        model.audio_senders.envelope_trigger.send(false).unwrap();
+    // get midi note value from keyboard input
+    let key_note_value = Note::key_value(&key);
+
+    if let Some(note) = key_note_value {
+        // transpose octave if higher keys are pressed
+        let octave = octave_from_key(model.octave, key);
+
+        // get the midi note value from octave and key note
+        let note = octave.starting_midi_note() + note;
+
+        // push note event to the note handler
+        let mut note_handler = model.note_handler.lock().unwrap();
+        note_handler.push_event(NoteEvent::NoteOff {
+            note,
+            // TODO: add proper timing here
+            timing: 0,
+        });
+    }
+}
+
+/// Returns the correctly transposed octave from the computer keyboard input.
+fn octave_from_key(octave: Octave, key: Key) -> Octave {
+    if matches!(key, Key::K | Key::O | Key::L | Key::P) {
+        octave.transpose(1)
+    }
+    else {
+        octave
     }
 }

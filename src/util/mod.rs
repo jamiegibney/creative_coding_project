@@ -3,10 +3,13 @@
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 
 pub mod interp;
+pub mod smoothing;
+pub mod window;
 pub mod xfer;
 
 pub use interp::InterpolationType as InterpType;
 pub use interp::{ilerp, lerp};
+pub use smoothing::*;
 pub use xfer::SmoothingType;
 
 /// Calculates the frequency value of the provided MIDI note value.

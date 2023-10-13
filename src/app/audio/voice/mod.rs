@@ -1,5 +1,7 @@
 use crate::prelude::*;
 
-pub mod note_event;
+pub mod note;
 pub mod voice;
-pub mod voice_handler;
+
+pub use note::{NoteEvent, NoteHandler};
+pub use voice::{Voice, VoiceHandler};
