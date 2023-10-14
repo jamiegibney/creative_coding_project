@@ -53,7 +53,7 @@ const fn cast_to_f64(arr: [f32; 2]) -> [f64; 2] {
     clippy::range_minus_one, clippy::option_if_let_else, clippy::cast_lossless
 )]
 #[must_use]
-pub fn decimate_points(points: &[[f32; 2]], epsilon: f64) -> Vec<usize> {
+pub fn decimate_points(points: &[[f64; 2]], epsilon: f64) -> Vec<usize> {
     if points.len() <= 2 {
         return (0..points.len()).collect();
     }
@@ -74,8 +74,8 @@ pub fn decimate_points(points: &[[f32; 2]], epsilon: f64) -> Vec<usize> {
         let start_index = *range.start();
         let end_index = *range.end();
 
-        let start_point = cast_to_f64(points[start_index]);
-        let end_point = cast_to_f64(points[end_index]);
+        let start_point = points[start_index];
+        let end_point = points[end_index];
 
         // the Line struct is mainly used to abstract some calculations here
         let line = LineDistance::new(&start_point, &end_point);
@@ -85,10 +85,8 @@ pub fn decimate_points(points: &[[f32; 2]], epsilon: f64) -> Vec<usize> {
             points[start_index + 1..end_index].iter().enumerate().fold(
                 (0.0f64, 0),
                 move |(max_distance, max_index), (index, point)| {
-                    let current_point = &cast_to_f64(*point);
-
                     let distance = if let Some(dist) =
-                        line.distance_to(current_point)
+                        line.distance_to(point)
                     // IF the distance is not 0.0, use it
                     {
                         dist
@@ -97,7 +95,7 @@ pub fn decimate_points(points: &[[f32; 2]], epsilon: f64) -> Vec<usize> {
                     // calculate the distance from the start point
                     else {
                         let [sx, sy] = start_point;
-                        let [px, py] = current_point;
+                        let [px, py] = point;
 
                         (px - sx).hypot(py - sy)
                     };

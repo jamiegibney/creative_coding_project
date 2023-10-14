@@ -232,8 +232,8 @@ impl Note {
     }
 }
 
-// TODO is this needed?
-pub const KEYBOARD_MUSICAL_NOTES: [Key; 16] = [
+/// All the keyboard values which are used to trigger MIDI note messages.
+pub const KEYBOARD_MIDI_NOTES: [Key; 16] = [
     Key::A,
     Key::S,
     Key::D,

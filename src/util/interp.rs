@@ -110,9 +110,14 @@ pub fn cubic_catmull(p0: f64, p1: f64, p2: f64, p3: f64, t: f64) -> f64 {
     let t2 = t * t;
     let t3 = t2 * t;
 
-    let a = 0.5f64.mul_add(p3, 1.5f64.mul_add(-p2, (-0.5f64).mul_add(p0, 1.5 * p1)));
-    let b = 0.5f64.mul_add(-p3, 2.0f64.mul_add(p2, 2.5f64.mul_add(-p1, p0)));
-    let c = (-0.5f64).mul_add(p0, 0.5 * p2);
+    // let a = 0.5f64.mul_add(p3, 1.5f64.mul_add(-p2, (-0.5f64).mul_add(p0, 1.5 * p1)));
+    // let b = 0.5f64.mul_add(-p3, 2.0f64.mul_add(p2, 2.5f64.mul_add(-p1, p0)));
+    // let c = (-0.5f64).mul_add(p0, 0.5 * p2);
+    // let d = p1;
+
+    let a = -0.5 * p0 + 1.5 * p1 - 1.5 * p2 + 0.5 * p3;
+    let b = p0 - 2.5 * p1 + 2.0 * p2 - 0.5 * p3;
+    let c = -0.5 * p0 + 0.5 * p2;
     let d = p1;
 
     c.mul_add(t, a.mul_add(t3, b * t2)) + d

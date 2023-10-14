@@ -6,6 +6,8 @@
 // for playing around and  experimentation. It also allows me to play around with race 
 // conditions if I want, which seems like good practice...
 
+use nannou::prelude::Vec2;
+
 /// The global sample rate, set to 44.1 kHz as default.
 ///
 /// # Safety
@@ -32,6 +34,16 @@ pub const NUM_VOICES: u32 = 16;
 /// broken down into blocks which are this big, unless the buffer size is 
 /// smaller.
 pub const MAX_BLOCK_SIZE: usize = 1 << 6; // 64
+
+pub struct V2 {
+    pub x: f64,
+    pub y: f64,
+}
+
+pub const WINDOW_SIZE: V2 = V2 {
+    x: 1400.0,
+    y: 800.0,
+};
 
 // TODO this is constant for now, but should be variable later.
 pub const BUFFER_SIZE: usize = 256;

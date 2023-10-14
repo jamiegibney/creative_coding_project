@@ -1,5 +1,6 @@
 use super::*;
 use crate::dsp::*;
+use crate::gui::spectrum::*;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
@@ -7,6 +8,7 @@ use std::sync::{Arc, Mutex};
 pub mod context;
 pub mod process;
 pub mod voice;
+pub mod model;
 
 pub use context::AudioContext;
 pub use process::process;
@@ -36,6 +38,9 @@ pub struct AudioModel {
     pub context: AudioContext,
     pub gain: Smoother<f64>,
     pub amp_envelope: AdsrEnvelope,
+
+    pub pre_spectrum: Option<SpectrumInput>,
+    pub post_spectrum: Option<SpectrumInput>,
 
     pub filter_lp: [BiquadFilter; 2],
     pub filter_hp: [BiquadFilter; 2],
@@ -106,7 +111,7 @@ impl AudioModel {
         let note_handler_ref = context.note_handler_ref();
 
         let mut amp_envelope = AdsrEnvelope::new();
-        amp_envelope.set_parameters(1.0, 300.0, 0.0, 10.0);
+        amp_envelope.set_parameters(300.0, 300.0, 1.0, 1000.0);
 
         Self {
             callback_time_elapsed: Arc::new(Mutex::new(
@@ -115,6 +120,9 @@ impl AudioModel {
             voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
             context,
             gain: Smoother::new(1.0, 0.1),
+
+            pre_spectrum: None,
+            post_spectrum: None,
 
             filter_lp: [biquad.clone(), biquad.clone()],
             filter_hp: [biquad.clone(), biquad.clone()],
@@ -151,6 +159,17 @@ impl AudioModel {
             filter_freq: filter_freq_sender,
             drive_amount: drive_amount_sender,
         }
+    }
+
+    /// Returns the pre and post `SpectrumOutput`s for the audio thread.
+    pub fn spectrum_outputs(&mut self) -> (SpectrumOutput, SpectrumOutput) {
+        let (pre_in, pre_out) = SpectrumInput::new(2);
+        let (post_in, post_out) = SpectrumInput::new(2);
+
+        self.pre_spectrum = Some(pre_in);
+        self.post_spectrum = Some(post_in);
+
+        (pre_out, post_out)
     }
 
     /// Initializes the `AudioModel`, returning an `AudioSenders` instance containing
@@ -295,8 +314,8 @@ impl AudioModel {
     /// but should be more than adequate for things like note events.
     pub fn current_sample_idx(&self) -> u32 {
         let guard = self.callback_time_elapsed.lock().unwrap();
-        let samples_exact = guard.elapsed().as_secs_f64()
-            * unsafe { SAMPLE_RATE };
+        let samples_exact =
+            guard.elapsed().as_secs_f64() * unsafe { SAMPLE_RATE };
 
         samples_exact.round() as u32 % BUFFER_SIZE as u32
     }

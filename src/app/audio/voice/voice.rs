@@ -2,7 +2,7 @@ use nannou_audio::Buffer;
 use std::sync::{Arc, Mutex};
 
 use super::note::NoteHandler;
-use crate::dsp::synthesis::Phasor;
+use crate::dsp::synthesis::*;
 use crate::dsp::*;
 use crate::prelude::*;
 
@@ -83,9 +83,7 @@ impl VoiceHandler {
 
             for (value_idx, sample_idx) in (block_start..block_end).enumerate()
             {
-                // println!("{sample_idx}");
                 let amp = gain[value_idx] * voice_amp_envelope[value_idx];
-                // let amp = 1.0;
 
                 let (sample_l, sample_r) = voice.generator.process();
 
@@ -106,7 +104,7 @@ impl VoiceHandler {
         let mut new_voice = Voice {
             id: self.next_voice_id(),
             note,
-            envelope: envelope.unwrap_or_else(AdsrEnvelope::default),
+            envelope: envelope.unwrap_or_default(),
             releasing: false,
             generator: Generator::Saw(Phasor::new(note_to_freq(note as f64))),
         };

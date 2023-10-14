@@ -1,22 +1,27 @@
 //! For processing spectral information for analysis.
 
 use crate::dsp::StftHelper;
+use crate::prelude::*;
 use crate::util::window::{blackman, hann, multiply_buffers};
 use nannou_audio::Buffer;
-use realfft::{num_complex::Complex64, RealFftPlanner, RealToComplex};
+use realfft::{
+    num_complex::Complex64, ComplexToReal, RealFftPlanner, RealToComplex,
+};
 use std::sync::Arc;
 use triple_buffer::TripleBuffer;
 
 // These settings closely match FabFilter Pro-Q 3's spectrum analyser
 // on its "Maximum" / "Very Fast" resolution / time settings.
-const SPECTRUM_WINDOW_SIZE: usize = 1 << 13; // 8192
-const SPECTRUM_OVERLAP_FACTOR: usize = 1 << 4; // 16
+pub const SPECTRUM_WINDOW_SIZE: usize = 1 << 13; // 8192
+pub const SPECTRUM_OVERLAP_FACTOR: usize = 1 << 4; // 16
 const SPECTRUM_ATTACK_MS: f64 = 120.0;
 const SPECTRUM_RELEASE_MS: f64 = 110.0;
 
-pub type Spectrum = [f64; SPECTRUM_WINDOW_SIZE / 2 + 1];
+const RESULT_BUFFER_SIZE: usize = SPECTRUM_WINDOW_SIZE / 2 + 1;
 
-pub type SpectrumOutput = triple_buffer::Output<Spectrum>;
+// pub type Spectrum = [f64; SPECTRUM_WINDOW_SIZE / 2 + 1];
+
+pub type SpectrumOutput = triple_buffer::Output<Vec<f64>>;
 
 pub struct SpectrumInput {
     /// An adapter to process most of the overlap-add operation.
@@ -36,10 +41,10 @@ pub struct SpectrumInput {
     /// This is a way to send information to a corresponding
     /// `SpectrumOutput`. The struct's `spectrum_result_buffer` is
     /// copied into this buffer each time a new spectrum is available.
-    triple_buffer_input: triple_buffer::Input<Spectrum>,
+    triple_buffer_input: triple_buffer::Input<Vec<f64>>,
 
     /// A scratch buffer used to compute the power amplitude spectrum.
-    spectrum_result_buffer: Spectrum,
+    spectrum_result_buffer: Vec<f64>,
 
     /// The forward FFT algorithm used to produce the spectral data.
     plan: Arc<dyn RealToComplex<f64>>,
@@ -60,24 +65,24 @@ impl SpectrumInput {
     /// to the editor.
     pub fn new(num_channels: usize) -> (Self, SpectrumOutput) {
         let (triple_buffer_input, output) =
-            TripleBuffer::new(&[0.0; SPECTRUM_WINDOW_SIZE / 2 + 1]).split();
+            // TripleBuffer::new(&[0.0; SPECTRUM_WINDOW_SIZE / 2 + 1]).split();
+            TripleBuffer::new(&vec![0.0; RESULT_BUFFER_SIZE]).split();
 
-        let input = Self {
+        let mut input = Self {
             stft: StftHelper::new(num_channels, SPECTRUM_WINDOW_SIZE, 0),
             num_channels,
             attack_weight: 0.0,
             release_weight: 0.0,
             triple_buffer_input,
-            spectrum_result_buffer: [0.0; SPECTRUM_WINDOW_SIZE / 2 + 1],
+            spectrum_result_buffer: vec![0.0; RESULT_BUFFER_SIZE],
             plan: RealFftPlanner::new().plan_fft_forward(SPECTRUM_WINDOW_SIZE),
 
-            // compensated_window_function: blackman(SPECTRUM_WINDOW_SIZE)
+            // compensated_window_function: hann(SPECTRUM_WINDOW_SIZE)
             //     .into_iter()
             //     .map(|x| {
             //         x / (SPECTRUM_WINDOW_SIZE * SPECTRUM_OVERLAP_FACTOR) as f64
             //     })
             //     .collect(),
-
             window_function: hann(SPECTRUM_WINDOW_SIZE),
 
             complex_buffer: vec![
@@ -85,6 +90,8 @@ impl SpectrumInput {
                 SPECTRUM_WINDOW_SIZE / 2 + 1
             ],
         };
+
+        input.update_timing();
 
         (input, output)
     }
@@ -96,9 +103,10 @@ impl SpectrumInput {
 
     /// Updates the attack/release smoothing based on the given sample rate.
     ///
-    /// For use in `initialize()`
-    pub fn update_sample_rate(&mut self, sample_rate: f64) {
-        let effective_sample_rate = sample_rate / SPECTRUM_WINDOW_SIZE as f64
+    /// Should be called if the sample rate changes.
+    pub fn update_timing(&mut self) {
+        let effective_sample_rate = unsafe { SAMPLE_RATE }
+            / SPECTRUM_WINDOW_SIZE as f64
             * SPECTRUM_OVERLAP_FACTOR as f64
             * self.num_channels as f64;
 
@@ -153,7 +161,8 @@ impl SpectrumInput {
                 }
 
                 // send to the triple buffer output
-                self.triple_buffer_input.write(self.spectrum_result_buffer);
+                self.triple_buffer_input
+                    .write(self.spectrum_result_buffer.clone());
             },
         );
     }

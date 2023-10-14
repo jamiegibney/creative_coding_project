@@ -3,8 +3,10 @@ use nannou_audio::Stream;
 use super::audio::*;
 use super::view::view;
 use super::*;
+use crate::gui::spectrum::*;
 use crate::musical::*;
 use std::{
+    cell::RefCell,
     collections::HashMap,
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
@@ -25,17 +27,45 @@ pub struct Model {
 
     pub pressed_keys: HashMap<Key, bool>,
 
+    // unfortunately the view function has to take an immutable reference
+    // to the Model, so RefCell it is...
+    pub pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
+    pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
+
     pub audio_callback_timer: CallbackTimerRef,
 }
 
 impl Model {
     /// Builds the app's `Model`.
     pub fn build(app: &App) -> Self {
-        let (audio_stream, audio_senders, audio_callback_timer, note_handler) =
-            build_audio_system();
+        let AudioSystem {
+            stream: audio_stream,
+            senders: audio_senders,
+            callback_timer_ref: audio_callback_timer,
+            note_handler,
+            pre_spectrum,
+            post_spectrum,
+        } = build_audio_system();
+
+        let (w, h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
+        let rect =
+            Rect::from_corners(pt2(-w / 2.0, -h / 2.0), pt2(w / 2.0, h / 2.0));
+
+        let pre_spectrum_analyzer =
+            RefCell::new(SpectrumAnalyzer::new(pre_spectrum, rect));
+        let post_spectrum_analyzer =
+            RefCell::new(SpectrumAnalyzer::new(post_spectrum, rect));
 
         Self {
-            window: build_window(app),
+            window: app
+                .new_window()
+                .size(WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32)
+                .key_pressed(key::key_pressed)
+                .key_released(key::key_released)
+                .mouse_moved(mouse::mouse_moved)
+                .view(view)
+                .build()
+                .expect("failed to build app window!"),
 
             audio_stream,
             audio_senders,
@@ -47,6 +77,9 @@ impl Model {
             pressed_keys: build_pressed_keys_map(),
 
             audio_callback_timer,
+
+            pre_spectrum_analyzer,
+            post_spectrum_analyzer,
         }
     }
 
@@ -56,7 +89,7 @@ impl Model {
     /// but should be more than adequate for things like note events.
     ///
     /// If a lock on the callback timer is not obtained, then `0` is returned.
-    /// This doesn't create too much of an issue as note events are still 
+    /// This doesn't create too much of an issue as note events are still
     /// handled quite quickly in the audio thread.
     pub fn current_sample_idx(&self) -> u32 {
         self.audio_callback_timer.lock().map_or(0, |guard| {
@@ -68,7 +101,7 @@ impl Model {
 }
 
 /// Builds the app window.
-fn build_window(app: &App) -> WindowId {
+fn build_window(app: &App) -> window::Id {
     app.new_window()
         .size(1400, 800)
         .key_pressed(key::key_pressed)
@@ -79,16 +112,26 @@ fn build_window(app: &App) -> WindowId {
         .expect("failed to build app window!")
 }
 
+struct AudioSystem {
+    stream: Stream<AudioModel>,
+    senders: AudioSenders,
+    callback_timer_ref: CallbackTimerRef,
+    note_handler: NoteHandlerRef,
+    pre_spectrum: SpectrumOutput,
+    post_spectrum: SpectrumOutput,
+}
+
 /// Builds the audio stream, audio message channel senders, and input note handler.
-fn build_audio_system(
-) -> (Stream<AudioModel>, AudioSenders, CallbackTimerRef, NoteHandlerRef) {
+fn build_audio_system() -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
     let audio_context = AudioContext::build(Arc::clone(&note_handler));
     let mut audio_model = AudioModel::new(audio_context);
 
     // obtain audio message channels
-    let audio_senders = audio_model.message_channels();
+    let senders = audio_model.message_channels();
+
+    let (pre_spectrum, post_spectrum) = audio_model.spectrum_outputs();
 
     let callback_timer_ref = audio_model.callback_timer_ref();
 
@@ -105,14 +148,21 @@ fn build_audio_system(
 
     stream.play().unwrap();
 
-    (stream, audio_senders, callback_timer_ref, note_handler)
+    AudioSystem {
+        stream,
+        senders,
+        callback_timer_ref,
+        note_handler,
+        pre_spectrum,
+        post_spectrum,
+    }
 }
 
 /// Builds the `HashMap` used to track which keys are currently pressed or not.
 fn build_pressed_keys_map() -> HashMap<Key, bool> {
     let mut map = HashMap::new();
 
-    for k in KEYBOARD_MUSICAL_NOTES {
+    for k in KEYBOARD_MIDI_NOTES {
         map.insert(k, false);
     }
 

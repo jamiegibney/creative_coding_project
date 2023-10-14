@@ -8,6 +8,8 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // remaining in buffer}, `MAX_BLOCK_SIZE`, {next event index - block start
     // index}).
 
+    buffer.fill(0.0);
+
     let AudioModel { context, voice_handler, .. } = audio;
     let buffer_len = buffer.len_frames();
 
@@ -73,6 +75,10 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         block_end = (block_end + MAX_BLOCK_SIZE).min(buffer_len);
     }
 
+    if let Some(pre_spectrum) = audio.pre_spectrum.as_mut() {
+        pre_spectrum.compute(buffer);
+    }
+
     drop(note_handler_guard);
 
     // audio effects/processors
@@ -85,6 +91,11 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     //     output[0] = l;
     //     output[1] = r;
     // }
+
+    for output in buffer.frames_mut() {
+        output[0] = output[0].clamp(-1.0, 1.0);
+        output[1] = output[1].clamp(-1.0, 1.0);
+    }
 
     // the chance of not being able to acquire the lock is very small here,
     // but because this is the audio thread, it's preferable to not block at

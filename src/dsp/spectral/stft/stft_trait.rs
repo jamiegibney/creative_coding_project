@@ -22,7 +22,7 @@ pub trait StftInput {
 
 /// A buffer which may be written to by the `StftHelper`.
 pub trait StftInputMut: StftInput {
-    /// Obtains a mutable reference to a specific sample without any 
+    /// Obtains a mutable reference to a specific sample without any
     /// bounds checking.
     unsafe fn get_sample_unchecked_mut(
         &mut self,
@@ -49,7 +49,7 @@ impl StftInput for Buffer<f64> {
         sample_idx: usize,
     ) -> f64 {
         // the samples of this buffer are interleaved, hence channel * 2
-        unsafe { *self.get_unchecked(channel_idx * 2 + sample_idx) }
+        unsafe { *self.get_unchecked(sample_idx * 2 + channel_idx) }
     }
 }
 
@@ -61,7 +61,7 @@ impl StftInputMut for Buffer<f64> {
         sample_idx: usize,
     ) -> &mut f64 {
         // the samples of this buffer are interleaved, hence channel * 2
-        unsafe { self.get_unchecked_mut(channel_idx * 2 + sample_idx) }
+        unsafe { self.get_unchecked_mut(sample_idx * 2 + channel_idx) }
     }
 }
 

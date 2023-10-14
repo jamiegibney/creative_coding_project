@@ -1,6 +1,7 @@
 //! Global utility functions — these are publicly re-exported in `prelude.rs`.
 
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
+use nannou::prelude::{Vec2, DVec2};
 
 pub mod interp;
 pub mod smoothing;
@@ -55,6 +56,32 @@ pub fn scale(value: f64, min: f64, max: f64) -> f64 {
 /// Like `map()`, but with the output range set to `0.0 - 1.0`.
 pub fn normalise(value: f64, min: f64, max: f64) -> f64 {
     (value - min) / (max - min)
+}
+
+/// Returns a vector of interleaved elements from the input, i.e.
+/// `0.x, 0.y, 1.x, 1.y, ...`
+pub fn interleave_dvec2_to_f64(input: &[DVec2]) -> Vec<f64> {
+    let mut v = Vec::with_capacity(input.len() * 2);
+
+    for &pos in input {
+        v.push(pos.x);
+        v.push(pos.y);
+    }
+
+    v
+}
+
+/// Returns a vector of interleaved elements from the input, i.e.
+/// `0.x, 0.y, 1.x, 1.y, ...`
+pub fn interleave_vec2_to_f32(input: &[Vec2]) -> Vec<f32> {
+    let mut v = Vec::with_capacity(input.len() * 2);
+
+    for &pos in input {
+        v.push(pos.x);
+        v.push(pos.y);
+    }
+
+    v
 }
 
 /// Returns whether the absolute value of `value` is less than the provided
