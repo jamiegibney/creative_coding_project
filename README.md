@@ -3,7 +3,7 @@
 - Get spectrogram working with nannou. See `nannou/examples/draw/draw_mesh.rs` for an example of a mesh being created in nannou.
 
 ### Fixes
-- **PRIORITY** Envelopes note working correctly, could be a problem with `Smoother`.
+- **PRIORITY** `AdsrEnvelope` doesn't respond when its attack time is `0.0`
 - **PRIORITY** Fix glissando issue (ramp problem it seems, related to above?)
 - Convert the spectrogram to nannou from egui
     - Mesh implementation

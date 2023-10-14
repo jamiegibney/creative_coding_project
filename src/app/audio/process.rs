@@ -1,7 +1,6 @@
 use super::*;
 
 /// The main audio processing callback.
-#[allow(clippy::missing_panics_doc)]
 pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // This works by breaking down the buffer into smaller discrete blocks.
     // For each block, it first processes incoming note events, which are
@@ -10,18 +9,24 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // index}).
 
     let AudioModel { context, voice_handler, .. } = audio;
-
     let buffer_len = buffer.len_frames();
-    let mut note_handler_guard = context.note_handler.lock().unwrap();
 
-    let mut next_event = note_handler_guard.next_event();
+    // best not to block at all here - if the NoteHandler lock can't be
+    // obtained, then the note events won't be processed for this buffer.
+    let mut note_handler_guard = context.note_handler.try_lock().ok();
+    let mut next_event =
+        note_handler_guard.as_mut().and_then(|g| g.next_event());
+
     let mut block_start: usize = 0;
     let mut block_end = MAX_BLOCK_SIZE.min(buffer_len);
 
+    // audio generators
     while block_start < buffer_len {
         // first, handle incoming events.
         'events: loop {
             match next_event {
+                // if the event is now (or before the block), match
+                // the event and handle its voice accordingly.
                 Some(event) if (event.timing() as usize) <= block_start => {
                     match event {
                         NoteEvent::NoteOn { note, .. } => {
@@ -35,8 +40,18 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                         }
                     }
 
-                    next_event = note_handler_guard.next_event();
+                    // then obtain the next event and loop again
+                    // SAFETY: this is ok, because this pattern would not
+                    // match if the note_handler_guard was not obtained.
+                    next_event = unsafe {
+                        note_handler_guard
+                            .as_mut()
+                            .unwrap_unchecked()
+                            .next_event()
+                    };
                 }
+                // if the event exists within this block, set the next block
+                // to start at the event and continue processing the block
                 Some(event) if (event.timing() as usize) < block_end => {
                     block_end = event.timing() as usize;
                     break 'events;
@@ -46,17 +61,6 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         }
 
         let block_len = block_end - block_start;
-
-        // buffer.fill(0.0);
-
-        // for i in block_start..block_end {
-        //     let sample = audio.phase.sin();
-        //     let sample_halved = sample / 2.0;
-        //     audio.phase += (100.0 / unsafe { SAMPLE_RATE }) * TAU_F64;
-        //
-        //     buffer[i * 2] = sample;
-        //     buffer[i * 2 + 1] = sample_halved;
-        // }
 
         let mut gain = [0.0; MAX_BLOCK_SIZE];
         audio.gain.next_block(&mut gain, block_len);
@@ -71,15 +75,30 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     drop(note_handler_guard);
 
-    // effects go here...
+    // audio effects/processors
+    // for output in buffer.frames_mut() {
+    //     let (l, r) = (output[0], output[1]);
+    //     // let (l, r) = audio.process_comb_filters((l, r));
+    //     // let (l, r) = audio.process_distortion((l, r));
+    //     // let (l, r) = audio.process_filters((l, r));
+    //
+    //     output[0] = l;
+    //     output[1] = r;
+    // }
 
-    for output in buffer.frames_mut() {
-        let (l, r) = audio.process_comb_filters((output[0], output[1]));
-        // let (l, r) = audio.process_filters((l, r));
-
-        output[0] = l;
-        output[1] = r;
-    }
+    // the chance of not being able to acquire the lock is very small here,
+    // but because this is the audio thread, it's preferable to not block at
+    // all. so if the lock can't be obtained, then the callback_time_elapsed
+    // will temporarily not be reset. this won't cause issues in the context
+    // of this program.
+    audio
+        .callback_time_elapsed
+        .try_lock()
+        .map_or((), |mut guard| {
+            if guard.elapsed().as_secs_f64() >= 0.0001 {
+                *guard = std::time::Instant::now();
+            }
+        });
 }
 
 /* fn process_old(audio: &mut AudioModel, output: &mut Buffer) {

@@ -61,8 +61,8 @@ impl NoteHandler {
         self.events.push_back(event);
     }
 
-    /// Obtains the next event in the internal queue, or returns `None` if there are
-    /// no events.
+    /// Obtains the next event in the internal queue, or returns `None` if 
+    /// there are no events.
     pub fn next_event(&mut self) -> Option<NoteEvent> {
         self.events.pop_front()
     }

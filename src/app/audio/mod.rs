@@ -25,7 +25,13 @@ pub struct AudioSenders {
 
 /// The audio state for the whole program.
 pub struct AudioModel {
-    pub phase: f64,
+    /// The time since the last audio callback (sort of).
+    ///
+    /// It seems as though the audio callback is called twice very quickly,
+    /// and then left for nearly two buffers. As a result, this is set up to
+    /// track every *other* callback, so only resets every second call. In
+    /// other words, it resets after `BUFFER_SIZE * 2` samples (approximately).
+    pub callback_time_elapsed: Arc<Mutex<std::time::Instant>>,
     pub voice_handler: VoiceHandler,
     pub context: AudioContext,
     pub gain: Smoother<f64>,
@@ -45,8 +51,6 @@ pub struct AudioModel {
 
     pub glide_time: f64,
     pub volume: f64,
-
-    timer: std::time::Instant,
 }
 
 impl AudioModel {
@@ -102,13 +106,15 @@ impl AudioModel {
         let note_handler_ref = context.note_handler_ref();
 
         let mut amp_envelope = AdsrEnvelope::new();
-        amp_envelope.set_parameters(500.0, 1000.0, 1.0, 2000.0);
+        amp_envelope.set_parameters(1.0, 300.0, 0.0, 10.0);
 
         Self {
-            phase: 0.0,
+            callback_time_elapsed: Arc::new(Mutex::new(
+                std::time::Instant::now(),
+            )),
             voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
             context,
-            gain: Smoother::new(1.0, 0.3),
+            gain: Smoother::new(1.0, 0.1),
 
             filter_lp: [biquad.clone(), biquad.clone()],
             filter_hp: [biquad.clone(), biquad.clone()],
@@ -127,24 +133,11 @@ impl AudioModel {
             amp_envelope,
 
             glide_time,
-
-            timer: std::time::Instant::now(),
         }
     }
 
-    /// Initializes the `AudioModel`, returning an `AudioSenders` instance containing
-    /// the channel senders used to communicate with the audio thread.
-    pub fn initialize(&mut self) -> AudioSenders {
-        self.set_filters();
-
-        // ENVELOPE PARAMETERS
-        // self.envelope.set_parameters(500.0, 2000.0, 0.6, 80.0);
-        self.amp_envelope.set_parameters(1.0, 60.0, 0.0, 60.0);
-        self.amp_envelope.set_decay_curve(0.9);
-        // self.envelope.set_attack_curve(-1.0);
-
-        // self.filter_freq.set_smoothing_type(SmoothingType::Linear);
-
+    /// Returns the `AudioModel`'s channel senders.
+    pub fn message_channels(&mut self) -> AudioSenders {
         let (envelope_trigger_sender, receiver) = channel();
 
         let (filter_freq_sender, receiver) = channel();
@@ -160,6 +153,12 @@ impl AudioModel {
         }
     }
 
+    /// Initializes the `AudioModel`, returning an `AudioSenders` instance containing
+    /// the channel senders used to communicate with the audio thread.
+    pub fn initialize(&mut self) {
+        self.set_filters();
+    }
+
     /// Sets the initial state of the filters.
     pub fn set_filters(&mut self) {
         let params = BiquadParams {
@@ -171,6 +170,8 @@ impl AudioModel {
 
         for lp in &mut self.filter_lp {
             lp.set_params(&params);
+            lp.set_freq(100.0);
+            lp.set_q(BUTTERWORTH_Q);
         }
 
         for hp in &mut self.filter_hp {
@@ -203,7 +204,7 @@ impl AudioModel {
     pub fn set_filter_freq(&mut self, mut freq: f64) {
         freq = freq.clamp(10.0, unsafe { SAMPLE_RATE } / 2.0);
         for ch in 0..2 {
-            self.filter_lp[ch].set_freq(freq);
+            // self.filter_lp[ch].set_freq(freq);
             self.filter_hp[ch].set_freq(freq);
             self.filter_peak[ch].set_freq(freq);
             self.filter_comb[ch].set_freq(freq);
@@ -280,5 +281,23 @@ impl AudioModel {
         }
 
         // self.filter_freq.next();
+    }
+
+    /// Returns a thread-safe reference to the `AudioModel`'s callback
+    /// timer.
+    pub fn callback_timer_ref(&self) -> Arc<Mutex<std::time::Instant>> {
+        Arc::clone(&self.callback_time_elapsed)
+    }
+
+    /// Returns the (approximate) sample index for the current moment in time.
+    ///
+    /// This is **not** a particularly precise method of tracking time events,
+    /// but should be more than adequate for things like note events.
+    pub fn current_sample_idx(&self) -> u32 {
+        let guard = self.callback_time_elapsed.lock().unwrap();
+        let samples_exact = guard.elapsed().as_secs_f64()
+            * unsafe { SAMPLE_RATE };
+
+        samples_exact.round() as u32 % BUFFER_SIZE as u32
     }
 }

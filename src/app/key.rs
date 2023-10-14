@@ -40,13 +40,14 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         // get the midi note value from octave and key note
         let note = octave.starting_midi_note() + note;
 
+        // get the approximate number of samples which have elapsed in
+        // this buffer
+        let samples_elapsed = model.current_sample_idx();
+
         // push note event to the note handler
         let mut note_handler = model.note_handler.lock().unwrap();
-        note_handler.push_event(NoteEvent::NoteOn {
-            note,
-            // TODO: add proper timing here
-            timing: 0,
-        });
+        note_handler
+            .push_event(NoteEvent::NoteOn { note, timing: samples_elapsed });
     }
 }
 
@@ -66,13 +67,14 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
         // get the midi note value from octave and key note
         let note = octave.starting_midi_note() + note;
 
+        // get the approximate number of samples which have elapsed in
+        // this buffer
+        let samples_elapsed = model.current_sample_idx();
+
         // push note event to the note handler
         let mut note_handler = model.note_handler.lock().unwrap();
-        note_handler.push_event(NoteEvent::NoteOff {
-            note,
-            // TODO: add proper timing here
-            timing: 0,
-        });
+        note_handler
+            .push_event(NoteEvent::NoteOff { note, timing: samples_elapsed });
     }
 }
 
