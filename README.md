@@ -4,6 +4,8 @@
 
 ### Fixes
 - **PRIORITY** `AdsrEnvelope` doesn't respond when its attack time is `0.0`
+- **PRIORITY** Lowpass biquad filter doesn't seem to process properly in the
+`AudioModel` struct (`process_filters()`) method
 - **PRIORITY** Fix glissando issue (ramp problem it seems, related to above?)
 - Convert the spectrogram to nannou from egui
     - Mesh implementation
