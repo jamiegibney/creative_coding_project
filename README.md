@@ -1,18 +1,15 @@
 # TODO
 
-- Get spectrogram working with nannou. See `nannou/examples/draw/draw_mesh.rs` for an example of a mesh being created in nannou.
+- Get spectrogram working with nannou. See `nannou/examples/draw/draw_mesh.rs` for an example of a mesh being created with nannou.
 
 ### Fixes
 - **PRIORITY** `AdsrEnvelope` doesn't respond when its attack time is `0.0`
-- **PRIORITY** Lowpass biquad filter doesn't seem to process properly in the
-`AudioModel` struct (`process_filters()`) method
-- **PRIORITY** Fix glissando issue (ramp problem it seems, related to above?)
+- **PRIORITY** Lowpass biquad filter doesn't seem to process properly in the `AudioModel` struct (`process_filters()`) method
 - Convert the spectrogram to nannou from egui
     - Mesh implementation
     - Gradient implementation
 
 ### Implementation
-- **PRIORITY** implement note event timing (for sample-accurate note events)
 - Implement compression
 - Distortion
     - Implement downsampling
