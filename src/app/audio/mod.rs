@@ -102,16 +102,16 @@ impl AudioModel {
         let mut waveshaper = [Waveshaper::new(), Waveshaper::new()];
 
         for ws in &mut waveshaper {
-            ws.set_curve(1.0);
-            ws.set_asymmetric(true);
-            ws.set_drive(1.0);
+            ws.set_curve(0.8);
+            ws.set_asymmetric(false);
+            ws.set_drive(0.5);
             ws.set_xfer_function(xfer::s_curve_round);
         }
 
         let note_handler_ref = context.note_handler_ref();
 
         let mut amp_envelope = AdsrEnvelope::new();
-        amp_envelope.set_parameters(300.0, 300.0, 1.0, 1000.0);
+        amp_envelope.set_parameters(10.0, 300.0, 1.0, 10.0);
 
         Self {
             callback_time_elapsed: Arc::new(Mutex::new(
@@ -183,7 +183,7 @@ impl AudioModel {
         let params = BiquadParams {
             freq: 440.0,
             gain: 0.0,
-            q: 12.0,
+            q: 50.0,
             filter_type: FilterType::Lowpass,
         };
 

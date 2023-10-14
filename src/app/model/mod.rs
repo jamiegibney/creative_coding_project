@@ -128,6 +128,8 @@ fn build_audio_system() -> AudioSystem {
     let audio_context = AudioContext::build(Arc::clone(&note_handler));
     let mut audio_model = AudioModel::new(audio_context);
 
+    audio_model.initialize();
+
     // obtain audio message channels
     let senders = audio_model.message_channels();
 

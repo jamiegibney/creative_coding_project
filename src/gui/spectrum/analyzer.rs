@@ -1,8 +1,8 @@
 use super::*;
-use crate::dsp::*;
 use crate::{gui::rdp::decimate_points, prelude::*};
 use nannou::prelude::*;
-use std::ptr::{addr_of, copy};
+// use nannou::color::rgb;
+use std::ptr::{addr_of, copy, copy_nonoverlapping};
 // use std::sync::{Arc, Mutex};
 
 const CURVE_RESOLUTION: usize = WINDOW_SIZE.x as usize;
@@ -62,35 +62,56 @@ impl SpectrumAnalyzer {
         }
     }
 
-    pub fn draw(&mut self, draw: &Draw) {
-        self.compute_spectrum();
-        self.draw_line(draw);
-        // self.draw_mesh(draw);
+    /// Draws the spectrum. If `None` is passed to either `line_color` or `mesh_color`, those
+    /// parts of the spectum will not be computed, saving processing time. If both are `None`
+    /// (for some reason), then the spectrum visual is not computed.
+    pub fn draw(
+        &mut self,
+        draw: &Draw,
+        line_color: Option<Rgba>,
+        mesh_color: Option<Rgba>,
+    ) {
+        if line_color.is_some() || mesh_color.is_some() {
+            self.compute_spectrum();
+        }
+        if let Some(color) = mesh_color {
+            self.draw_mesh(draw, color);
+        }
+        if let Some(color) = line_color {
+            self.draw_line(draw, color);
+        }
     }
 
-    fn draw_line(&mut self, draw: &Draw) {
-        draw.polyline().weight(1.5).points_colored(
-            self.spectrum_line.iter().map(|x| (x.as_f32(), WHITE)),
+    fn draw_line(&mut self, draw: &Draw, color: Rgba) {
+        draw.polyline().weight(2.0).points_colored(
+            self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
         );
     }
 
-    fn draw_mesh(&mut self, draw: &Draw) {
-        let start_point =
-            dvec2(-5.0, gain_to_ypos(MINUS_INFINITY_DB, self.height()));
-        let end_point = dvec2(self.width() + 50.0, 3000.0);
+    fn draw_mesh(&mut self, draw: &Draw, color: Rgba) {
+        // let mut points = Vec::with_capacity(self.spectrum_line.len() + 2);
+        let start_point = dvec2(
+            -self.width(),
+            gain_to_ypos(MINUS_INFINITY_DB, self.height()),
+        );
+        let end_point = dvec2(self.width() + 50.0, -3000.0);
+        // points.push(start_point);
+        // points.append(&mut self.spectrum_line.clone());
+        // points.push(end_point);
 
-        let mut points = Vec::with_capacity(self.spectrum_line.len() + 2);
+        let mut points = vec![dvec2(0.0, 0.0); self.spectrum_line.len() + 2];
 
         unsafe {
-            copy(addr_of!(start_point), points.as_mut_ptr(), 1);
-            copy(
+            let ptr = points.as_mut_ptr();
+            copy_nonoverlapping(addr_of!(start_point), ptr, 1);
+            copy_nonoverlapping(
                 self.spectrum_line.as_ptr(),
-                points.as_mut_ptr().add(1),
+                ptr.add(1),
                 self.spectrum_line.len(),
             );
-            copy(
+            copy_nonoverlapping(
                 addr_of!(end_point),
-                points.as_mut_ptr().add(self.spectrum_line.len() + 1),
+                ptr.add(self.spectrum_line.len() + 1),
                 1,
             );
         }
@@ -98,12 +119,10 @@ impl SpectrumAnalyzer {
         let indices =
             earcutr::earcut(&interleave_dvec2_to_f64(&points), &[], 2).unwrap();
 
-        draw.mesh()
-            .indexed_colored(
-                points.iter().map(|x| (x.extend(0.0).as_f32(), GREY)),
-                indices,
-            )
-            .finish();
+        draw.mesh().indexed_colored(
+            points.iter().map(|x| (x.extend(0.0).as_f32(), color)),
+            indices,
+        );
     }
 
     fn compute_spectrum(&mut self) {
@@ -126,7 +145,7 @@ impl SpectrumAnalyzer {
 
             let slice = &mags[range_min..=range_max];
 
-            // TODO: so much recalculation going on here which could be cached!
+            // TODO: optimisation: so much recalculation going on here which could be cached!
             let mut mag = cubic_catmull_db(slice, interp);
 
             if mag <= MINUS_INFINITY_DB {
@@ -136,8 +155,8 @@ impl SpectrumAnalyzer {
             *pt = [x, mag];
         }
 
+        // TODO: optimisation: could this mutate a buffer in-place?
         // decimation removes about 1/3 of the total points here.
-        // TODO: could the decimate_points() function mutate a buffer in-place?
         self.spectrum_line = decimate_points(&self.interpolated, 0.1)
             .iter()
             .map(|i| {
