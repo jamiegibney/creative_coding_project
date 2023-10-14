@@ -22,3 +22,4 @@ pub use filters::{
 };
 pub use ring_buffer::RingBuffer;
 pub use synthesis::Generator;
+pub use spectral::StftHelper;
