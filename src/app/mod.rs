@@ -16,7 +16,7 @@ pub use model::Model;
 
 /// Runs the app via Nannou.
 pub fn run_app() {
-    nannou::app(model::Model::new)
+    nannou::app(model::Model::build)
         .loop_mode(RefreshSync)
         .update(update)
         .run();

@@ -29,7 +29,8 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(app: &App) -> Self {
+    /// Builds the app's `Model`.
+    pub fn build(app: &App) -> Self {
         let (audio_stream, audio_senders, audio_callback_timer, note_handler) =
             build_audio_system();
 
