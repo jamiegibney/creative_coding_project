@@ -77,9 +77,14 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     drop(note_handler_guard);
 
-    if let Some(pre_spectrum) = audio.pre_spectrum.as_mut() {
-        pre_spectrum.compute(buffer);
-    }
+    // copy the buffer pre-fx to the cache for spectrum processing
+    audio.pre_buffer_cache.try_lock().map_or((), |mut guard| {
+        for i in 0..buffer.len() {
+            guard[i] = buffer[i];
+        }
+    });
+
+    audio.compute_pre_spectrum();
 
     // audio effects/processors
     for output in buffer.frames_mut() {
@@ -97,9 +102,9 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         output[1] = output[1].clamp(-1.0, 1.0);
     }
 
-    if let Some(post_spectrum) = audio.post_spectrum.as_mut() {
-        post_spectrum.compute(buffer);
-    }
+    // if let Some(post_spectrum) = audio.post_spectrum.as_mut() {
+        // post_spectrum.compute(buffer);
+    // }
 
     // the chance of not being able to acquire the lock is very small here,
     // but because this is the audio thread, it's preferable to not block at

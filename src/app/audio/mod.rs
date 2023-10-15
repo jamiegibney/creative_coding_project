@@ -1,14 +1,16 @@
 use super::*;
 use crate::dsp::*;
 use crate::gui::spectrum::*;
+use nannou_audio::Buffer;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
+use thread_pool::ThreadPool;
 
 // pub mod buffer;
 pub mod context;
+pub mod model;
 pub mod process;
 pub mod voice;
-pub mod model;
 
 pub use context::AudioContext;
 pub use process::process;
@@ -39,8 +41,11 @@ pub struct AudioModel {
     pub gain: Smoother<f64>,
     pub amp_envelope: AdsrEnvelope,
 
-    pub pre_spectrum: Option<SpectrumInput>,
+    pub pre_spectrum: Arc<Mutex<Option<SpectrumInput>>>,
+    pub pre_buffer_cache: Arc<Mutex<Vec<f64>>>,
     pub post_spectrum: Option<SpectrumInput>,
+    pub post_buffer_cache: Vec<f64>,
+    spectrum_thread_pool: ThreadPool,
 
     pub filter_lp: [BiquadFilter; 2],
     pub filter_hp: [BiquadFilter; 2],
@@ -121,8 +126,15 @@ impl AudioModel {
             context,
             gain: Smoother::new(1.0, 0.1),
 
-            pre_spectrum: None,
+            pre_spectrum: Arc::new(Mutex::new(None)),
+            pre_buffer_cache: Arc::new(Mutex::new(vec![
+                0.0;
+                BUFFER_SIZE
+                    * NUM_CHANNELS
+            ])),
             post_spectrum: None,
+            post_buffer_cache: Vec::with_capacity(BUFFER_SIZE * NUM_CHANNELS),
+            spectrum_thread_pool: ThreadPool::build(3).unwrap(),
 
             filter_lp: [biquad.clone(), biquad.clone()],
             filter_hp: [biquad.clone(), biquad.clone()],
@@ -166,7 +178,11 @@ impl AudioModel {
         let (pre_in, pre_out) = SpectrumInput::new(2);
         let (post_in, post_out) = SpectrumInput::new(2);
 
-        self.pre_spectrum = Some(pre_in);
+        let mut guard = self.pre_spectrum.lock().unwrap();
+        *guard = Some(pre_in);
+        drop(guard);
+
+        // self.pre_spectrum = self.pre_spectrum.lock();
         self.post_spectrum = Some(post_in);
 
         (pre_out, post_out)
@@ -176,6 +192,18 @@ impl AudioModel {
     /// the channel senders used to communicate with the audio thread.
     pub fn initialize(&mut self) {
         self.set_filters();
+    }
+
+    pub fn compute_pre_spectrum(&mut self) {
+        let spectrum = Arc::clone(&self.pre_spectrum);
+        let buffer = Arc::clone(&self.pre_buffer_cache);
+
+        self.spectrum_thread_pool.execute(move || {
+            if let Some(spectrum) = spectrum.lock().unwrap().as_mut() {
+                let buf = buffer.lock().unwrap();
+                spectrum.compute(&buf);
+            }
+        });
     }
 
     /// Sets the initial state of the filters.

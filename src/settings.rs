@@ -47,3 +47,5 @@ pub const WINDOW_SIZE: V2 = V2 {
 
 // TODO this is constant for now, but should be variable later.
 pub const BUFFER_SIZE: usize = 256;
+
+pub const NUM_CHANNELS: usize = 2;

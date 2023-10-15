@@ -142,7 +142,7 @@ fn build_audio_system() -> AudioSystem {
     let stream = audio_host
         .new_output_stream(audio_model)
         .render(audio::process)
-        .channels(2)
+        .channels(NUM_CHANNELS)
         .sample_rate(unsafe { SAMPLE_RATE } as u32)
         .frames_per_buffer(BUFFER_SIZE)
         .build()

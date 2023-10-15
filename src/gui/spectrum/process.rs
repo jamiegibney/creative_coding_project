@@ -121,13 +121,13 @@ impl SpectrumInput {
         self.release_weight = minus_12_db.powf(release_samples.recip());
     }
 
+
     /// Computes the spectral information for an audio buffer and sends
     /// it to the output spectrum pair.
     #[allow(clippy::missing_panics_doc)] // this function should not panic
-    pub fn compute(&mut self, buffer: &mut Buffer<f64>) {
-        // LATENCY GOES HERE IF INCLUDED IN THE PROCESSOR
+    pub fn compute(&mut self, buffer: &[f64]) {
         self.stft.process_forward_only(
-            buffer,
+            &buffer,
             SPECTRUM_OVERLAP_FACTOR,
             |_, real_buffer| {
                 // apply the window function

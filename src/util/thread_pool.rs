@@ -7,7 +7,7 @@ use std::{
 use PoolCreationError as PCE;
 
 type ReceiverArc = Arc<Mutex<mpsc::Receiver<Job>>>;
-type Job = Box<dyn FnOnce() + Send + 'static>;
+type Job = Box<dyn FnMut() + Send + 'static>;
 
 #[derive(Debug)]
 pub struct ThreadPool {
@@ -38,9 +38,13 @@ impl Worker {
                     break;
                 }
 
-                let job = msg.unwrap();
+                // println!("Thread #{id} started processing");
+
+                let mut job = msg.unwrap();
                 job();
             }
+
+            // println!("Thread #{id} has finished");
         })?;
 
         Ok(Self { id, thread: Some(thread) })
@@ -75,11 +79,11 @@ impl ThreadPool {
     }
 
     pub fn execute<F>(&self, f: F)
-        where
-        F: FnOnce() + Send + 'static,
-        {
-            self.sender.as_ref().unwrap().send(Box::new(f)).unwrap();
-        }
+    where
+        F: FnMut() + Send + 'static,
+    {
+        self.sender.as_ref().unwrap().send(Box::new(f)).unwrap();
+    }
 }
 
 impl Drop for ThreadPool {
@@ -88,6 +92,7 @@ impl Drop for ThreadPool {
 
         for worker in &mut self.workers {
             worker.join();
+            // println!("Thread #{} has joined", worker.id);
         }
     }
 }

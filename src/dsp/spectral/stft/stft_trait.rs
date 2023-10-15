@@ -130,3 +130,25 @@ impl StftInputMut for [&mut [f64]] {
         }
     }
 }
+
+impl StftInput for &[f64] {
+    #[inline]
+    fn num_samples(&self) -> usize {
+        self.len()
+    }
+
+    #[inline]
+    fn num_channels(&self) -> usize {
+        2
+    }
+
+    #[inline]
+    unsafe fn get_sample_unchecked(
+        &self,
+        channel_idx: usize,
+        sample_idx: usize,
+    ) -> f64 {
+        // the samples of this buffer are interleaved, hence channel * 2
+        unsafe { *self.get_unchecked(sample_idx * 2 + channel_idx) }
+    }
+}
