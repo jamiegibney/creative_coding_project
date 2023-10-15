@@ -43,8 +43,8 @@ pub struct AudioModel {
 
     pub pre_spectrum: Arc<Mutex<Option<SpectrumInput>>>,
     pub pre_buffer_cache: Arc<Mutex<Vec<f64>>>,
-    pub post_spectrum: Option<SpectrumInput>,
-    pub post_buffer_cache: Vec<f64>,
+    pub post_spectrum: Arc<Mutex<Option<SpectrumInput>>>,
+    pub post_buffer_cache: Arc<Mutex<Vec<f64>>>,
     spectrum_thread_pool: ThreadPool,
 
     pub filter_lp: [BiquadFilter; 2],
@@ -132,8 +132,12 @@ impl AudioModel {
                 BUFFER_SIZE
                     * NUM_CHANNELS
             ])),
-            post_spectrum: None,
-            post_buffer_cache: Vec::with_capacity(BUFFER_SIZE * NUM_CHANNELS),
+            post_spectrum: Arc::new(Mutex::new(None)),
+            post_buffer_cache: Arc::new(Mutex::new(vec![
+                0.0;
+                BUFFER_SIZE
+                    * NUM_CHANNELS
+            ])),
             spectrum_thread_pool: ThreadPool::build(3).unwrap(),
 
             filter_lp: [biquad.clone(), biquad.clone()],
@@ -182,8 +186,9 @@ impl AudioModel {
         *guard = Some(pre_in);
         drop(guard);
 
-        // self.pre_spectrum = self.pre_spectrum.lock();
-        self.post_spectrum = Some(post_in);
+        let mut guard = self.post_spectrum.lock().unwrap();
+        *guard = Some(post_in);
+        drop(guard);
 
         (pre_out, post_out)
     }
@@ -197,6 +202,18 @@ impl AudioModel {
     pub fn compute_pre_spectrum(&mut self) {
         let spectrum = Arc::clone(&self.pre_spectrum);
         let buffer = Arc::clone(&self.pre_buffer_cache);
+
+        self.spectrum_thread_pool.execute(move || {
+            if let Some(spectrum) = spectrum.lock().unwrap().as_mut() {
+                let buf = buffer.lock().unwrap();
+                spectrum.compute(&buf);
+            }
+        });
+    }
+
+    pub fn compute_post_spectrum(&mut self) {
+        let spectrum = Arc::clone(&self.post_spectrum);
+        let buffer = Arc::clone(&self.post_buffer_cache);
 
         self.spectrum_thread_pool.execute(move || {
             if let Some(spectrum) = spectrum.lock().unwrap().as_mut() {

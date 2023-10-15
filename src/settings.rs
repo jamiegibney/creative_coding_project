@@ -49,3 +49,5 @@ pub const WINDOW_SIZE: V2 = V2 {
 pub const BUFFER_SIZE: usize = 256;
 
 pub const NUM_CHANNELS: usize = 2;
+
+pub const PRINT_DSP_LOAD: bool = true;

@@ -134,12 +134,12 @@ impl StftInputMut for [&mut [f64]] {
 impl StftInput for &[f64] {
     #[inline]
     fn num_samples(&self) -> usize {
-        self.len()
+        self.len() / NUM_CHANNELS
     }
 
     #[inline]
     fn num_channels(&self) -> usize {
-        2
+        NUM_CHANNELS
     }
 
     #[inline]

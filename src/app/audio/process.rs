@@ -8,6 +8,8 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // remaining in buffer}, `MAX_BLOCK_SIZE`, {next event index - block start
     // index}).
 
+    let start = std::time::Instant::now();
+
     buffer.fill(0.0);
 
     let AudioModel { context, voice_handler, .. } = audio;
@@ -102,9 +104,19 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         output[1] = output[1].clamp(-1.0, 1.0);
     }
 
-    // if let Some(post_spectrum) = audio.post_spectrum.as_mut() {
-        // post_spectrum.compute(buffer);
-    // }
+    audio.post_buffer_cache.try_lock().map_or((), |mut guard| {
+        for i in 0..buffer.len() {
+            guard[i] = buffer[i];
+        }
+    });
+
+    audio.compute_post_spectrum();
+
+    if PRINT_DSP_LOAD {
+        let total_buf_time = sample_length() * BUFFER_SIZE as f64;
+        let elapsed_ms = start.elapsed().as_secs_f64();
+        println!("dsp load: {:.2}%", elapsed_ms / total_buf_time * 100.0);
+    }
 
     // the chance of not being able to acquire the lock is very small here,
     // but because this is the audio thread, it's preferable to not block at
