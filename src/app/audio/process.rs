@@ -2,15 +2,13 @@ use super::*;
 
 /// The main audio processing callback.
 pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+    let dsp_start = std::time::Instant::now();
+
     // This works by breaking down the buffer into smaller discrete blocks.
     // For each block, it first processes incoming note events, which are
     // obtained from the `NoteHandler`. The block size is set to min({samples
     // remaining in buffer}, `MAX_BLOCK_SIZE`, {next event index - block start
     // index}).
-
-    let start = std::time::Instant::now();
-
-    buffer.fill(0.0);
 
     let AudioModel { context, voice_handler, .. } = audio;
     let buffer_len = buffer.len_frames();
@@ -20,6 +18,18 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     let mut note_handler_guard = context.note_handler.try_lock().ok();
     let mut next_event =
         note_handler_guard.as_mut().and_then(|g| g.next_event());
+
+    // if there is no note event, no active voice, and there was no audio
+    // processed in the last frame, most of the signal processing can be skipped.
+    if next_event.is_none()
+        && !voice_handler.is_voice_active()
+        && !audio.is_processing
+    {
+        drop(note_handler_guard);
+        print_dsp_load(audio, dsp_start);
+        callback_timer(audio);
+        return;
+    }
 
     let mut block_start: usize = 0;
     let mut block_end = MAX_BLOCK_SIZE.min(buffer_len);
@@ -79,45 +89,64 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     drop(note_handler_guard);
 
-    // copy the buffer pre-fx to the cache for spectrum processing
+    compute_pre_fx_spectrum(audio, buffer);
+
+    // audio effects/processors
+    process_fx(audio, buffer);
+
+    compute_post_fx_spectrum(audio, buffer);
+
+    print_dsp_load(audio, dsp_start);
+    callback_timer(audio);
+}
+
+/// Captures the audio buffer pre-FX, then sends it to a separate thread to
+/// compute a spectrum.
+///
+/// Paired with the below `compute_post_spectrum()` function, processing the
+/// audio spectra on separate threads **enormously** reduces the DSP load.
+/// Some quick benchmarking showed a load reduction of around *one order of
+/// magnitude* on the audio thread. Vroom.
+fn compute_pre_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+    // copy the buffer pre-fx to the audio model
     audio.pre_buffer_cache.try_lock().map_or((), |mut guard| {
         for i in 0..buffer.len() {
             guard[i] = buffer[i];
         }
     });
 
+    // then compute the pre-fx spectrum on a separate thread
     audio.compute_pre_spectrum();
+}
 
-    // audio effects/processors
-    for output in buffer.frames_mut() {
-        let (l, r) = (output[0], output[1]);
-        let (l, r) = audio.process_filters((l, r));
-        let (l, r) = audio.process_comb_filters((l, r));
-        let (l, r) = audio.process_distortion((l, r));
-
-        output[0] = l;
-        output[1] = r;
-    }
-
-    for output in buffer.frames_mut() {
-        output[0] = output[0].clamp(-1.0, 1.0);
-        output[1] = output[1].clamp(-1.0, 1.0);
-    }
-
+/// Captures the audio buffer post-FX, then sends it to a separate thread to
+/// compute a spectrum.
+fn compute_post_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+    // copy the buffer post-fx to the audio model
     audio.post_buffer_cache.try_lock().map_or((), |mut guard| {
         for i in 0..buffer.len() {
             guard[i] = buffer[i];
         }
     });
 
+    // then compute the post-fx spectrum on a separate thread
     audio.compute_post_spectrum();
+}
 
+fn print_dsp_load(audio: &mut AudioModel, start_time: std::time::Instant) {
     if PRINT_DSP_LOAD {
         let total_buf_time = sample_length() * BUFFER_SIZE as f64;
-        let elapsed_ms = start.elapsed().as_secs_f64();
-        println!("dsp load: {:.2}%", elapsed_ms / total_buf_time * 100.0);
-    }
+        audio.average_load[audio.avr_pos] = start_time.elapsed().as_secs_f64();
 
+        let avr = audio.average_load.iter().sum::<f64>()
+            / DSP_LOAD_AVERAGING_SAMPLES as f64;
+        println!("DSP load: {:.2}%", avr / total_buf_time * 100.0);
+
+        audio.avr_pos = (audio.avr_pos + 1) % DSP_LOAD_AVERAGING_SAMPLES;
+    }
+}
+
+fn callback_timer(audio: &mut AudioModel) {
     // the chance of not being able to acquire the lock is very small here,
     // but because this is the audio thread, it's preferable to not block at
     // all. so if the lock can't be obtained, then the callback_time_elapsed
@@ -131,6 +160,38 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                 *guard = std::time::Instant::now();
             }
         });
+}
+
+/// Processes all audio FX.
+fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+    // audio effects/processors
+    for output in buffer.frames_mut() {
+        let (l, r) = (output[0], output[1]);
+        let (l, r) = audio.process_filters((l, r));
+        let (l, r) = audio.process_comb_filters((l, r));
+        let (l, r) = audio.process_distortion((l, r));
+
+        output[0] = l;
+        output[1] = r;
+    }
+
+    let mut is_processing = false;
+
+    for output in buffer.frames_mut() {
+        output[0] = output[0].clamp(-1.0, 1.0);
+        output[1] = output[1].clamp(-1.0, 1.0);
+
+        // this seems to be a better level to compare against than f64::EPSILON
+        let signal_epsilon = MINUS_INFINITY_GAIN / 5.0;
+
+        // used to decide whether to skip DSP processing in the next block or not.
+        if output[0].abs() > signal_epsilon || output[1].abs() > signal_epsilon
+        {
+            is_processing = true;
+        }
+    }
+
+    audio.is_processing = is_processing;
 }
 
 /* fn process_old(audio: &mut AudioModel, output: &mut Buffer) {
@@ -151,8 +212,8 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         let output = audio.process_distortion(output); // waveshaping
         let output = audio.process_comb_filters(output); // main comb filters, which contain a
                                                          // peak, highpass, and comb filter
-        let output = audio.process_post_peak_filters(output); // wide peak filtering
 
+        let output = audio.process_post_peak_filters(output); // wide peak filtering
         f[0] = output.0 as f32;
         f[1] = output.1 as f32;
     }

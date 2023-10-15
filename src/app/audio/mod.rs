@@ -16,6 +16,8 @@ pub use context::AudioContext;
 pub use process::process;
 pub use voice::*;
 
+pub const DSP_LOAD_AVERAGING_SAMPLES: usize = 64;
+
 /// A struct containing the channel senders returned by
 /// `AudioModel::initialize()`.
 ///
@@ -35,16 +37,35 @@ pub struct AudioModel {
     /// and then left for nearly two buffers. As a result, this is set up to
     /// track every *other* callback, so only resets every second call. In
     /// other words, it resets after `BUFFER_SIZE * 2` samples (approximately).
+    ///
+    /// This is *not* very accurate, but it is more than adequate for capturing
+    /// note events. Any discrepancies in timing are not noticeable.
     pub callback_time_elapsed: Arc<Mutex<std::time::Instant>>,
+    /// A `struct` for handling polyphonic voices.
     pub voice_handler: VoiceHandler,
+    /// A general audio context. Holds a reference to the input `NoteHandler`.
     pub context: AudioContext,
+    /// Master gain level.
     pub gain: Smoother<f64>,
+    /// Amplitude envelope which is cloned to each voice upon spawning.
     pub amp_envelope: AdsrEnvelope,
 
+    /// The pre-FX spectrum processor. This will have a respective `SpectrumOutput`
+    /// where the spectral data may be received. Held in an `Arc<Mutex<T>>` so as
+    /// to be processed on a separate thread.
     pub pre_spectrum: Arc<Mutex<Option<SpectrumInput>>>,
+    /// A buffer for storing the main audio buffer pre-FX. The audio thread copies
+    /// its buffer to this cache, and then requests that the spectrum be processed.
     pub pre_buffer_cache: Arc<Mutex<Vec<f64>>>,
+    /// The post-FX spectrum processor. This will have a respective `SpectrumOutput`
+    /// where the spectral data may be received. Held in an `Arc<Mutex<T>>` so as
+    /// to be processed on a separate thread.
     pub post_spectrum: Arc<Mutex<Option<SpectrumInput>>>,
+    /// A buffer for storing the main audio buffer post-FX. The audio thread copies
+    /// its buffer to this cache, and then requests that the spectrum be processed.
     pub post_buffer_cache: Arc<Mutex<Vec<f64>>>,
+    /// A thread pool for processing both the pre- and post-FX spectra. Holds two
+    /// threads which are blocked until they receive a closure to process.
     spectrum_thread_pool: ThreadPool,
 
     pub filter_lp: [BiquadFilter; 2],
@@ -61,6 +82,10 @@ pub struct AudioModel {
 
     pub glide_time: f64,
     pub volume: f64,
+
+    pub average_load: Vec<f64>,
+    pub avr_pos: usize,
+    pub is_processing: bool,
 }
 
 impl AudioModel {
@@ -138,7 +163,7 @@ impl AudioModel {
                 BUFFER_SIZE
                     * NUM_CHANNELS
             ])),
-            spectrum_thread_pool: ThreadPool::build(3).unwrap(),
+            spectrum_thread_pool: ThreadPool::build(2).unwrap(),
 
             filter_lp: [biquad.clone(), biquad.clone()],
             filter_hp: [biquad.clone(), biquad.clone()],
@@ -155,9 +180,13 @@ impl AudioModel {
             volume: db_to_level(-24.0),
 
             amp_envelope,
-
             glide_time,
-        }
+
+            average_load: vec![0.0; DSP_LOAD_AVERAGING_SAMPLES],
+            avr_pos: 0,
+
+            is_processing: false,
+       }
     }
 
     /// Returns the `AudioModel`'s channel senders.

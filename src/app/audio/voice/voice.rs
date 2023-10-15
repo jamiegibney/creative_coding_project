@@ -166,6 +166,11 @@ impl VoiceHandler {
         }
     }
 
+    /// Returns whether there is at least one voice active or not.
+    pub fn is_voice_active(&self) -> bool {
+        self.voices.iter().any(|v| v.is_some())
+    }
+
     fn next_voice_id(&mut self) -> u64 {
         self.id_counter = self.id_counter.wrapping_add(1);
         self.id_counter
