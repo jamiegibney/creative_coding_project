@@ -9,16 +9,12 @@ pub enum NoteEvent {
         note: u8,
         /// The sample offset from the start of the block to the start of the note.
         timing: u32,
-        // TODO: needed?
-        // id: Option<i32>,
     },
     NoteOff {
         /// The MIDI note value of the note.
         note: u8,
         /// The sample offset from the start of the block to the start of the note.
         timing: u32,
-        // TODO: needed?
-        // id: Option<i32>,
     },
 }
 

@@ -5,9 +5,6 @@ use std::f64::consts::{FRAC_1_SQRT_2, PI, TAU};
 use util::db_to_level;
 use FilterType as FT;
 
-// TODO see if the wikipedia biquad implementation works any better?
-// https://en.wikipedia.org/wiki/Digital_biquad_filter#Transposed_direct_form_2
-
 #[derive(Debug, Clone, Copy)]
 struct Coefs {
     a0: f64,

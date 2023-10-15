@@ -7,11 +7,13 @@ pub mod interp;
 pub mod smoothing;
 pub mod window;
 pub mod xfer;
+pub mod thread_pool;
 
 pub use interp::InterpolationType as InterpType;
 pub use interp::{ilerp, lerp};
 pub use smoothing::*;
 pub use xfer::SmoothingType;
+pub use thread_pool::ThreadPool;
 
 /// Calculates the frequency value of the provided MIDI note value.
 pub fn note_to_freq(note_value: f64) -> f64 {
