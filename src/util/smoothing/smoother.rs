@@ -1,3 +1,4 @@
+#![allow(clippy::should_implement_trait)]
 use super::ramp::Ramp;
 use super::*;
 use crate::prelude::*;
@@ -122,6 +123,10 @@ impl<T: Smoothable> Smoother<T> {
         self.start_value = T::from_f64(0.0);
         self.target_value = T::from_f64(0.0);
         self.current_value = T::from_f64(0.0);
+    }
+
+    pub fn reset_to(&mut self, value: T) {
+        self.ramp.reset_to(value.to_f64());
     }
 
     /// Resets the smoothing period of the `Smoother` in milliseconds.

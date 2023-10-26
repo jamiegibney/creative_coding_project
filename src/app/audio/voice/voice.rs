@@ -44,6 +44,7 @@ impl Voice {
 }
 
 /// A struct to handle all voices, i.e. the spawning and termination of voices.
+#[derive(Debug)]
 pub struct VoiceHandler {
     /// A reference to the note handler to obtain note events.
     pub note_handler_ref: Arc<Mutex<NoteHandler>>,

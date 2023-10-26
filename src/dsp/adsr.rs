@@ -213,6 +213,11 @@ impl AdsrEnvelope {
         self.stage
     }
 
+    /// Returns the current value of the envelope.
+    pub fn current_value(&self) -> f64 {
+        self.ramp.current_value()
+    }
+
     /// Returns whether the envelope is in an idle stage or not.
     pub fn is_idle(&self) -> bool {
         matches!(self.stage, AS::Idle)
@@ -259,6 +264,13 @@ impl AdsrEnvelope {
         // target attack level, attack time ramping
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.attack_curve));
+        self.ramp
+            .set_start_value(if self.attack_time_ms <= f64::EPSILON {
+                self.attack_level
+            }
+            else {
+                0.0
+            });
         self.ramp.set_target_value(self.attack_level);
         self.ramp.set_smoothing_period(self.attack_time_ms);
         self.stage = AS::Attack;
@@ -270,6 +282,7 @@ impl AdsrEnvelope {
         self.ramp
             .set_smoothing_type(SmoothingType::CurveNormal(self.decay_curve));
         self.ramp.set_target_value(self.sustain_level);
+        self.ramp.set_start_value(self.attack_level);
         self.ramp.set_smoothing_period(self.decay_time_ms);
         self.stage = AS::Decay;
     }

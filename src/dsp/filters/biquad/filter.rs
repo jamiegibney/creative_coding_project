@@ -2,7 +2,7 @@
 use super::*;
 use crate::{prelude::SAMPLE_RATE, util};
 use std::f64::consts::{FRAC_1_SQRT_2, PI, TAU};
-use util::db_to_level;
+use util::{db_to_level, level_to_db};
 use FilterType as FT;
 
 #[derive(Debug, Clone, Copy)]
@@ -10,14 +10,17 @@ struct Coefs {
     a0: f64,
     a1: f64,
     a2: f64,
+    // b0 is always normalised to 1 in these implementations, and is not
+    // used for processing the filter's output.
+    b0: f64,
     b1: f64,
     b2: f64,
 }
 
 impl Coefs {
+    /// A coefficient state which leaves the input signal totally unaffected.
     fn identity() -> Self {
-        // This state can be used to leave the input signal totally unaffected.
-        Self { a0: 1.0, a1: 0.0, a2: 0.0, b1: 0.0, b2: 0.0 }
+        Self { a0: 1.0, a1: 0.0, a2: 0.0, b0: 1.0, b1: 0.0, b2: 0.0 }
     }
 }
 
@@ -70,10 +73,11 @@ impl Default for BiquadParams {
 pub struct BiquadFilter {
     coefs: Coefs,
     delayed: (f64, f64),
-    needs_recompute: bool,
 
     params: BiquadParams,
     sample_rate: f64,
+
+    needs_recompute: bool,
 }
 
 impl Filter for BiquadFilter {
@@ -84,7 +88,7 @@ impl Filter for BiquadFilter {
     /// is computed — not the filter coefficients. In other words, this method
     /// will compute much faster if there is no parameter change between calls.
     fn process(&mut self, sample: f64) -> f64 {
-        let Coefs { a0, a1, a2, b1, b2 } = self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = self.coefs;
         let (z1, z2) = self.delayed;
 
         if self.needs_recompute {
@@ -92,13 +96,15 @@ impl Filter for BiquadFilter {
                 FT::Peak => self.set_peak_coefs(),
                 FT::Lowpass => self.set_lowpass_coefs(),
                 FT::Highpass => self.set_highpass_coefs(),
-                FT::Lowshelf | FT::Highshelf => {
-                    dbg!(
-                        self.params.filter_type,
-                        "shelf filters not yet implemented for biquads",
-                    );
-                    self.suspend();
-                }
+                // FT::Lowshelf | FT::Highshelf => {
+                //     dbg!(
+                //         self.params.filter_type,
+                //         "shelf filters not yet implemented for biquads",
+                //     );
+                //     self.suspend();
+                // }
+                FT::Lowshelf => self.set_lowshelf_coefs(),
+                FT::Highshelf => self.set_highshelf_coefs(),
                 FT::Bandpass => self.set_bandpass_coefs(),
                 FT::Notch => self.set_notch_coefs(),
                 FT::Allpass => self.set_allpass_coefs(),
@@ -117,6 +123,11 @@ impl Filter for BiquadFilter {
         output
     }
 }
+
+// note: the mul_add() method is used a lot here as it may improve performance on
+// some systems and only involves one rounding error. as the majority of the code 
+// for computing filter coefficients is designed to focus on correctness and 
+// performance, I opted to use mul_add() at the cost of some readability.
 
 impl BiquadFilter {
     /// Creates a new, initialised `Filter`, set to the default `Peak` filter type.
@@ -169,8 +180,7 @@ impl BiquadFilter {
     /// # Panics
     ///
     /// This function will panic in debug mode if the parameter's filter
-    /// and/or q value is negative.
-    /// It will also panic in debug mode if the frequency is over half of
+    /// and/or q value is negative, or if the frequency is over half of
     /// the sample rate.
     pub fn set_params(&mut self, params: &BiquadParams) {
         self.params = *params;
@@ -222,8 +232,8 @@ impl BiquadFilter {
     /// Returns the half-power points (-3 dB gain) of the bandpass/notch filter.
     ///
     /// # Panics
+    ///
     /// This function will panic if the current filter type is not `Bandpass` or `Notch`.
-    #[must_use]
     pub fn bp_notch_half_power_points(&self) -> (f64, f64) {
         debug_assert!(matches!(
             self.params.filter_type,
@@ -240,8 +250,8 @@ impl BiquadFilter {
     /// Returns the bandwidth of the bandpass/notch filter.
     ///
     /// # Panics
+    ///
     /// This function will panic if the current filter type is not `Bandpass` or `Notch`.
-    #[must_use]
     pub fn bp_notch_bandwidth(&self) -> f64 {
         debug_assert!(matches!(
             self.params.filter_type,
@@ -251,11 +261,40 @@ impl BiquadFilter {
         self.params.freq / self.params.q
     }
 
+    /// Returns the magnitude response at `freq` Hz in decibels.
+    ///
+    /// Method found in the comments at <https://www.musicdsp.org/en/latest/Analysis/186-frequency-response-from-biquad-coefficients.html>.
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug mode if `freq <= 0.0 || freq > sample_rate / 2`.
+    pub fn response_at(&self, freq: f64) -> f64 {
+        debug_assert!(0.0 < freq && freq <= self.sample_rate / 2.0);
+        let Coefs { a0, a1, a2, b0, b1, b2 } = self.coefs;
+
+        // sin²(w / 2)
+        let phi = (freq * 0.5).sin().powi(2);
+
+        // the part with the b coefficients
+        let a = (b0 + b1 + b2).powi(2);
+        let b = 4.0 * b1.mul_add(b2, b0.mul_add(b1, 4.0 * b0 * b2)) * phi;
+        let c = 16.0 * b0 * b2 * phi.powi(2);
+        let b_part = 10.0 * (a - b + c).log10();
+
+        // the part with the a coefficients
+        let a = (a0 + a1 + a2).powi(2);
+        let b = 4.0 * a1.mul_add(a2, a0.mul_add(a1, 4.0 * a0 * a2)) * phi;
+        let c = 16.0 * a0 * a2 * phi.powi(2);
+        let a_part = 10.0 * (a - b + c).log10();
+
+        b_part - a_part
+    }
+
     /* PRIVATE METHODS */
 
     /// Sets the filter coefficients for a peak filter.
     fn set_peak_coefs(&mut self) {
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
         let BiquadParams { freq, gain, q, filter_type } = self.params;
         let sr = &self.sample_rate;
 
@@ -274,7 +313,7 @@ impl BiquadFilter {
     /// Sets the filter coefficients for a lowpass filter.
     fn set_lowpass_coefs(&mut self) {
         self.lowpass_highpass_b_coefs();
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
 
         *a0 = 0.25 * (1.0 + *b1 + *b2);
         *a1 = 2.0 * *a0;
@@ -284,7 +323,7 @@ impl BiquadFilter {
     /// Sets the filter coefficients for a highpass filter.
     fn set_highpass_coefs(&mut self) {
         self.lowpass_highpass_b_coefs();
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
 
         *a0 = 0.25 * (1.0 - *b1 + *b2);
         *a1 = -2.0 * *a0;
@@ -293,7 +332,7 @@ impl BiquadFilter {
 
     /// Sets common coefficients for lowpass and highpass designs.
     fn lowpass_highpass_b_coefs(&mut self) {
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
         let BiquadParams { freq, q, filter_type, .. } = self.params;
         let sr = &self.sample_rate;
 
@@ -307,72 +346,68 @@ impl BiquadFilter {
 
     /// Sets the filter coefficients for a lowshelf filter.
     fn set_lowshelf_coefs(&mut self) {
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
-        let BiquadParams { freq, gain, .. } = self.params;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
+        let BiquadParams { freq, gain, q, .. } = self.params;
         let sr = self.sample_rate;
 
         let gain = db_to_level(gain);
-        let k2 = (PI * freq / sr).tan().powi(2);
-        let sqrt_2_g = (2.0 * gain).sqrt();
-        let sqrt_2_gk = sqrt_2_g * k2;
 
-        // TODO this is a total mess, can it be refactored for clarity?
-        if gain.is_sign_positive() {
-            // boost
-            let norm = 1.0 / (1.0 + sqrt_2_g + k2);
-            *a0 = gain.mul_add(k2, 1.0 + sqrt_2_gk) * norm;
-            *a1 = 2.0 * gain.mul_add(k2, -1.0) * norm;
-            *a2 = gain.mul_add(k2, 1.0 - sqrt_2_gk) * norm;
-            *b1 = 2.0 * (k2 - 1.0) * norm;
-            *b2 = (1.0 - sqrt_2_g + k2) * norm;
-        }
-        else {
-            // cut
-            let norm = 1.0 / gain.mul_add(k2, 1.0 + sqrt_2_gk);
-            *a0 = (1.0 + sqrt_2_g + k2) * norm;
-            *a1 = 2.0 * (k2 - 1.0) * norm;
-            *a2 = (1.0 - sqrt_2_g + k2) * norm;
-            *b1 = 2.0 * gain.mul_add(k2, -1.0) * norm;
-            *b2 = gain.mul_add(k2, 1.0 - sqrt_2_gk) * norm;
-        }
+        let phi = (TAU * freq) / sr;
+        let cos_phi = phi.cos();
+        let alpha = phi.sin() / (2.0 * q);
+        let sqrt_2_g_alpha = 2.0 * gain.sqrt() * alpha;
+
+        // equivalent to the "b0" coefficient, which here is used to normalise
+        // all the other coefs.
+        let norm = ((gain - 1.0).mul_add(cos_phi, gain + 1.0) + sqrt_2_g_alpha)
+            .recip();
+
+        *a0 = gain
+            * ((gain - 1.0).mul_add(-cos_phi, gain + 1.0) + sqrt_2_g_alpha)
+            * norm;
+        *a1 = 2.0 * gain * (gain + 1.0).mul_add(-cos_phi, gain - 1.0) * norm;
+        *a2 = gain
+            * ((gain - 1.0).mul_add(cos_phi, gain + 1.0) - sqrt_2_g_alpha)
+            * norm;
+        *b1 = -2.0 * (gain + 1.0).mul_add(cos_phi, gain - 1.0) * norm;
+        *b2 =
+            ((gain - 1.0).mul_add(cos_phi, gain + 1.0) - sqrt_2_g_alpha) * norm;
     }
 
     /// Sets the filter coefficients for a highshelf filter.
     fn set_highshelf_coefs(&mut self) {
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
-        let BiquadParams { freq, q, gain, .. } = self.params;
-        let sr = &self.sample_rate;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
+        let BiquadParams { freq, gain, q, .. } = self.params;
+        let sr = self.sample_rate;
 
         let gain = db_to_level(gain);
-        let k2 = (PI * freq / sr).tan().powi(2);
-        let sqrt_2_g = (2.0 * gain).sqrt();
-        let sqrt_2_gk = sqrt_2_g * k2;
 
-        // TODO this is also a total mess, can it be refactored for clarity?
-        if gain.is_sign_positive() {
-            // boost
-            let norm = 1.0 / (1.0 + sqrt_2_g + k2);
-            *a0 = (gain + sqrt_2_gk + k2) * norm;
-            *a1 = 2.0 * (k2 - gain) * norm;
-            *a2 = (gain - sqrt_2_gk + k2) * norm;
-            *b1 = 2.0 * (k2 - 1.0) * norm;
-            *b2 = (1.0 - sqrt_2_g + k2) * norm;
-        }
-        else {
-            // cut
-            let norm = 1.0 / (gain + sqrt_2_gk + k2);
-            *a0 = (1.0 + sqrt_2_g + k2) * norm;
-            *a1 = 2.0 * (k2 - 1.0) * norm;
-            *a2 = (1.0 - sqrt_2_g + k2) * norm;
-            *b1 = 2.0 * (k2 - gain) * norm;
-            *b2 = (gain - sqrt_2_gk + k2) * norm;
-        }
+        let phi = (TAU * freq) / sr;
+        let cos_phi = phi.cos();
+        let alpha = phi.sin() / (2.0 * q);
+        let sqrt_2_g_alpha = 2.0 * gain.sqrt() * alpha;
+
+        // equivalent to the "b0" coefficient, which here is used to normalise
+        // all the other coefs.
+        let norm = ((gain - 1.0).mul_add(cos_phi, gain + 1.0) + sqrt_2_g_alpha)
+            .recip();
+
+        *a0 = gain
+            * ((gain - 1.0).mul_add(cos_phi, gain + 1.0) + sqrt_2_g_alpha)
+            * norm;
+        *a1 = -2.0 * gain * (gain + 1.0).mul_add(cos_phi, gain - 1.0) * norm;
+        *a2 = gain
+            * ((gain - 1.0).mul_add(cos_phi, gain + 1.0) - sqrt_2_g_alpha)
+            * norm;
+        *b1 = 2.0 * (gain + 1.0).mul_add(-cos_phi, gain - 1.0) * norm;
+        *b2 = ((gain - 1.0).mul_add(-cos_phi, gain + 1.0) - sqrt_2_g_alpha)
+            * norm;
     }
 
     /// Sets the filter coefficients for a bandpass filter.
     fn set_bandpass_coefs(&mut self) {
         self.bandpass_notch_b_coefs();
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
 
         *a0 = (1.0 - *b2) / 2.0;
         *a1 = 0.0;
@@ -382,7 +417,7 @@ impl BiquadFilter {
     /// Sets the filter coefficients for a notch filter.
     fn set_notch_coefs(&mut self) {
         self.bandpass_notch_b_coefs();
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
 
         *a0 = (1.0 + *b2) / 2.0;
         *a1 = *b1;
@@ -391,7 +426,7 @@ impl BiquadFilter {
 
     /// Sets common coefficients for notch and bandpass designs.
     fn bandpass_notch_b_coefs(&mut self) {
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
         let BiquadParams { freq, q, .. } = self.params;
         let sr = &self.sample_rate;
 
@@ -403,7 +438,7 @@ impl BiquadFilter {
 
     /// Sets the filter coefficients for a allpass filter.
     fn set_allpass_coefs(&mut self) {
-        let Coefs { a0, a1, a2, b1, b2 } = &mut self.coefs;
+        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
         let BiquadParams { freq, q, .. } = self.params;
         let sr = &self.sample_rate;
 

@@ -14,7 +14,6 @@ pub struct Waveshaper {
     // curve_lower: f64,
     curve_range: RangeInclusive<f64>,
     // asymmetric_curve: bool,
-
     drive: f64,
     drive_lower: f64,
     asymmetric: bool,
@@ -37,7 +36,6 @@ impl Waveshaper {
             // curve_lower: 0.0,
             curve_range: 0.0..=1.0,
             // asymmetric_curve: false,
-
             drive: MAX_DIST_MULT.recip(),
             drive_lower: MAX_DIST_MULT.recip(),
             asymmetric: false,
@@ -222,5 +220,29 @@ impl Waveshaper {
 impl Default for Waveshaper {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Smooth soft saturation function. `input` is clamped between `-1.0` and `1.0`,
+/// and `c` is clamped between `0.0` and `1.0`. Outputs in the range `-1.0` to `1.0`.
+///
+/// Raising `c` will increase the amount of saturation.
+///
+/// From <https://www.musicdsp.org/en/latest/Effects/42-soft-saturation.html>
+pub fn smooth_soft_clip(mut input: f64, mut c: f64) -> f64 {
+    input = input.clamp(-1.0, 1.0);
+    c = 1.0 - c.clamp(0.0, 1.0);
+
+    let abs = input.abs();
+    let sign = if input.is_sign_positive() { 1.0 } else { -1.0 };
+
+    if abs > 1.0 {
+        (c + 1.0) / 2.0 * sign
+    }
+    else if abs > c {
+        c + (abs - c) / (1.0 + ((abs + c) / (1.0 - c)).powi(2)) * sign
+    }
+    else {
+        input
     }
 }

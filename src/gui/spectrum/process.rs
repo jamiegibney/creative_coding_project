@@ -2,10 +2,9 @@
 
 use crate::dsp::StftHelper;
 use crate::prelude::*;
-use crate::util::window::{blackman, hann, multiply_buffers};
-use nannou_audio::Buffer;
+use crate::util::window::{hann, multiply_buffers};
 use realfft::{
-    num_complex::Complex64, ComplexToReal, RealFftPlanner, RealToComplex,
+    num_complex::Complex64, RealFftPlanner, RealToComplex,
 };
 use std::sync::Arc;
 use triple_buffer::TripleBuffer;
