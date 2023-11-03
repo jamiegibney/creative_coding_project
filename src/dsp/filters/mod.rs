@@ -4,9 +4,14 @@ use std::fmt::Debug;
 pub const BUTTERWORTH_Q: f64 = std::f64::consts::FRAC_1_SQRT_2;
 
 pub mod allpass;
+pub mod ballistics;
 pub mod biquad;
 pub mod comb;
+pub mod filter_design;
 pub mod first_order;
+pub mod lrf;
+pub mod one_pole_lowpass;
+pub mod svf;
 
 /// A trait which allows for filters to be dynamically dispatched.
 pub trait Filter: Send + DynClone {

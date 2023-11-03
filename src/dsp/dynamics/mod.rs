@@ -1,7 +1,7 @@
 //! Module for dynamics processors.
-mod envelope;
+use super::*;
+
 pub mod compressor;
+mod envelope;
 pub mod expander;
 pub mod limiter;
-
-use super::*;

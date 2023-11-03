@@ -5,6 +5,7 @@
 - Can't properly display pre and post spectrogram meshes simultaneously (earcutr issue?)
 
 ### Implementation
+- **PRIORITY** implement some GUI controls, which may make general development faster
 - Implement compression
 - Implement other allpass filter design, and look into the diopser implementation
 - Distortion

@@ -165,15 +165,28 @@ fn callback_timer(audio: &mut AudioModel) {
 /// Processes all audio FX.
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // audio effects/processors
-    for output in buffer.frames_mut() {
-        let (l, r) = (output[0], output[1]);
-        let (l, r) = audio.process_filters((l, r));
-        let (l, r) = audio.process_comb_filters((l, r));
-        let (l, r) = audio.process_distortion((l, r));
-
-        output[0] = l;
-        output[1] = r;
+    for oversampler in &mut audio.oversamplers {
+        panic!("oversampling does not yet implement correct channels");
+        oversampler.process(
+            buffer,
+            audio
+                .oversampling_factor
+                .load(std::sync::atomic::Ordering::Relaxed),
+            |upsampled| {
+                // channels?
+                for sample in upsampled {
+                    //
+                }
+            },
+        );
     }
+    // let (l, r) = (block[0], block[1]);
+    // let (l, r) = audio.process_filters((l, r));
+    // let (l, r) = audio.process_comb_filters((l, r));
+    // let (l, r) = audio.process_distortion((l, r));
+
+    // block[0] = l;
+    // block[1] = r;
 
     let mut is_processing = false;
 

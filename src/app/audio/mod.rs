@@ -2,6 +2,7 @@ use super::*;
 use crate::dsp::*;
 use crate::gui::spectrum::*;
 use nannou_audio::Buffer;
+use std::sync::atomic::AtomicUsize;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use thread_pool::ThreadPool;
@@ -17,6 +18,9 @@ pub use process::process;
 pub use voice::*;
 
 pub const DSP_LOAD_AVERAGING_SAMPLES: usize = 64;
+
+const MAX_OVERSAMPLING_FACTOR: usize = 4; // 16x oversampling
+const DEFAULT_OVERSAMPLING_FACTOR: usize = 2; // 4x oversampling
 
 /// A struct containing the channel senders returned by
 /// `AudioModel::initialize()`.
@@ -83,9 +87,14 @@ pub struct AudioModel {
     pub glide_time: f64,
     pub volume: f64,
 
+    pub oversamplers: Vec<Oversampler>,
+    pub oversampling_factor: Arc<AtomicUsize>,
+
     pub average_load: Vec<f64>,
     pub avr_pos: usize,
     pub is_processing: bool,
+
+    pub latency_samples: u32,
 }
 
 impl AudioModel {
@@ -182,11 +191,21 @@ impl AudioModel {
             amp_envelope,
             glide_time,
 
+            oversamplers: vec![
+                Oversampler::new(2048, MAX_OVERSAMPLING_FACTOR);
+                NUM_CHANNELS
+            ],
+            oversampling_factor: Arc::new(AtomicUsize::new(
+                2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32),
+            )),
+
             average_load: vec![0.0; DSP_LOAD_AVERAGING_SAMPLES],
             avr_pos: 0,
 
             is_processing: false,
-       }
+
+            latency_samples: 0,
+        }
     }
 
     /// Returns the `AudioModel`'s channel senders.
@@ -380,6 +399,20 @@ impl AudioModel {
     /// timer.
     pub fn callback_timer_ref(&self) -> Arc<Mutex<std::time::Instant>> {
         Arc::clone(&self.callback_time_elapsed)
+    }
+
+    pub fn latency(&mut self) -> u32 {
+        unimplemented!("latency calculation not fully implemented");
+        self.latency_samples = 0;
+
+        if let Some(oversampler) = self.oversamplers.first() {
+            self.latency_samples += oversampler.latency(
+                self.oversampling_factor
+                    .load(std::sync::atomic::Ordering::Relaxed),
+            );
+        }
+
+        self.latency_samples
     }
 
     /// Returns the (approximate) sample index for the current moment in time.

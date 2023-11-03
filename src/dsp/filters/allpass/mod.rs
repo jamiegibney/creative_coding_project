@@ -1,3 +1,5 @@
+//! Various allpass filter designs.
+
 mod filter;
 
 pub use filter::*;

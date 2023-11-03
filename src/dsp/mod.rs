@@ -4,6 +4,7 @@ pub mod distortion;
 pub mod dynamics;
 pub mod effect_trait;
 pub mod filters;
+pub mod oversampling;
 pub mod ring_buffer;
 pub mod spectral;
 pub mod synthesis;
@@ -18,8 +19,12 @@ pub use filters::{
     biquad::{BiquadFilter, BiquadParams},
     comb::{FirCombFilter, IirCombFilter},
     first_order::FirstOrderFilter,
+    lrf::LinkwitzRileyFilter,
+    one_pole_lowpass::OnePoleLowpass,
+    svf::StateVariableFilter,
     Filter, FilterType, BUTTERWORTH_Q,
 };
+pub use oversampling::Oversampler;
 pub use ring_buffer::RingBuffer;
-pub use synthesis::Generator;
 pub use spectral::StftHelper;
+pub use synthesis::Generator;

@@ -1,3 +1,5 @@
+//! First-order lowpass and highpass filters.
+
 pub mod filter;
 use super::*;
 

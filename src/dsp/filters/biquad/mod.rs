@@ -1,3 +1,5 @@
+//! Second-order biquad filter form supporting various filter types.
+
 #![allow(unused, clippy::must_use_candidate)]
 mod filter;
 use crate::util;

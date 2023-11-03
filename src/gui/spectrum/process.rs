@@ -109,7 +109,7 @@ impl SpectrumInput {
             * SPECTRUM_OVERLAP_FACTOR as f64
             * self.num_channels as f64;
 
-        // 0.25 is used to represent -12dB change in amplitude.
+        // 0.25 is used to represent a -12dB change in amplitude.
         let minus_12_db = 0.25f64;
         let attack_samples =
             SPECTRUM_ATTACK_MS / 1000.0 * effective_sample_rate;

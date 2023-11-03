@@ -1,3 +1,5 @@
+//! FIR (finite impulse response) and IIR (infinite impulse response) comb filter forms.
+
 #![allow(clippy::must_use_candidate)]
 mod filter;
 mod fir;
