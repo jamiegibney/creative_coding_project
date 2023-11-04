@@ -72,9 +72,9 @@ impl Compressor {
     pub fn set_attack_time_ms(&mut self, time_ms: f64) {
         // self.attack_time_ms = time_ms;
         // self.attack_samples =
-        //     -(unsafe { SAMPLE_RATE } * (time_ms * 0.001)).recip().exp();
+        //     -(unsafe { OVERSAMPLED_SAMPLE_RATE } * (time_ms * 0.001)).recip().exp();
 
-        self.attack_samples = unsafe { SAMPLE_RATE } * (time_ms * 0.001);
+        self.attack_samples = unsafe { OVERSAMPLED_SAMPLE_RATE } * (time_ms * 0.001);
     }
 
     /// Sets the compressor's release time in milliseconds.
@@ -83,9 +83,9 @@ impl Compressor {
     pub fn set_release_time_ms(&mut self, time_ms: f64) {
         // self.release_time_ms = time_ms;
         // self.release_samples =
-        //     -(unsafe { SAMPLE_RATE } * (time_ms * 0.001)).recip().exp();
+        //     -(unsafe { OVERSAMPLED_SAMPLE_RATE } * (time_ms * 0.001)).recip().exp();
 
-        self.release_samples = unsafe { SAMPLE_RATE } * (time_ms * 0.001);
+        self.release_samples = unsafe { OVERSAMPLED_SAMPLE_RATE } * (time_ms * 0.001);
     }
 
     /// Sets the compressor's lookahead time in milliseconds.

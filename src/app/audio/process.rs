@@ -165,21 +165,60 @@ fn callback_timer(audio: &mut AudioModel) {
 /// Processes all audio FX.
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // audio effects/processors
-    for oversampler in &mut audio.oversamplers {
-        panic!("oversampling does not yet implement correct channels");
+
+    // update the sampling rate to the upsampled rate - a pretty bad idea, mind.
+    // a better solution is for the processors which actually use the higher sampling
+    // rate to be configured with this rate, rather than modifying and accessing the
+    // global rate. if this is mutated on another thread, it could lead to a race
+    // condition. usage like this is the whole reason an unsafe block is required!
+    unsafe {
+        SAMPLE_RATE *= 2.0f64.powi(
+            audio
+                .oversampling_factor
+                .load(std::sync::atomic::Ordering::Relaxed) as i32,
+        );
+    }
+
+    // copy the audio buffer into the oversampling buffer so the channel layout
+    // is compatible with the oversamplers.
+    for ch in 0..NUM_CHANNELS {
+        for smp in 0..buffer.len_frames() {
+            audio.oversampling_buffer[ch][smp] =
+                buffer[smp * NUM_CHANNELS + ch];
+        }
+    }
+
+    for ((ch, block), oversampler) in audio
+        .oversampling_buffer
+        .iter_mut()
+        .enumerate()
+        .zip(audio.oversamplers.iter_mut())
+    {
         oversampler.process(
-            buffer,
+            block,
             audio
                 .oversampling_factor
                 .load(std::sync::atomic::Ordering::Relaxed),
             |upsampled| {
-                // channels?
+                // a single channel iterating through each upsampled sample
                 for sample in upsampled {
-                    //
+                    *sample = audio.filter_lp[ch].process(*sample);
+                    *sample = audio.filter_comb[ch].process(*sample);
+                    *sample = audio.waveshaper[ch].process(*sample);
                 }
             },
         );
     }
+
+    // copy the oversampling buffer content back to the main audio buffer with the
+    // correct channel layout.
+    for ch in 0..NUM_CHANNELS {
+        for smp in 0..buffer.len_frames() {
+            buffer[smp * NUM_CHANNELS + ch] =
+                audio.oversampling_buffer[ch][smp];
+        }
+    }
+
     // let (l, r) = (block[0], block[1]);
     // let (l, r) = audio.process_filters((l, r));
     // let (l, r) = audio.process_comb_filters((l, r));
@@ -187,6 +226,15 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // block[0] = l;
     // block[1] = r;
+
+    // update the sampling rate back down to the slow domain rate - still a bad idea.
+    unsafe {
+        SAMPLE_RATE /= 2.0f64.powi(
+            audio
+                .oversampling_factor
+                .load(std::sync::atomic::Ordering::Relaxed) as i32,
+        );
+    }
 
     let mut is_processing = false;
 

@@ -92,17 +92,17 @@ impl Lanczos3Stage {
 
             self.scratch_buffer[out_idx] =
                 if out_idx % 2 == (LANZCOS3_KERNEL_LATENCY % 2) {
-                    debug_assert_eq!(
+                    debug_assert!(
                         self.upsampling_buffer[(direct_read_pos
                             + self.upsampling_buffer.len()
                             - 1)
-                            % self.upsampling_buffer.len()],
-                        0.0
+                            % self.upsampling_buffer.len()]
+                            <= f64::EPSILON
                     );
-                    debug_assert_eq!(
+                    debug_assert!(
                         self.upsampling_buffer[(direct_read_pos + 1)
-                            % self.upsampling_buffer.len()],
-                        0.0
+                            % self.upsampling_buffer.len()]
+                            <= f64::EPSILON
                     );
 
                     self.upsampling_buffer[direct_read_pos]

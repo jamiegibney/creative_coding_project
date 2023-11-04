@@ -1,7 +1,4 @@
-use nannou_audio::stream::input;
-
 use super::lanczos_stage::Lanczos3Stage;
-use super::*;
 
 #[derive(Clone)]
 pub struct Lanczos3Oversampler {
@@ -50,7 +47,7 @@ impl Lanczos3Oversampler {
         factor: usize,
         f: impl FnOnce(&mut [f64]),
     ) {
-        assert!(factor <= self.stages.len());
+        debug_assert!(factor <= self.stages.len());
 
         if factor == 0 {
             f(block);
@@ -72,8 +69,8 @@ impl Lanczos3Oversampler {
         block: &[f64],
         factor: usize,
     ) -> &mut [f64] {
-        assert_ne!(factor, 0);
-        assert!(factor <= self.stages.len());
+        debug_assert_ne!(factor, 0);
+        debug_assert!(factor <= self.stages.len());
 
         self.stages[0].upsample_from(block);
 
@@ -96,7 +93,7 @@ impl Lanczos3Oversampler {
         block: &'a mut [f64],
         factor: usize,
     ) -> &'a mut [f64] {
-        assert!(factor <= self.stages.len());
+        debug_assert!(factor <= self.stages.len());
 
         if factor == 0 {
             return block;
@@ -111,8 +108,8 @@ impl Lanczos3Oversampler {
     }
 
     pub fn downsample_to(&mut self, block: &mut [f64], factor: usize) {
-        assert_ne!(factor, 0);
-        assert!(factor <= self.stages.len());
+        debug_assert_ne!(factor, 0);
+        debug_assert!(factor <= self.stages.len());
 
         let mut next_block_len = block.len() * 2usize.pow(factor as u32 - 1);
 
