@@ -3,6 +3,8 @@
 ### Fixes
 - The DSP idle detection is too quick for notes with very quick release times for the spectrograms. Try to add a timer after all voices are finished which leaves enough time for the spectrogram to decay properly
 - Can't properly display pre and post spectrogram meshes simultaneously (earcutr issue?)
+- Bug where oversampling affects Biquad filter cutoff frequencies
+- Many DSP processors use the global sample rate - they should instead hold their own sample rate value so they can be compatible with upsampled blocks.
 
 ### Implementation
 - **PRIORITY** implement some GUI controls, which may make general development faster
@@ -31,6 +33,8 @@
     - filters?
     - STFT helper?
     - spectrum processing?
+    - oversampling
 - Point decimation could mutate a buffer in-place
 - Interpolating between frequency bins involves a lot of recomputation, basic caching could speed up quite a bit
 - Find out why some spectrum points are not finite?
+- Oversampling could be much faster - better convolution algorithm? Process both channels in parallel?
