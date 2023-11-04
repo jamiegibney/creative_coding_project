@@ -9,6 +9,7 @@ pub mod ring_buffer;
 pub mod spectral;
 pub mod synthesis;
 pub mod width;
+// pub mod oversampling_old;
 
 use crate::prelude::*;
 pub use adsr::AdsrEnvelope;
@@ -24,7 +25,7 @@ pub use filters::{
     svf::StateVariableFilter,
     Filter, FilterType, BUTTERWORTH_Q,
 };
-pub use oversampling::Oversampler;
+pub use oversampling::{Oversampler, OversamplingBuffer};
 pub use ring_buffer::RingBuffer;
 pub use spectral::StftHelper;
 pub use synthesis::Generator;

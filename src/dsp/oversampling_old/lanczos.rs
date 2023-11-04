@@ -47,11 +47,15 @@ impl Lanczos3Oversampler {
         factor: usize,
         f: impl FnOnce(&mut [f64]),
     ) {
+        debug_assert!(factor <= self.stages.len());
+
+        println!("{}", self.stages.len());
+
         if factor == 0 {
             f(block);
             return;
         }
-        debug_assert!(factor <= self.stages.len());
+
         debug_assert!(
             block.len() <= self.stages[0].scratch_buffer.len() / 2,
             "The block exceeded the max size"

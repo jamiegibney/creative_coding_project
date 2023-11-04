@@ -59,9 +59,10 @@ pub struct AudioModel {
     /// The oversamping factor.
     pub oversampling_factor: Arc<AtomicUsize>,
     /// A buffer to temporarily hold audio data for oversampling. This buffer matches the
-    /// channel expectation of the oversamplers, and just "relays" the data from the main
+    /// audio layout of the oversamplers, and just "relays" the data from the main
     /// audio buffer to the oversamplers.
-    pub oversampling_buffer: Vec<Vec<f64>>,
+    // pub oversampling_buffer: Vec<Vec<f64>>,
+    pub oversampling_buffer: OversamplingBuffer,
 
     pub average_load: Vec<f64>,
     pub avr_pos: usize,
@@ -74,12 +75,20 @@ impl AudioModel {
     /// Creates a new `AudioModel`.
     pub fn new(context: AudioContext) -> Self {
         let sample_rate = unsafe { SAMPLE_RATE };
-        let biquad = BiquadFilter::new(sample_rate);
 
-        let mut comb = IirCombFilter::with_interpolation(true);
+        unsafe {
+            update_oversampled_sample_rate(
+                2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32),
+            );
+        }
+
+        let upsampled_rate = unsafe { OVERSAMPLED_SAMPLE_RATE };
+        let biquad = BiquadFilter::new(upsampled_rate);
+
+        let mut comb = IirCombFilter::with_interpolation(true, upsampled_rate);
         comb.set_freq(12.0);
 
-        let mut comb_peak = BiquadFilter::new(sample_rate);
+        let mut comb_peak = BiquadFilter::new(upsampled_rate);
         comb_peak.set_params(&BiquadParams {
             freq: 726.0,
             gain: 4.0,
@@ -87,7 +96,7 @@ impl AudioModel {
             filter_type: FilterType::Peak,
         });
 
-        let mut comb_lp = BiquadFilter::new(sample_rate);
+        let mut comb_lp = BiquadFilter::new(upsampled_rate);
         comb_lp.set_params(&BiquadParams {
             freq: 2652.0,
             gain: 0.0,
@@ -95,11 +104,12 @@ impl AudioModel {
             filter_type: FilterType::Lowpass,
         });
 
-        let mut comb_lp = FirstOrderFilter::new(sample_rate);
+        let mut comb_lp = FirstOrderFilter::new(upsampled_rate);
         comb_lp.set_type(FilterType::Lowpass);
         comb_lp.set_freq(1000.0);
 
-        let mut comb_comb = IirCombFilter::with_interpolation(true);
+        let mut comb_comb =
+            IirCombFilter::with_interpolation(true, upsampled_rate);
         comb_comb.set_freq(6324.0);
         comb_comb.set_gain_db(-2.0);
 
@@ -124,12 +134,6 @@ impl AudioModel {
 
         let mut amp_envelope = AdsrEnvelope::new();
         amp_envelope.set_parameters(10.0, 300.0, 1.0, 10.0);
-
-        unsafe {
-            update_oversampled_sample_rate(
-                2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32),
-            );
-        }
 
         // let oversampling_scale = 2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32);
 
@@ -182,7 +186,10 @@ impl AudioModel {
                 DEFAULT_OVERSAMPLING_FACTOR,
             )),
 
-            oversampling_buffer: vec![vec![0.0; MAX_BUFFER_SIZE]; NUM_CHANNELS],
+            // oversampling_buffer: vec![vec![0.0; MAX_BUFFER_SIZE]; NUM_CHANNELS],
+            oversampling_buffer: OversamplingBuffer::new(
+                NUM_CHANNELS, MAX_BUFFER_SIZE,
+            ),
 
             average_load: vec![
                 0.0;
@@ -388,8 +395,7 @@ impl AudioModel {
         // self.filter_freq.next();
     }
 
-    /// Returns a thread-safe reference to the `AudioModel`'s callback
-    /// timer.
+    /// Returns a thread-safe reference to the `AudioModel`'s callback timer.
     pub fn callback_timer_ref(&self) -> Arc<Mutex<std::time::Instant>> {
         Arc::clone(&self.callback_time_elapsed)
     }

@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use super::*;
 use nannou_audio::Buffer;
 
@@ -19,7 +21,7 @@ pub struct OversamplingBlock {
 
 impl OversamplingBlock {
     /// Creates a new `OversamplingBlock` from a `Buffer`.
-    pub fn from_buffer(buffer: &Buffer<f64>) -> Self {
+    pub fn from_buffer(buffer: &mut Buffer<f64>) -> Self {
         let num_channels = buffer.channels();
         let num_samples = buffer.len_frames();
 
@@ -36,7 +38,7 @@ impl OversamplingBlock {
         }
     }
 
-    pub fn from_oversampling_buffer(buffer: &OversamplingBuffer) -> Self {
+    pub fn from_oversampling_buffer(buffer: &mut OversamplingBuffer) -> Self {
         let num_channels = buffer.num_channels();
         let num_samples = buffer.num_samples();
 
@@ -48,7 +50,7 @@ impl OversamplingBlock {
     }
 
     /// Creates a new `OversamplingBlock` from a slice of `f64`.
-    pub fn from_interleaved_slice(slice: &[f64], num_channels: usize) -> Self {
+    pub fn from_interleaved_slice(slice: &mut [f64], num_channels: usize) -> Self {
         let num_samples = slice.len() / num_channels;
 
         Self {
@@ -119,8 +121,8 @@ impl OversamplingBuffer {
     pub fn copy_from_buffer(&mut self, buffer: &Buffer<f64>) {
         let num_channels = buffer.channels();
         let num_samples = buffer.len_frames();
-        assert_eq!(num_channels, self.num_channels());
-        assert_eq!(num_samples, self.num_samples());
+        debug_assert!(num_channels <= self.num_channels());
+        debug_assert!(num_samples <= self.num_samples());
 
         for ch in 0..num_channels {
             for smp in 0..num_samples {
@@ -142,8 +144,8 @@ impl OversamplingBuffer {
     pub fn copy_to_buffer(&self, buffer: &mut Buffer<f64>) {
         let num_channels = buffer.channels();
         let num_samples = buffer.len_frames();
-        assert_eq!(num_channels, self.num_channels());
-        assert_eq!(num_samples, self.num_samples());
+        debug_assert!(num_channels <= self.num_channels());
+        debug_assert!(num_samples <= self.num_samples());
 
         for ch in 0..num_channels {
             for smp in 0..num_samples {
@@ -199,5 +201,19 @@ impl OversamplingBuffer {
         else {
             0
         }
+    }
+}
+
+impl Deref for OversamplingBuffer {
+    type Target = Vec<Vec<f64>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl DerefMut for OversamplingBuffer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
     }
 }

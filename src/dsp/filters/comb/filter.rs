@@ -13,13 +13,16 @@ pub struct CombFilter {
     pub gain_db: f64,
     pub positive_polarity: bool,
     pub interpolation: bool,
+
+    pub sample_rate: f64,
 }
 
 impl CombFilter {
     #[must_use]
-    pub fn new(interpolation: bool) -> Self {
+    pub fn new(interpolation: bool, sample_rate: f64) -> Self {
         // allocates 1 second
-        let mut buffer = RingBuffer::new(unsafe { SAMPLE_RATE } as usize / 10);
+        let mut buffer =
+            RingBuffer::new(sample_rate as usize / 10, sample_rate);
         buffer.set_smoothing(SmoothingType::Cosine, 0.05);
 
         Self {
@@ -32,11 +35,14 @@ impl CombFilter {
             gain_db: MINUS_INFINITY_DB,
             positive_polarity: true,
             interpolation,
+
+            sample_rate,
         }
     }
 
-    pub fn reset_sample_rate(&mut self) {
-        self.buffer.resize(unsafe { SAMPLE_RATE } as usize);
+    pub fn reset_sample_rate(&mut self, sample_rate: f64) {
+        self.sample_rate = sample_rate;
+        self.buffer.resize(self.sample_rate as usize);
     }
 
     pub fn set_freq(&mut self, freq: f64) {
@@ -65,7 +71,7 @@ impl CombFilter {
     fn assertions(&self) {
         debug_assert!(
             10.0 <= self.freq
-                && self.freq <= unsafe { SAMPLE_RATE } / 2.0
+                && self.freq <= self.sample_rate / 2.0
                 && self.gain_db <= 0.0,
             "{}",
             self.freq

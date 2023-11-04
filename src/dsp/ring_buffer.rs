@@ -20,15 +20,17 @@ pub struct RingBuffer {
 
     smoothing_type: SmoothingType,
     smoothing_time_secs: f64,
+
+    sample_rate: f64,
 }
 
 impl RingBuffer {
-    /// Returns a new, initialised `RingBuffer` which holds `size` elements.
+    /// Returns a new, initialised `RingBuffer` which holds `size` samples.
     ///
     /// Defaults to linear smoothing (see `set_smoothing()`) and interpolation
     /// (see `set_interpolation()`).
     #[must_use]
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: usize, sample_rate: f64) -> Self {
         Self {
             data: vec![0.0; size],
             write_pos: 0,
@@ -39,6 +41,8 @@ impl RingBuffer {
 
             smoothing_type: SmoothingType::default(),
             smoothing_time_secs: DEFAULT_SMOOTHING_TIME,
+
+            sample_rate,
         }
     }
 
@@ -158,11 +162,11 @@ impl RingBuffer {
     /// Returns the maximum delay time possible for the current sample rate.
     fn max_delay_secs(&self) -> f64 {
         let size = self.size() as f64;
-        size / unsafe { SAMPLE_RATE }
+        size / self.sample_rate
     }
 
     fn get_read_pos_and_interp(&mut self) -> (usize, f64) {
-        let delay_samples = unsafe { SAMPLE_RATE } * self.delay_secs.next();
+        let delay_samples = self.sample_rate * self.delay_secs.next();
         // the exact delay sample, i.e. read position
         let samples_exact = delay_samples.floor();
         // the interpolation between this sample and the next

@@ -185,16 +185,16 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         .zip(audio.oversamplers.iter_mut())
     {
         oversampler.process(
-            &mut block[..BUFFER_SIZE],
+            block,
             audio
                 .oversampling_factor
                 .load(std::sync::atomic::Ordering::Relaxed),
             |upsampled| {
                 // a single channel iterating through each upsampled sample
-                for (i, sample) in upsampled.iter_mut().enumerate() {
+                for (i, sample) in upsampled.iter().enumerate() {
                     // *sample = audio.filter_lp[ch].process(*sample);
                     // *sample = audio.filter_comb[ch].process(*sample);
-                    *sample = audio.waveshaper[ch].process(*sample);
+                    // *sample = audio.waveshaper[ch].process(*sample);
                 }
             },
         );

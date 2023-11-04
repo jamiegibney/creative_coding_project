@@ -23,13 +23,13 @@ impl Filter for FirCombFilter {
 impl FirCombFilter {
     /// Creates a new, initialized filter with an internal buffer holding
     /// one second of samples.
-    pub fn with_interpolation(interpolation: bool) -> Self {
-        Self { filter: CombFilter::new(interpolation) }
+    pub fn with_interpolation(interpolation: bool, sample_rate: f64) -> Self {
+        Self { filter: CombFilter::new(interpolation, sample_rate) }
     }
 
     /// Use this if you change the sample rate to reallocate the internal buffer.
-    pub fn reset_sample_rate(&mut self) {
-        self.filter.reset_sample_rate();
+    pub fn reset_sample_rate(&mut self, sample_rate: f64) {
+        self.filter.reset_sample_rate(sample_rate);
     }
 
     /// Sets the frequency of the comb filter. Must be between 10 Hz and half

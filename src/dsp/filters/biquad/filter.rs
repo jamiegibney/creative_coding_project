@@ -125,8 +125,8 @@ impl Filter for BiquadFilter {
 }
 
 // note: the mul_add() method is used a lot here as it may improve performance on
-// some systems and only involves one rounding error. as the majority of the code 
-// for computing filter coefficients is designed to focus on correctness and 
+// some systems and only involves one rounding error. as the majority of the code
+// for computing filter coefficients is designed to focus on correctness and
 // performance, I opted to use mul_add() at the cost of some readability.
 
 impl BiquadFilter {
