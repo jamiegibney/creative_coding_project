@@ -1,24 +1,21 @@
-const LANCZOS3_UPSAMPLING_KERNEL: [f64; 11] = [
-    0.024_317_08, -0.0, -0.135_094_91, 0.0, 0.607_927_1, 1.0, 0.607_927_1, 0.0,
-    -0.135_094_91, -0.0, 0.024_317_08,
-];
+// TODO there is massive potential to parallelise these operations, namely the
+// loop which calls the convolution algorithm. Using an FFT to convolve is likely
+// not worthwhile for such a small data set (the kernel is only convolved with
+// very small buffers).
 
-const LANCZOS3_DOWNSAMPLING_KERNEL: [f64; 11] = [
-    0.012_158_54, -0.0, -0.067_547_46, 0.0, 0.303_963_55, 0.5, 0.303_963_55,
-    0.0, -0.067_547_46, -0.0, 0.012_158_54,
-];
-
-const LANZCOS3_KERNEL_LATENCY: usize = LANCZOS3_UPSAMPLING_KERNEL.len() / 2;
+use crate::prelude::*;
 
 #[derive(Clone)]
 pub(super) struct Lanczos3Stage {
     oversampling_amount: usize,
 
+    upsampling_kernel: Vec<f64>,
     upsampling_buffer: Vec<f64>,
     upsampling_write_pos: usize,
 
     additional_upsampling_latency: usize,
 
+    downsampling_kernel: Vec<f64>,
     downsampling_buffer: Vec<f64>,
     downsampling_write_pos: usize,
 
@@ -27,10 +24,29 @@ pub(super) struct Lanczos3Stage {
 
 impl Lanczos3Stage {
     /// Creates a new oversampling stage.
-    pub fn new(max_block_size: usize, stage_number: u32) -> Self {
+    ///
+    /// `quality_factor` directly affects the "a" variable in the Lanczos kernel.
+    /// A value of `3` offers a good compromise of performance and quality.
+    ///
+    /// Note that increases in quality will exponentially decrease performance, but
+    /// offer diminishing returns in resampling quality.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `quality_factor == 0`.
+    pub fn new(
+        max_block_size: usize,
+        stage_number: u32,
+        quality_factor: u8,
+    ) -> Self {
+        assert_ne!(quality_factor, 0);
         let oversampling_amount = 2usize.pow(stage_number + 1);
+        let upsampling_kernel = lanczos_kernel(quality_factor, 1.0, true);
+        let downsampling_kernel = lanczos_kernel(quality_factor, 0.5, true);
 
-        let uncompensated_stage_latency = LANZCOS3_KERNEL_LATENCY * 2;
+        println!("{upsampling_kernel:?} | {downsampling_kernel:?}");
+
+        let uncompensated_stage_latency = upsampling_kernel.len() * 2;
 
         let additional_upsampling_latency =
             (-(uncompensated_stage_latency as isize))
@@ -41,14 +57,16 @@ impl Lanczos3Stage {
 
             upsampling_buffer: vec![
                 0.0;
-                LANCZOS3_UPSAMPLING_KERNEL.len()
+                upsampling_kernel.len()
                     + additional_upsampling_latency
             ],
+            upsampling_kernel,
             upsampling_write_pos: 0,
 
             additional_upsampling_latency,
 
-            downsampling_buffer: vec![0.0; LANCZOS3_DOWNSAMPLING_KERNEL.len()],
+            downsampling_buffer: vec![0.0; downsampling_kernel.len()],
+            downsampling_kernel,
             downsampling_write_pos: 0,
 
             scratch_buffer: vec![0.0; max_block_size * oversampling_amount],
@@ -64,7 +82,7 @@ impl Lanczos3Stage {
     }
 
     pub fn effective_latency(&self) -> u32 {
-        let uncompensated_stage_latency = LANZCOS3_KERNEL_LATENCY * 2;
+        let uncompensated_stage_latency = self.stage_latency() * 2;
         let total_stage_latency =
             uncompensated_stage_latency + self.additional_upsampling_latency;
 
@@ -83,7 +101,7 @@ impl Lanczos3Stage {
         }
 
         let mut direct_read_pos = (self.upsampling_write_pos
-            + LANZCOS3_KERNEL_LATENCY)
+            + self.stage_latency())
             % self.upsampling_buffer.len();
 
         for out_idx in 0..output_length {
@@ -93,7 +111,7 @@ impl Lanczos3Stage {
             self.increment_up_write_positions(&mut direct_read_pos);
 
             self.scratch_buffer[out_idx] =
-                if out_idx % 2 == (LANZCOS3_KERNEL_LATENCY % 2) {
+                if out_idx % 2 == (self.stage_latency() % 2) {
                     debug_assert!(
                         self.upsampling_buffer[(direct_read_pos
                             + self.upsampling_buffer.len()
@@ -110,8 +128,8 @@ impl Lanczos3Stage {
                     self.upsampling_buffer[direct_read_pos]
                 }
                 else {
-                    convolve_ring_buffer(
-                        &self.upsampling_buffer, &LANCZOS3_UPSAMPLING_KERNEL,
+                    convolve(
+                        &self.upsampling_buffer, &self.upsampling_kernel,
                         self.upsampling_write_pos,
                     )
                 }
@@ -131,12 +149,16 @@ impl Lanczos3Stage {
             if input_idx % 2 == 0 {
                 let output_idx = input_idx / 2;
 
-                block[output_idx] = convolve_ring_buffer(
-                    &self.downsampling_buffer, &LANCZOS3_DOWNSAMPLING_KERNEL,
+                block[output_idx] = convolve(
+                    &self.downsampling_buffer, &self.downsampling_kernel,
                     self.downsampling_write_pos,
                 );
             }
         }
+    }
+
+    fn stage_latency(&self) -> usize {
+        self.upsampling_kernel.len() / 2
     }
 
     fn increment_up_write_positions(&mut self, direct_pos: &mut usize) {
@@ -159,36 +181,57 @@ impl Lanczos3Stage {
     }
 }
 
-fn convolve_ring_buffer(
-    input_buffer: &[f64],
-    kernel: &[f64],
-    ring_buffer_pos: usize,
-) -> f64 {
+#[rustfmt::skip]
+fn convolve(input_buffer: &[f64], kernel: &[f64], buffer_pos: usize) -> f64 {
     debug_assert!(input_buffer.len() >= kernel.len());
+    let samples_until_wrap =
+        (input_buffer.len() - buffer_pos).min(kernel.len());
 
-    let mut total = 0.0;
+    kernel
+        .iter().rev().take(samples_until_wrap).enumerate()
+        .map(|(off, &smp)| smp * input_buffer[buffer_pos + off])
+        .sum::<f64>()
+    + kernel.iter().rev().skip(samples_until_wrap).enumerate()
+        .map(|(pos, &smp)| smp * input_buffer[pos])
+        .sum::<f64>()
+}
 
-    let num_samples_until_wraparound =
-        (input_buffer.len() - ring_buffer_pos).min(kernel.len());
+/// Returns a vector containing points of a Lanczos kernel. `a_factor` is the "a"
+/// variable in the kernel calculation. Only holds enough points to represent each lobe.
+///
+/// `trim_zeroes` will remove the first and last elements (which are always `0.0`) if
+/// true.
+///
+/// [Source](https://en.wikipedia.org/wiki/Lanczos_resampling)
+///
+/// # Panics
+///
+/// Panics if `a_factor == 0`.
+fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
+    assert_ne!(a_factor, 0);
 
-    for (read_pos_offset, &kernel_sample) in kernel
-        .iter()
-        .rev()
-        .take(num_samples_until_wraparound)
-        .enumerate()
-    {
-        total +=
-            kernel_sample * input_buffer[ring_buffer_pos + read_pos_offset];
-    }
+    let a = a_factor as f64;
+    let num_stages = a_factor * 4 + 1;
 
-    for (read_pos, kernel_sample) in kernel
-        .iter()
-        .rev()
-        .skip(num_samples_until_wraparound)
-        .enumerate()
-    {
-        total += kernel_sample * input_buffer[read_pos];
-    }
+    let sinc = |x: f64| x.sin() / x;
 
-    total
+    (if trim_zeroes { 1..num_stages - 1 } else { 0..num_stages })
+        .map(|i| {
+            if i % 2 == 0 {
+                0.0
+            }
+            else {
+                let x = (i as f64 - 2.0 * a) / 2.0;
+                if x == 0.0 {
+                    1.0
+                }
+                else if -a <= x && x < a {
+                    sinc(PI * x) * sinc((PI * x) / a) * scale
+                }
+                else {
+                    0.0
+                }
+            }
+        })
+        .collect()
 }

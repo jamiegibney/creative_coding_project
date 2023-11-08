@@ -88,7 +88,7 @@ pub const NUM_CHANNELS: usize = 2;
 
 /// An option to allow the DSP load to be printed to the standard output. Incurs a
 /// slight run-time cost if `true`.
-pub const PRINT_DSP_LOAD: bool = false;
+pub const PRINT_DSP_LOAD: bool = true;
 
 /// The maximum available oversampling factor (i.e. this is `2⁴ == 16x` oversampling).
 pub const MAX_OVERSAMPLING_FACTOR: usize = 4; // 16x oversampling

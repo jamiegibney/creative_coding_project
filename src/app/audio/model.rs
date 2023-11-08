@@ -73,6 +73,7 @@ pub struct AudioModel {
 
 impl AudioModel {
     /// Creates a new `AudioModel`.
+    #[allow(clippy::too_many_lines)]
     pub fn new(context: AudioContext) -> Self {
         let sample_rate = unsafe { SAMPLE_RATE };
 
@@ -178,7 +179,7 @@ impl AudioModel {
 
             oversamplers: vec![
                 Oversampler::new(
-                    MAX_BUFFER_SIZE, MAX_OVERSAMPLING_FACTOR
+                    MAX_BUFFER_SIZE, MAX_OVERSAMPLING_FACTOR, 3
                 );
                 NUM_CHANNELS
             ],

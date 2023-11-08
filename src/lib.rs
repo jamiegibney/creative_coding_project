@@ -22,3 +22,5 @@ pub mod gui;
 
 // L-system related
 pub mod l_system;
+
+pub mod simd;

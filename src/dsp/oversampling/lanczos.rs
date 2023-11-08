@@ -1,5 +1,6 @@
 use super::lanczos_stage::Lanczos3Stage;
 
+/// An oversampler which uses Lanczos resampling.
 #[derive(Clone)]
 pub struct Lanczos3Oversampler {
     stages: Vec<Lanczos3Stage>,
@@ -7,11 +8,20 @@ pub struct Lanczos3Oversampler {
 }
 
 impl Lanczos3Oversampler {
-    pub fn new(max_block_size: usize, max_factor: usize) -> Self {
+    /// # Panics
+    ///
+    /// Panics if `quality_factor == 0`.
+    pub fn new(
+        max_block_size: usize,
+        max_factor: usize,
+        quality_factor: u8,
+    ) -> Self {
         let mut stages = Vec::with_capacity(max_factor);
 
         for stage in 0..max_factor {
-            stages.push(Lanczos3Stage::new(max_block_size, stage as u32));
+            stages.push(Lanczos3Stage::new(
+                max_block_size, stage as u32, quality_factor,
+            ));
         }
 
         Self {
