@@ -4,8 +4,6 @@ use super::*;
 
 mod equiripple_fir;
 mod block;
-mod lanczos;
-mod lanczos_stage;
 pub mod oversampler;
 
 pub use oversampler::Oversampler;

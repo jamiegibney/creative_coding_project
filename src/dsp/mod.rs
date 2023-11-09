@@ -9,7 +9,6 @@ pub mod ring_buffer;
 pub mod spectral;
 pub mod synthesis;
 pub mod width;
-// pub mod oversampling_old;
 
 use crate::prelude::*;
 pub use adsr::AdsrEnvelope;
