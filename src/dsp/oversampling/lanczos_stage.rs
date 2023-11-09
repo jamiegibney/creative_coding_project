@@ -41,10 +41,11 @@ impl Lanczos3Stage {
     ) -> Self {
         assert_ne!(quality_factor, 0);
         let oversampling_amount = 2usize.pow(stage_number + 1);
-        let upsampling_kernel = lanczos_kernel(quality_factor, 1.0, true);
-        let downsampling_kernel = lanczos_kernel(quality_factor, 0.5, true);
 
-        println!("{upsampling_kernel:?} | {downsampling_kernel:?}");
+        let upsampling_kernel = lanczos_kernel(quality_factor, 1.0, true);
+        // the downsampling kernel is identical, but scaled by half to result in
+        // unity gain after oversampling.
+        let downsampling_kernel = lanczos_kernel(quality_factor, 0.5, true);
 
         let uncompensated_stage_latency = upsampling_kernel.len() * 2;
 
@@ -95,9 +96,8 @@ impl Lanczos3Stage {
         assert!(output_length <= self.scratch_buffer.len());
 
         for (i, &smp) in block.iter().enumerate() {
-            let output_smp_idx = i * 2;
-            self.scratch_buffer[output_smp_idx] = smp;
-            self.scratch_buffer[output_smp_idx + 1] = 0.0;
+            self.scratch_buffer[i * 2] = smp;
+            self.scratch_buffer[i * 2 + 1] = 0.0;
         }
 
         let mut direct_read_pos = (self.upsampling_write_pos
@@ -181,26 +181,29 @@ impl Lanczos3Stage {
     }
 }
 
+/// This function is optimised to skip the interleaved zeroes in the Lanczos kernel, 
+/// and expects the first and last elements to be non-zero. This makes the operation
+/// significantly faster.
 #[rustfmt::skip]
 fn convolve(input_buffer: &[f64], kernel: &[f64], buffer_pos: usize) -> f64 {
-    debug_assert!(input_buffer.len() >= kernel.len());
-    let samples_until_wrap =
-        (input_buffer.len() - buffer_pos).min(kernel.len());
+    let len = input_buffer.len();
+    debug_assert!(len >= kernel.len());
 
+    // technically this is cross-correlation, not convolution, because the kernel 
+    // is processed forwards, but because the Lanczos kernel is symmetrical the
+    // reversal is a redundant operation.
     kernel
-        .iter().rev().take(samples_until_wrap).enumerate()
-        .map(|(off, &smp)| smp * input_buffer[buffer_pos + off])
-        .sum::<f64>()
-    + kernel.iter().rev().skip(samples_until_wrap).enumerate()
-        .map(|(pos, &smp)| smp * input_buffer[pos])
-        .sum::<f64>()
+        .iter().step_by(2).enumerate()
+        .map(|(off, &smp)| smp * input_buffer[(buffer_pos + off) % len])
+        .sum()
 }
 
 /// Returns a vector containing points of a Lanczos kernel. `a_factor` is the "a"
 /// variable in the kernel calculation. Only holds enough points to represent each lobe.
+/// Returns `4 * a_factor + 1` elements (when `trim_zeroes == false`).
 ///
-/// `trim_zeroes` will remove the first and last elements (which are always `0.0`) if
-/// true.
+/// `scale` will automatically scale each element in the kernel, and `trim_zeroes` will
+/// remove the first and last elements (which are always `0.0`) if true.
 ///
 /// [Source](https://en.wikipedia.org/wiki/Lanczos_resampling)
 ///
@@ -213,15 +216,14 @@ fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
     let a = a_factor as f64;
     let num_stages = a_factor * 4 + 1;
 
-    let sinc = |x: f64| x.sin() / x;
-
     (if trim_zeroes { 1..num_stages - 1 } else { 0..num_stages })
         .map(|i| {
             if i % 2 == 0 {
                 0.0
             }
             else {
-                let x = (i as f64 - 2.0 * a) / 2.0;
+                let x = 2.0f64.mul_add(-a, i as f64) / 2.0;
+
                 if x == 0.0 {
                     1.0
                 }

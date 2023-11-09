@@ -50,7 +50,10 @@ impl OversamplingBlock {
     }
 
     /// Creates a new `OversamplingBlock` from a slice of `f64`.
-    pub fn from_interleaved_slice(slice: &mut [f64], num_channels: usize) -> Self {
+    pub fn from_interleaved_slice(
+        slice: &mut [f64],
+        num_channels: usize,
+    ) -> Self {
         let num_samples = slice.len() / num_channels;
 
         Self {
@@ -195,12 +198,7 @@ impl OversamplingBuffer {
     ///
     /// Returns `0` if the buffer is empty (i.e. contains no data, not `== 0.0`).
     pub fn num_samples(&self) -> usize {
-        if let Some(x) = self.data.first() {
-            x.len()
-        }
-        else {
-            0
-        }
+        self.data.first().map_or(0, |x| x.len())
     }
 }
 

@@ -1,19 +1,19 @@
 //! Global utility functions — these are publicly re-exported in `prelude.rs`.
 
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
-use nannou::prelude::{Vec2, DVec2};
+use nannou::prelude::{DVec2, Vec2};
 
 pub mod interp;
 pub mod smoothing;
+pub mod thread_pool;
 pub mod window;
 pub mod xfer;
-pub mod thread_pool;
 
 pub use interp::InterpolationType as InterpType;
 pub use interp::{ilerp, lerp};
 pub use smoothing::*;
-pub use xfer::SmoothingType;
 pub use thread_pool::ThreadPool;
+pub use xfer::SmoothingType;
 
 /// Calculates the frequency value of the provided MIDI note value.
 pub fn note_to_freq(note_value: f64) -> f64 {
@@ -95,6 +95,18 @@ pub fn within_tolerance(value: f64, target: f64, tolerance: f64) -> bool {
 /// Returns the length of one sample in seconds, based on the current sample rate.
 pub fn sample_length() -> f64 {
     unsafe { SAMPLE_RATE }.recip()
+}
+
+/// The unnormalised sinc function (`sin(x) / x`).
+///
+/// For a normalised sinc function, multiply `x` by `π`.
+pub fn sinc(x: f64) -> f64 {
+    if x == 0.0 {
+        1.0
+    }
+    else {
+        x.sin() / x
+    }
 }
 
 #[cfg(test)]

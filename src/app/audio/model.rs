@@ -136,7 +136,7 @@ impl AudioModel {
         let mut amp_envelope = AdsrEnvelope::new();
         amp_envelope.set_parameters(10.0, 300.0, 1.0, 10.0);
 
-        // let oversampling_scale = 2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32);
+        // let thread_pool = 
 
         Self {
             callback_time_elapsed: Arc::new(Mutex::new(
@@ -169,7 +169,6 @@ impl AudioModel {
             waveshaper,
             drive_amount_receiver: None,
 
-            // filter_freq: Ramp::new(440.0, glide_time),
             filter_freq_receiver: None,
 
             volume: db_to_level(-24.0),
@@ -178,6 +177,8 @@ impl AudioModel {
             glide_time,
 
             oversamplers: vec![
+                // a quality factor of 3 offers good resampling quality and decent 
+                // performance, including in debug mode.
                 Oversampler::new(
                     MAX_BUFFER_SIZE, MAX_OVERSAMPLING_FACTOR, 3
                 );

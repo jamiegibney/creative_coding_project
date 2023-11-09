@@ -170,13 +170,6 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // is compatible with the oversamplers.
     audio.oversampling_buffer.copy_from_buffer(buffer);
 
-    // for ch in 0..NUM_CHANNELS {
-    //     for smp in 0..buffer.len_frames() {
-    //         audio.oversampling_buffer[ch][smp] =
-    //             buffer[smp * NUM_CHANNELS + ch];
-    //     }
-    // }
-
     // process the oversampling
     for ((ch, block), oversampler) in audio
         .oversampling_buffer
@@ -195,6 +188,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                     // *sample = audio.filter_lp[ch].process(*sample);
                     // *sample = audio.filter_comb[ch].process(*sample);
                     *sample = audio.waveshaper[ch].process(*sample);
+                    *sample *= 2.5;
                 }
             },
         );
@@ -203,13 +197,6 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // copy the oversampling buffer content back to the main audio buffer with the
     // correct channel layout.
     audio.oversampling_buffer.copy_to_buffer(buffer);
-
-    // for ch in 0..NUM_CHANNELS {
-    //     for smp in 0..buffer.len_frames() {
-    //         buffer[smp * NUM_CHANNELS + ch] = 0.0;
-    //         // audio.oversampling_buffer[ch][smp];
-    //     }
-    // }
 
     let mut is_processing = false;
 

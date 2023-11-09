@@ -42,13 +42,9 @@ impl Lanczos3Oversampler {
         self.stages.iter_mut().for_each(|stage| stage.reset());
     }
 
+    #[rustfmt::skip]
     pub fn latency(&self, factor: usize) -> u32 {
-        if factor == 0 {
-            0
-        }
-        else {
-            self.latencies[factor - 1]
-        }
+        if factor == 0 { 0 } else { self.latencies[factor - 1] }
     }
 
     pub fn process(
