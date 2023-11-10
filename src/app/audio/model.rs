@@ -1,5 +1,10 @@
 use super::*;
 
+/// When the DSP stops processing, it will continue to process for this length of time
+/// to allow the audio spectrums to fully relax. After this time has passed, the DSP is 
+/// skipped to reduce total load when idle.
+const IDLE_TIME_SECS: f64 = 0.7;
+
 /// The audio state for the whole program.
 pub struct AudioModel {
     /// The time since the last audio callback (sort of).
@@ -67,6 +72,7 @@ pub struct AudioModel {
     pub average_load: Vec<f64>,
     pub avr_pos: usize,
     pub is_processing: bool,
+    pub idle_timer_samples: usize,
 
     pub latency_samples: u32,
 }
@@ -136,7 +142,7 @@ impl AudioModel {
         let mut amp_envelope = AdsrEnvelope::new();
         amp_envelope.set_parameters(10.0, 300.0, 1.0, 10.0);
 
-        // let thread_pool = 
+        // let thread_pool =
 
         Self {
             callback_time_elapsed: Arc::new(Mutex::new(
@@ -203,8 +209,9 @@ impl AudioModel {
                 }
             ],
             avr_pos: 0,
-
             is_processing: false,
+            idle_timer_samples: (unsafe { SAMPLE_RATE } * IDLE_TIME_SECS)
+                as usize,
 
             latency_samples: 0,
         }
@@ -414,6 +421,22 @@ impl AudioModel {
         }
 
         self.latency_samples
+    }
+
+    pub fn set_idle_timer(&mut self, is_processing: bool) {
+        self.idle_timer_samples = if is_processing {
+            (unsafe { SAMPLE_RATE } * IDLE_TIME_SECS) as usize
+        }
+        else if self.idle_timer_samples > 0 {
+            self.idle_timer_samples - 1
+        }
+        else {
+            0
+        }
+    }
+
+    pub fn is_idle(&self) -> bool {
+        !self.is_processing && self.idle_timer_samples == 0
     }
 
     /// Returns the (approximate) sample index for the current moment in time.

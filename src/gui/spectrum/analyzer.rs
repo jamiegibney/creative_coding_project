@@ -1,9 +1,11 @@
-use super::*;
+use super::{process::RESULT_BUFFER_SIZE, *};
 use crate::{gui::rdp::decimate_points, prelude::*};
 use nannou::prelude::*;
 // use nannou::color::rgb;
 use std::ptr::{addr_of, copy, copy_nonoverlapping};
 // use std::sync::{Arc, Mutex};
+
+const NUM_SPECTRUM_AVERAGES: usize = 12;
 
 const CURVE_RESOLUTION: usize = WINDOW_SIZE.x as usize;
 
@@ -17,6 +19,11 @@ pub struct SpectrumAnalyzer {
 
     /// The spectral data received from a corresponding `SpectrumInput`.
     spectrum: SpectrumOutput,
+
+    spectrum_averaging: Vec<Vec<f64>>,
+    averaging_write_pos: usize,
+
+    averaged_data: Vec<f64>,
 
     /// The frequency bin points.
     bin_points: Vec<[f64; 2]>,
@@ -39,6 +46,14 @@ impl SpectrumAnalyzer {
 
         Self {
             spectrum,
+
+            spectrum_averaging: vec![
+                vec![0.0; RESULT_BUFFER_SIZE];
+                NUM_SPECTRUM_AVERAGES
+            ],
+            averaging_write_pos: 0,
+
+            averaged_data: vec![0.0; RESULT_BUFFER_SIZE],
 
             bin_step: sample_rate / SPECTRUM_WINDOW_SIZE as f64,
 
@@ -83,7 +98,7 @@ impl SpectrumAnalyzer {
     }
 
     fn draw_line(&mut self, draw: &Draw, color: Rgba) {
-        draw.polyline().weight(2.0).points_colored(
+        draw.polyline().weight(2.5).points_colored(
             self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
         );
     }
@@ -127,7 +142,7 @@ impl SpectrumAnalyzer {
 
     fn compute_spectrum(&mut self) {
         let width = self.width();
-        let mags = self.spectrum.read();
+        self.average_spectrum_data();
 
         for (i, pt) in self.interpolated.iter_mut().enumerate() {
             let x = (i as f64 / (CURVE_RESOLUTION - 5) as f64) * width;
@@ -135,7 +150,7 @@ impl SpectrumAnalyzer {
             let (idx, interp) =
                 Self::bin_idx_t(xpos_to_freq(x, width), self.bin_step);
 
-            if !(1..mags.len() - 2).contains(&idx) {
+            if !(1..self.averaged_data.len() - 2).contains(&idx) {
                 *pt = [x, MINUS_INFINITY_DB];
                 continue;
             }
@@ -143,9 +158,10 @@ impl SpectrumAnalyzer {
             let range_min = idx - 1;
             let range_max = idx + 2;
 
-            let slice = &mags[range_min..=range_max];
+            let slice = &self.averaged_data[range_min..=range_max];
 
-            // TODO: optimisation: so much recalculation going on here which could be cached!
+            // TODO: optimisation: so much recalculation going on here which could
+            // be cached!
             let mut mag = cubic_catmull_db(slice, interp);
 
             if mag <= MINUS_INFINITY_DB {
@@ -175,6 +191,36 @@ impl SpectrumAnalyzer {
             .collect();
     }
 
+    fn average_spectrum_data(&mut self) {
+        // add the new set of magnitudes to the averaging buffers
+        let mags = self.spectrum.read();
+        self.spectrum_averaging[self.averaging_write_pos]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, x)| *x = mags[i]);
+
+        // increment the write pos for next time
+        self.increment_averaging_pos();
+
+        let frames = NUM_SPECTRUM_AVERAGES;
+
+        // iterate through each sample...
+        for smp in 0..RESULT_BUFFER_SIZE {
+            // and sum up all elements from each frame
+            self.averaged_data[smp] = (0..frames)
+                .map(|fr| {
+                    // normalise each value
+                    self.spectrum_averaging[fr][smp] / frames as f64
+                })
+                .sum();
+        }
+    }
+
+    fn increment_averaging_pos(&mut self) {
+        self.averaging_write_pos =
+            (self.averaging_write_pos + 1) % NUM_SPECTRUM_AVERAGES;
+    }
+
     fn bin_idx_t(freq: f64, step: f64) -> (usize, f64) {
         let idx_exact = freq / step;
         let idx = idx_exact.floor();
@@ -202,7 +248,7 @@ fn xpos_to_freq(x: f64, width: f64) -> f64 {
 }
 
 fn gain_to_ypos(gain: f64, height: f64) -> f64 {
-    (gain + 85.0).mul_add(8.0, -height)
+    (gain + 105.0).mul_add(6.0, -height)
 }
 
 fn cubic_catmull_db(points: &[f64], t: f64) -> f64 {

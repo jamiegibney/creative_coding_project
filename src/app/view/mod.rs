@@ -3,10 +3,10 @@ use crate::gui;
 
 pub fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
-    draw.background().color(BLACK);
+    draw.background().color(WHITE);
 
-    let pre_spectrum_mesh_color = Rgba::new(1.0, 1.0, 1.0, 0.03);
-    let post_spectrum_line_color = Rgba::new(0.7, 0.7, 0.7, 1.0);
+    let pre_spectrum_mesh_color = Rgba::new(0.0, 0.0, 0.0, 0.3);
+    let post_spectrum_line_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
 
     model.pre_spectrum_analyzer.borrow_mut().draw(
         &draw, 

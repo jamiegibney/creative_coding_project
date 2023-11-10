@@ -10,6 +10,8 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // remaining in buffer}, `MAX_BLOCK_SIZE`, {next event index - block start
     // index}).
 
+    // has to be extracted here because it is borrowed in the line below
+    let audio_is_idle = audio.is_idle();
     let AudioModel { context, voice_handler, .. } = audio;
     let buffer_len = buffer.len_frames();
 
@@ -21,9 +23,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // if there is no note event, no active voice, and there was no audio
     // processed in the last frame, most of the signal processing can be skipped.
-    if next_event.is_none()
-        && !voice_handler.is_voice_active()
-        && !audio.is_processing
+    if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle
     {
         drop(note_handler_guard);
         print_dsp_load(audio, dsp_start);
@@ -212,6 +212,8 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         {
             is_processing = true;
         }
+
+        audio.set_idle_timer(is_processing);
     }
 
     audio.is_processing = is_processing;

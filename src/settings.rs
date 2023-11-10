@@ -93,4 +93,4 @@ pub const PRINT_DSP_LOAD: bool = true;
 /// The maximum available oversampling factor (i.e. this is `2⁴ == 16x` oversampling).
 pub const MAX_OVERSAMPLING_FACTOR: usize = 4; // 16x oversampling
 /// The default oversampling factor (i.e. this is `2² == 4x` oversampling).
-pub const DEFAULT_OVERSAMPLING_FACTOR: usize = 2; // 4x oversampling
+pub const DEFAULT_OVERSAMPLING_FACTOR: usize = 3; // 4x oversampling

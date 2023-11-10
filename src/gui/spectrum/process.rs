@@ -13,10 +13,10 @@ use triple_buffer::TripleBuffer;
 // on its "Maximum" / "Very Fast" resolution / time settings.
 pub const SPECTRUM_WINDOW_SIZE: usize = 1 << 13; // 8192
 pub const SPECTRUM_OVERLAP_FACTOR: usize = 1 << 4; // 16
-const SPECTRUM_ATTACK_MS: f64 = 120.0;
-const SPECTRUM_RELEASE_MS: f64 = 110.0;
+const SPECTRUM_ATTACK_MS: f64 = 70.0;
+const SPECTRUM_RELEASE_MS: f64 = 60.0;
 
-const RESULT_BUFFER_SIZE: usize = SPECTRUM_WINDOW_SIZE / 2 + 1;
+pub const RESULT_BUFFER_SIZE: usize = SPECTRUM_WINDOW_SIZE / 2 + 1;
 
 // pub type Spectrum = [f64; SPECTRUM_WINDOW_SIZE / 2 + 1];
 
