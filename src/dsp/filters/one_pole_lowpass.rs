@@ -68,6 +68,10 @@ impl OnePoleLowpass {
         let samples = unsafe { SAMPLE_RATE } * time_ms * 0.001;
         self.set_cutoff_time_samples(samples, speed);
     }
+
+    pub fn reset(&mut self) {
+        self.old = 0.0;
+    }
 }
 
 impl Effect for OnePoleLowpass {

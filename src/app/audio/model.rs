@@ -1,9 +1,9 @@
 use super::*;
 
-/// When the DSP stops processing, it will continue to process for this length of time
-/// to allow the audio spectrums to fully relax. After this time has passed, the DSP is 
-/// skipped to reduce total load when idle.
-const IDLE_TIME_SECS: f64 = 0.7;
+/// When the DSP stops , it will continue to process for this length of time to
+/// allow the audio spectrums to fully relax. After this time has passed, the DSP
+/// is skipped to reduce total load when idle.
+const DSP_IDLE_HOLD_TIME_SECS: f64 = 0.8;
 
 /// The audio state for the whole program.
 pub struct AudioModel {
@@ -210,8 +210,7 @@ impl AudioModel {
             ],
             avr_pos: 0,
             is_processing: false,
-            idle_timer_samples: (unsafe { SAMPLE_RATE } * IDLE_TIME_SECS)
-                as usize,
+            idle_timer_samples: 0,
 
             latency_samples: 0,
         }
@@ -425,7 +424,7 @@ impl AudioModel {
 
     pub fn set_idle_timer(&mut self, is_processing: bool) {
         self.idle_timer_samples = if is_processing {
-            (unsafe { SAMPLE_RATE } * IDLE_TIME_SECS) as usize
+            (unsafe { SAMPLE_RATE } * DSP_IDLE_HOLD_TIME_SECS) as usize
         }
         else if self.idle_timer_samples > 0 {
             self.idle_timer_samples - 1

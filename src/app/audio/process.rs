@@ -96,7 +96,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     compute_post_fx_spectrum(audio, buffer);
 
-    print_dsp_load(audio, dsp_start);
+    // print_dsp_load(audio, dsp_start);
     callback_timer(audio);
 }
 

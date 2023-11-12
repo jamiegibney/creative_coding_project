@@ -31,6 +31,12 @@ pub struct FirstOrderFilter {
     sample_rate: f64,
 }
 
+impl crate::dsp::Effect for FirstOrderFilter {
+    fn process_mono(&mut self, input: f64) -> f64 {
+        self.process(input)
+    }
+}
+
 impl Filter for FirstOrderFilter {
     fn process(&mut self, sample: f64) -> f64 {
         let Coefs { a0, a1, b1 } = self.coefs;
@@ -72,6 +78,10 @@ impl FirstOrderFilter {
 
     pub fn set_type(&mut self, filter_type: FilterType) {
         self.filter_type = filter_type;
+    }
+
+    pub fn reset(&mut self) {
+        self.z1 = 0.0;
     }
 
     fn set_lowpass_coefs(&mut self) {

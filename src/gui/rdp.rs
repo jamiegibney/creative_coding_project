@@ -85,8 +85,7 @@ pub fn decimate_points(points: &[[f64; 2]], epsilon: f64) -> Vec<usize> {
             points[start_index + 1..end_index].iter().enumerate().fold(
                 (0.0f64, 0),
                 move |(max_distance, max_index), (index, point)| {
-                    let distance = if let Some(dist) =
-                        line.distance_to(point)
+                    let distance = if let Some(dist) = line.distance_to(point)
                     // IF the distance is not 0.0, use it
                     {
                         dist

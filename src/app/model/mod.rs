@@ -33,6 +33,8 @@ pub struct Model {
     pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
 
     pub audio_callback_timer: CallbackTimerRef,
+
+    pub dsp_load: Option<String>,
 }
 
 impl Model {
@@ -80,6 +82,8 @@ impl Model {
 
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
+
+            dsp_load: None,
         }
     }
 

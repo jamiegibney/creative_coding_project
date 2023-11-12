@@ -1,9 +1,7 @@
 use super::{process::RESULT_BUFFER_SIZE, *};
-use crate::{gui::rdp::decimate_points, prelude::*};
+use crate::{dsp::*, gui::rdp::decimate_points, prelude::*};
 use nannou::prelude::*;
-// use nannou::color::rgb;
-use std::ptr::{addr_of, copy, copy_nonoverlapping};
-// use std::sync::{Arc, Mutex};
+use std::ptr::{addr_of, copy_nonoverlapping};
 
 const NUM_SPECTRUM_AVERAGES: usize = 12;
 
@@ -36,6 +34,8 @@ pub struct SpectrumAnalyzer {
 
     /// The bounding box of the analyzer.
     rect: Rect,
+
+    filter: FirstOrderFilter,
     // spectrum_mesh: Vec<[f32; 2]>,
 }
 
@@ -43,6 +43,10 @@ impl SpectrumAnalyzer {
     pub fn new(spectrum: SpectrumOutput, rect: Rect) -> Self {
         let width = rect.w() as f64;
         let sample_rate = unsafe { SAMPLE_RATE };
+
+        let mut filter = FirstOrderFilter::new(10.0);
+        filter.set_type(FilterType::Lowpass);
+        filter.set_freq(1.0);
 
         Self {
             spectrum,
@@ -72,8 +76,9 @@ impl SpectrumAnalyzer {
                 .collect(),
 
             spectrum_line: Vec::with_capacity(CURVE_RESOLUTION),
-
             rect,
+
+            filter,
         }
     }
 
@@ -104,15 +109,11 @@ impl SpectrumAnalyzer {
     }
 
     fn draw_mesh(&mut self, draw: &Draw, color: Rgba) {
-        // let mut points = Vec::with_capacity(self.spectrum_line.len() + 2);
         let start_point = dvec2(
             -self.width(),
             gain_to_ypos(MINUS_INFINITY_DB, self.height()),
         );
         let end_point = dvec2(self.width() + 50.0, -3000.0);
-        // points.push(start_point);
-        // points.append(&mut self.spectrum_line.clone());
-        // points.push(end_point);
 
         let mut points = vec![dvec2(0.0, 0.0); self.spectrum_line.len() + 2];
 
@@ -142,37 +143,57 @@ impl SpectrumAnalyzer {
 
     fn compute_spectrum(&mut self) {
         let width = self.width();
+        // first, average the spectrum data...
         self.average_spectrum_data();
 
+        // then get an interpolated magnitude value for each point along the curve.
         for (i, pt) in self.interpolated.iter_mut().enumerate() {
             let x = (i as f64 / (CURVE_RESOLUTION - 5) as f64) * width;
 
+            // get the frequency bin index and its offset
             let (idx, interp) =
                 Self::bin_idx_t(xpos_to_freq(x, width), self.bin_step);
 
+            // points outside of the working range are set to -inf dB
             if !(1..self.averaged_data.len() - 2).contains(&idx) {
                 *pt = [x, MINUS_INFINITY_DB];
                 continue;
             }
 
-            let range_min = idx - 1;
-            let range_max = idx + 2;
+            // get a slice of 4 points used for cubic interpolation...
+            let slice = &self.averaged_data[(idx - 1)..=(idx + 2)];
 
-            let slice = &self.averaged_data[range_min..=range_max];
-
-            // TODO: optimisation: so much recalculation going on here which could
-            // be cached!
+            // catmull-rom interpolation is used to give a lovely smoothed shape
+            // to the magnitude response.
             let mut mag = cubic_catmull_db(slice, interp);
 
-            if mag <= MINUS_INFINITY_DB {
+            // the magnitude is then clamped to -inf dB.
+            if mag < MINUS_INFINITY_DB {
                 mag = MINUS_INFINITY_DB;
             }
 
             *pt = [x, mag];
         }
 
-        // TODO: optimisation: could this mutate a buffer in-place?
-        // decimation removes about 1/3 of the total points here.
+        // bit of a hack here - the filter processes 10 samples but the values aren't
+        // used because it helps to "prime" the filter, smoothing out the curve at
+        // the very lowest frequencies. this needs to be done because the filter is
+        // reset for each frame, so has a little "blip" at DC.
+        // ideally the blip would be off screen, but this works well enough and the
+        // discontinuity is difficult to spot unless you're looking for it.
+        for i in 0..10 {
+            self.filter.process_mono(self.interpolated[i][1]);
+        }
+        self.interpolated.iter_mut().skip(10).for_each(|x| {
+            x[1] = self.filter.process_mono(x[1]);
+        });
+
+        // reset the filter for the next frame
+        self.filter.reset();
+
+        // decimate points to optimise the line geometry for rendering.
+        // TODO: add a version of this function which mutates a buffer in-place,
+        // rather than creating a new vector each time.
         self.spectrum_line = decimate_points(&self.interpolated, 0.1)
             .iter()
             .map(|i| {
@@ -191,6 +212,7 @@ impl SpectrumAnalyzer {
             .collect();
     }
 
+    // TODO this could probably be more efficient?
     fn average_spectrum_data(&mut self) {
         // add the new set of magnitudes to the averaging buffers
         let mags = self.spectrum.read();
@@ -207,12 +229,14 @@ impl SpectrumAnalyzer {
         // iterate through each sample...
         for smp in 0..RESULT_BUFFER_SIZE {
             // and sum up all elements from each frame
-            self.averaged_data[smp] = (0..frames)
-                .map(|fr| {
-                    // normalise each value
-                    self.spectrum_averaging[fr][smp] / frames as f64
-                })
-                .sum();
+            self.averaged_data[smp] = level_to_db(
+                (0..frames)
+                    .map(|fr| {
+                        // normalise each value
+                        self.spectrum_averaging[fr][smp] / frames as f64
+                    })
+                    .sum(),
+            );
         }
     }
 
@@ -248,17 +272,10 @@ fn xpos_to_freq(x: f64, width: f64) -> f64 {
 }
 
 fn gain_to_ypos(gain: f64, height: f64) -> f64 {
-    (gain + 105.0).mul_add(6.0, -height)
+    (gain + 90.0).mul_add(7.0, -height)
 }
 
 fn cubic_catmull_db(points: &[f64], t: f64) -> f64 {
     debug_assert!(points.len() >= 4);
-
-    interp::cubic_catmull(
-        level_to_db(points[0]),
-        level_to_db(points[1]),
-        level_to_db(points[2]),
-        level_to_db(points[3]),
-        t,
-    )
+    interp::cubic_catmull(points[0], points[1], points[2], points[3], t)
 }

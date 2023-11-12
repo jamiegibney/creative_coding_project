@@ -2,6 +2,7 @@
 
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 use nannou::prelude::{DVec2, Vec2};
+use std::f64::consts::{PI, TAU};
 
 pub mod interp;
 pub mod smoothing;
@@ -107,6 +108,46 @@ pub fn sinc(x: f64) -> f64 {
     else {
         x.sin() / x
     }
+}
+
+/// Returns a vector containing points of a Lanczos kernel. `a_factor` is the "a"
+/// variable in the kernel calculation. Only holds enough points to represent each lobe.
+/// Returns `4 * a_factor + 1` elements (when `trim_zeroes == false`).
+///
+/// `scale` will automatically scale each element in the kernel, and `trim_zeroes` will
+/// remove the first and last elements (which are always `0.0`) if true.
+///
+/// [Source](https://en.wikipedia.org/wiki/Lanczos_resampling)
+///
+/// # Panics
+///
+/// Panics if `a_factor == 0`.
+pub fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
+    assert_ne!(a_factor, 0);
+
+    let a = a_factor as f64;
+    let num_stages = a_factor * 4 + 1;
+
+    (if trim_zeroes { 1..num_stages - 1 } else { 0..num_stages })
+        .map(|i| {
+            if i % 2 == 0 {
+                0.0
+            }
+            else {
+                let x = 2.0f64.mul_add(-a, i as f64) / 2.0;
+
+                if x == 0.0 {
+                    1.0
+                }
+                else if -a <= x && x < a {
+                    sinc(PI * x) * sinc((PI * x) / a) * scale
+                }
+                else {
+                    0.0
+                }
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]

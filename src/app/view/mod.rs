@@ -5,6 +5,10 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
     draw.background().color(WHITE);
 
+    if PRINT_DSP_LOAD {
+
+    }
+
     let pre_spectrum_mesh_color = Rgba::new(0.0, 0.0, 0.0, 0.3);
     let post_spectrum_line_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
 
