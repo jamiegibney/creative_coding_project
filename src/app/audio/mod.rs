@@ -1,6 +1,7 @@
 use super::*;
 use crate::dsp::*;
 use crate::gui::spectrum::*;
+
 use nannou_audio::Buffer;
 use std::sync::atomic::AtomicUsize;
 use std::sync::mpsc::{channel, Receiver, Sender};
