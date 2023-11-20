@@ -1,6 +1,11 @@
+use crate::prelude::lanczos_kernel;
+use std::sync::Arc;
+
 use super::lanczos_stage::Lanczos3Stage;
 
 /// An oversampler which uses Lanczos resampling.
+//
+// TODO: add the ability to change the number of stages.
 #[derive(Clone)]
 pub struct Lanczos3Oversampler {
     stages: Vec<Lanczos3Stage>,
@@ -10,17 +15,28 @@ pub struct Lanczos3Oversampler {
 impl Lanczos3Oversampler {
     /// # Panics
     ///
-    /// Panics if `quality_factor == 0`.
+    /// Panics if `quality_factor == 0`, or if `max_factor == 0`.
     pub fn new(
         max_block_size: usize,
         max_factor: usize,
         quality_factor: u8,
     ) -> Self {
+        assert_ne!(max_factor, 0);
         let mut stages = Vec::with_capacity(max_factor);
+        let upsampling_kernel =
+            Arc::from(lanczos_kernel(quality_factor, 1.0, true));
+        // the downsampling kernel is identical, but scaled by half to result in
+        // unity gain after oversampling.
+        let downsampling_kernel =
+            Arc::from(lanczos_kernel(quality_factor, 0.5, true));
 
         for stage in 0..max_factor {
             stages.push(Lanczos3Stage::new(
-                max_block_size, stage as u32, quality_factor,
+                max_block_size,
+                stage as u32,
+                quality_factor,
+                Arc::clone(&upsampling_kernel),
+                Arc::clone(&downsampling_kernel),
             ));
         }
 
@@ -45,6 +61,10 @@ impl Lanczos3Oversampler {
     #[rustfmt::skip]
     pub fn latency(&self, factor: usize) -> u32 {
         if factor == 0 { 0 } else { self.latencies[factor - 1] }
+    }
+
+    pub fn max_stages(&self) -> usize {
+        self.stages.len()
     }
 
     pub fn process(
@@ -81,7 +101,8 @@ impl Lanczos3Oversampler {
         let mut previous_block_len = block.len() * 2;
 
         for to_stage_idx in 1..factor {
-            let ([.., from], [to, ..]) = self.stages.split_at_mut(to_stage_idx) else {
+            let ([.., from], [to, ..]) = self.stages.split_at_mut(to_stage_idx)
+            else {
                 unreachable!()
             };
 
@@ -118,7 +139,10 @@ impl Lanczos3Oversampler {
         let mut next_block_len = block.len() * 2usize.pow(factor as u32 - 1);
 
         for to_stage_idx in (1..factor).rev() {
-            let ([.., to], [from, ..]) = self.stages.split_at_mut(to_stage_idx) else { unreachable!() };
+            let ([.., to], [from, ..]) = self.stages.split_at_mut(to_stage_idx)
+            else {
+                unreachable!()
+            };
 
             from.downsample_to(&mut to.scratch_buffer[..next_block_len]);
 

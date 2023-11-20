@@ -23,6 +23,7 @@ pub struct AudioModel {
     pub context: AudioContext,
     /// Master gain level.
     pub gain: Smoother<f64>,
+    pub gain_data: Vec<f64>,
     /// Amplitude envelope which is cloned to each voice upon spawning.
     pub amp_envelope: AdsrEnvelope,
 
@@ -75,6 +76,10 @@ pub struct AudioModel {
     pub idle_timer_samples: usize,
 
     pub latency_samples: u32,
+
+    pub spectral_mask: Arc<Mutex<SpectralMask>>,
+
+    pub spectral_filter: SpectralFilter,
 }
 
 impl AudioModel {
@@ -139,10 +144,14 @@ impl AudioModel {
 
         let note_handler_ref = context.note_handler_ref();
 
-        let mut amp_envelope = AdsrEnvelope::new();
+        let mut amp_envelope = AdsrEnvelope::new(sample_rate);
         amp_envelope.set_parameters(10.0, 300.0, 1.0, 10.0);
 
-        // let thread_pool =
+        let spectral_block_size = 2048;
+
+        let mut spectral_filter =
+            SpectralFilter::new(NUM_CHANNELS, 2usize.pow(14));
+        spectral_filter.set_block_size(spectral_block_size);
 
         Self {
             callback_time_elapsed: Arc::new(Mutex::new(
@@ -150,7 +159,12 @@ impl AudioModel {
             )),
             voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
             context,
-            gain: Smoother::new(1.0, 0.1),
+            gain: Smoother::new(1.0, 0.1, upsampled_rate),
+            gain_data: vec![
+                0.1;
+                BUFFER_SIZE
+                    * 2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32)
+            ],
 
             pre_spectrum: Arc::new(Mutex::new(None)),
             pre_buffer_cache: Arc::new(Mutex::new(vec![
@@ -176,6 +190,12 @@ impl AudioModel {
             drive_amount_receiver: None,
 
             filter_freq_receiver: None,
+
+            // start with 512 elements
+            spectral_mask: Arc::new(Mutex::new(SpectralMask::new(
+                spectral_block_size.ilog2(),
+            ))),
+            spectral_filter,
 
             volume: db_to_level(-24.0),
 
@@ -235,18 +255,37 @@ impl AudioModel {
 
     /// Returns the pre and post `SpectrumOutput`s for the audio thread.
     pub fn spectrum_outputs(&mut self) -> (SpectrumOutput, SpectrumOutput) {
-        let (pre_in, pre_out) = SpectrumInput::new(2);
-        let (post_in, post_out) = SpectrumInput::new(2);
+        let (mut pre_in, pre_out) = SpectrumInput::new(2);
+        let (mut post_in, post_out) = SpectrumInput::new(2);
 
-        let mut guard = self.pre_spectrum.lock().unwrap();
+        let empty = vec![0.0; BUFFER_SIZE * NUM_CHANNELS];
+        pre_in.compute(&empty);
+        post_in.compute(&empty);
+
+        let mut guard = loop {
+            let res = self.pre_spectrum.try_lock();
+            if let Ok(x) = res {
+                break x;
+            }
+        };
         *guard = Some(pre_in);
         drop(guard);
 
-        let mut guard = self.post_spectrum.lock().unwrap();
+        let mut guard = loop {
+            let res = self.post_spectrum.try_lock();
+            if let Ok(x) = res {
+                break x;
+            }
+        };
         *guard = Some(post_in);
         drop(guard);
 
         (pre_out, post_out)
+    }
+
+    /// Returns a thread-safe reference to the audio processor's spectral mask.
+    pub fn spectral_mask(&mut self) -> Arc<Mutex<SpectralMask>> {
+        Arc::clone(&self.spectral_mask)
     }
 
     /// Initializes the `AudioModel`, returning an `AudioSenders` instance containing
@@ -255,26 +294,40 @@ impl AudioModel {
         self.set_filters();
     }
 
+    /// Computes the pre-fx spectrum in the thread pool.
+    ///
+    /// If the mutexes to the buffer cache and spectrum processor cannot be
+    /// locked, processing is skipped.
     pub fn compute_pre_spectrum(&mut self) {
         let spectrum = Arc::clone(&self.pre_spectrum);
         let buffer = Arc::clone(&self.pre_buffer_cache);
 
         self.spectrum_thread_pool.execute(move || {
-            if let Some(spectrum) = spectrum.lock().unwrap().as_mut() {
-                let buf = buffer.lock().unwrap();
-                spectrum.compute(&buf);
+            if let Ok(mut spectrum) = spectrum.try_lock() {
+                if let Some(spectrum) = spectrum.as_mut() {
+                    if let Ok(buf) = buffer.try_lock() {
+                        spectrum.compute(&buf);
+                    }
+                }
             }
         });
     }
 
+    /// Computes the post-fx spectrum in the thread pool.
+    ///
+    /// If the mutexes to the buffer cache and spectrum processor cannot be
+    /// locked, processing is skipped.
     pub fn compute_post_spectrum(&mut self) {
         let spectrum = Arc::clone(&self.post_spectrum);
         let buffer = Arc::clone(&self.post_buffer_cache);
 
         self.spectrum_thread_pool.execute(move || {
-            if let Some(spectrum) = spectrum.lock().unwrap().as_mut() {
-                let buf = buffer.lock().unwrap();
-                spectrum.compute(&buf);
+            if let Ok(mut spectrum) = spectrum.try_lock() {
+                if let Some(spectrum) = spectrum.as_mut() {
+                    if let Ok(buf) = buffer.try_lock() {
+                        spectrum.compute(&buf);
+                    }
+                }
             }
         });
     }
@@ -290,7 +343,7 @@ impl AudioModel {
 
         for lp in &mut self.filter_lp {
             lp.set_params(&params);
-            lp.set_freq(100.0);
+            lp.set_freq(4000.0);
             lp.set_q(BUTTERWORTH_Q);
         }
 

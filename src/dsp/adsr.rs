@@ -51,7 +51,7 @@ impl AdsrEnvelope {
     ///
     /// The envelope starts in an idle state.
     #[must_use]
-    pub fn new() -> Self {
+    pub fn new(sample_rate: f64) -> Self {
         Self {
             attack_time_ms: DEFAULT_ATTACK_TIME_MS,
             attack_level: 1.0,
@@ -65,7 +65,7 @@ impl AdsrEnvelope {
             release_time_ms: DEFAULT_RELEASE_TIME_MS,
             release_curve: DEFAULT_CURVE_AMOUNT,
 
-            ramp: Smoother::new(0.0, 1.0),
+            ramp: Smoother::new(0.0, 1.0, sample_rate),
             stage: AdsrStage::Idle,
             trigger: false,
         }
@@ -207,6 +207,11 @@ impl AdsrEnvelope {
         self.debug_parameter_assertions();
     }
 
+    /// Resets the internal sample rate for timing.
+    pub fn reset_sample_rate(&mut self, sample_rate: f64) {
+        self.ramp.reset_sample_rate(sample_rate);
+    }
+
     /// Returns the current `AdsrStage` of the envelope generator.
     #[must_use]
     pub fn get_stage(&self) -> AdsrStage {
@@ -334,7 +339,7 @@ impl AdsrEnvelope {
 
 impl Default for AdsrEnvelope {
     fn default() -> Self {
-        Self::new()
+        Self::new(unsafe { SAMPLE_RATE })
     }
 }
 
@@ -345,14 +350,14 @@ mod tests {
     #[test]
     #[should_panic]
     fn sus_out_of_range() {
-        let mut env = AdsrEnvelope::new();
+        let mut env = AdsrEnvelope::default();
         env.set_sustain_level(1.2);
     }
 
     #[test]
     #[should_panic]
     fn att_negative() {
-        let mut env = AdsrEnvelope::new();
+        let mut env = AdsrEnvelope::default();
         env.set_attack_time_ms(-8472.24);
     }
 
@@ -360,7 +365,7 @@ mod tests {
     // yes thank you clippy, very cool
     #[allow(clippy::cognitive_complexity)]
     fn correct_stages() {
-        let mut env = AdsrEnvelope::new();
+        let mut env = AdsrEnvelope::default();
         let samples_as_ms = 10.0 / unsafe { SAMPLE_RATE } * 1000.0;
         env.set_parameters(samples_as_ms, samples_as_ms, 0.5, samples_as_ms);
 

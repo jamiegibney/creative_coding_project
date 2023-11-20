@@ -3,8 +3,12 @@ use nannou_audio::Stream;
 use super::audio::*;
 use super::view::view;
 use super::*;
+use crate::dsp::SpectralMask;
+use crate::generative::*;
 use crate::gui::spectrum::*;
 use crate::musical::*;
+use nannou::image::Rgba;
+use nannou::prelude::*;
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -32,7 +36,12 @@ pub struct Model {
     pub pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
     pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
 
+    pub spectral_mask: Arc<Mutex<SpectralMask>>,
+
     pub audio_callback_timer: CallbackTimerRef,
+
+    pub contours: Contours,
+    pub mask_column: Vec<Rgba<u8>>,
 
     pub dsp_load: Option<String>,
 }
@@ -47,27 +56,35 @@ impl Model {
             note_handler,
             pre_spectrum,
             post_spectrum,
+            spectral_mask,
         } = build_audio_system();
 
         let (w, h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
-        let rect =
-            Rect::from_corners(pt2(-w / 2.0, -h / 2.0), pt2(w / 2.0, h / 2.0));
-
+        let rect = Rect::from_corners(pt2(250.0, -200.0), pt2(650.0, 200.0));
         let pre_spectrum_analyzer =
             RefCell::new(SpectrumAnalyzer::new(pre_spectrum, rect));
         let post_spectrum_analyzer =
             RefCell::new(SpectrumAnalyzer::new(post_spectrum, rect));
 
+        let window = app
+            .new_window()
+            .size(WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32)
+            .key_pressed(key::key_pressed)
+            .key_released(key::key_released)
+            .mouse_moved(mouse::mouse_moved)
+            .view(view)
+            .build()
+            .expect("failed to build app window!");
+
+        let contour_size = 256;
+        let contour_size_fl = (contour_size / 2) as f32;
+        let contour_rect = Rect::from_corners(
+            pt2(-contour_size_fl, -contour_size_fl),
+            pt2(contour_size_fl, contour_size_fl),
+        );
+
         Self {
-            window: app
-                .new_window()
-                .size(WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32)
-                .key_pressed(key::key_pressed)
-                .key_released(key::key_released)
-                .mouse_moved(mouse::mouse_moved)
-                .view(view)
-                .build()
-                .expect("failed to build app window!"),
+            window,
 
             audio_stream,
             audio_senders,
@@ -82,6 +99,14 @@ impl Model {
 
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
+
+            contours: Contours::new(app.main_window().device(), &contour_rect)
+                .with_z_increment(0.003)
+                .with_num_contours(16)
+                .with_contour_range(0.2..=0.8),
+            mask_column: vec![Rgba([255, 255, 255, u8::MAX]); contour_size],
+
+            spectral_mask,
 
             dsp_load: None,
         }
@@ -123,6 +148,7 @@ struct AudioSystem {
     note_handler: NoteHandlerRef,
     pre_spectrum: SpectrumOutput,
     post_spectrum: SpectrumOutput,
+    spectral_mask: Arc<Mutex<SpectralMask>>,
 }
 
 /// Builds the audio stream, audio message channel senders, and input note handler.
@@ -138,6 +164,8 @@ fn build_audio_system() -> AudioSystem {
     let senders = audio_model.message_channels();
 
     let (pre_spectrum, post_spectrum) = audio_model.spectrum_outputs();
+
+    let spectral_mask = audio_model.spectral_mask();
 
     let callback_timer_ref = audio_model.callback_timer_ref();
 
@@ -161,6 +189,7 @@ fn build_audio_system() -> AudioSystem {
         note_handler,
         pre_spectrum,
         post_spectrum,
+        spectral_mask,
     }
 }
 

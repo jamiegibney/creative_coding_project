@@ -26,5 +26,8 @@ pub use filters::{
 };
 pub use oversampling::{Oversampler, OversamplingBuffer};
 pub use ring_buffer::RingBuffer;
-pub use spectral::StftHelper;
+pub use spectral::{
+    spectral_filter::{mask::SpectralMask, SpectralFilter},
+    StftHelper,
+};
 pub use synthesis::Generator;

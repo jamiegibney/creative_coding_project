@@ -2,5 +2,5 @@
 use super::*;
 
 pub mod stft;
-pub mod mask;
+pub mod spectral_filter;
 pub use stft::StftHelper;

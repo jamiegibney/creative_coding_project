@@ -18,9 +18,9 @@ pub struct Smoother<T: Smoothable> {
 impl<T: Smoothable> Smoother<T> {
     /// Creates a new `Smoother` with linear smoothing (see the
     /// [`set_smoothing_type()`][Self::set_smoothing_type()] method).
-    pub fn new(duration_ms: f64, target_value: T) -> Self {
+    pub fn new(duration_ms: f64, target_value: T, sample_rate: f64) -> Self {
         Self {
-            ramp: Ramp::new(duration_ms),
+            ramp: Ramp::new(duration_ms, sample_rate),
             start_value: T::from_f64(0.0),
             current_value: T::from_f64(0.0),
             target_value,
@@ -132,6 +132,10 @@ impl<T: Smoothable> Smoother<T> {
     /// Resets the smoothing period of the `Smoother` in milliseconds.
     pub fn set_smoothing_period(&mut self, duration_ms: f64) {
         self.ramp.set_duration(duration_ms);
+    }
+
+    pub fn reset_sample_rate(&mut self, sample_rate: f64) {
+        self.ramp.reset_sample_rate(sample_rate);
     }
 
     /// Returns whether the `Smoother` is actively smoothing or not.

@@ -17,6 +17,7 @@ egui = "0.23.0" # egui - GUI library
 egui_wgpu_backend = "0.14"
 nannou = "0.18.1" # Creative coding library
 nannou_audio = "0.18.0" # Audio stuff
+noise = "0.8.2" # Different noise algorithms
 rand = "0.8.5" # RNG
 realfft = "3.3.0" # Fast Fourier Transform
 serde = "1.0.188" # (De)serialisation

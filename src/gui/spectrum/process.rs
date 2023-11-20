@@ -11,10 +11,10 @@ use triple_buffer::TripleBuffer;
 
 // These settings closely match FabFilter Pro-Q 3's spectrum analyser
 // on its "Maximum" / "Very Fast" resolution / time settings.
-pub const SPECTRUM_WINDOW_SIZE: usize = 1 << 13; // 8192
+pub const SPECTRUM_WINDOW_SIZE: usize = 1 << 12; // 4096
 pub const SPECTRUM_OVERLAP_FACTOR: usize = 1 << 4; // 16
 const SPECTRUM_ATTACK_MS: f64 = 70.0;
-const SPECTRUM_RELEASE_MS: f64 = 60.0;
+const SPECTRUM_RELEASE_MS: f64 = 100.0;
 
 pub const RESULT_BUFFER_SIZE: usize = SPECTRUM_WINDOW_SIZE / 2 + 1;
 

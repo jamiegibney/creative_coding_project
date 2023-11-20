@@ -24,12 +24,14 @@ pub struct Ramp {
 
     /// The duration of smoothing in milliseconds.
     duration_ms: f64,
+
+    sample_rate: f64,
 }
 
 impl Ramp {
     /// Returns a new `Ramp` with the provided duration time in milliseconds.
-    pub fn new(duration_ms: f64) -> Self {
-        let mut s = Self { duration_ms, ..Default::default() };
+    pub fn new(duration_ms: f64, sample_rate: f64) -> Self {
+        let mut s = Self { duration_ms, sample_rate, ..Default::default() };
         s.setup();
         s
     }
@@ -189,6 +191,10 @@ impl Ramp {
         self.setup();
     }
 
+    pub fn reset_sample_rate(&mut self, sample_rate: f64) {
+        self.sample_rate = sample_rate;
+    }
+
     /// Resets the duration of the `Ramp` in milliseconds.
     pub fn set_duration(&mut self, duration_ms: f64) {
         self.duration_ms = duration_ms;
@@ -217,7 +223,7 @@ impl Ramp {
     /// Computes the total number of steps required to reach the target value
     /// (i.e. the duration as samples).
     fn duration_samples(&self) -> u32 {
-        (unsafe { SAMPLE_RATE } * self.duration_ms / 1000.0).round() as u32
+        (self.sample_rate * self.duration_ms / 1000.0).round() as u32
     }
 
     /// Computes the size of each step.

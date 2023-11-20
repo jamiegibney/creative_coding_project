@@ -5,6 +5,7 @@ use super::*;
 pub enum Generator {
     Saw(PhasorOsc),
     Sine(SineOsc),
+    Noise,
 }
 
 impl Generator {
@@ -12,6 +13,7 @@ impl Generator {
         match self {
             Self::Saw(gen) => gen.process(),
             Self::Sine(gen) => gen.process(),
+            Self::Noise => NoiseOsc::process_stereo(),
         }
     }
 }

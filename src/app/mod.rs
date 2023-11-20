@@ -11,8 +11,10 @@ mod key;
 mod model;
 mod mouse;
 mod view;
+mod update;
 
 pub use model::Model;
+use update::update;
 
 /// Runs the app via Nannou.
 pub fn run_app() {
@@ -21,5 +23,3 @@ pub fn run_app() {
         .update(update)
         .run();
 }
-
-fn update(_app: &App, _model: &mut Model, _update: Update) {}

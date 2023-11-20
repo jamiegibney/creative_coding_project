@@ -35,7 +35,7 @@ impl RingBuffer {
             data: vec![0.0; size],
             write_pos: 0,
 
-            delay_secs: Smoother::new(0.0, DEFAULT_SMOOTHING_TIME),
+            delay_secs: Smoother::new(0.0, DEFAULT_SMOOTHING_TIME, sample_rate),
 
             interpolation_type: InterpType::default(), // linear
 

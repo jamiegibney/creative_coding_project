@@ -36,7 +36,7 @@ impl Voice {
         Self {
             id,
             note,
-            envelope: envelope.unwrap_or(AdsrEnvelope::new()),
+            envelope: envelope.unwrap_or_default(),
             releasing: false,
             generator,
         }
@@ -107,7 +107,7 @@ impl VoiceHandler {
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
-            generator: Generator::Sine(SineOsc::new(note_to_freq(note as f64))),
+            generator: Generator::Noise,
         };
 
         new_voice.envelope.set_trigger(true);

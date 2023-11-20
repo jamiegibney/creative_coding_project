@@ -4,18 +4,22 @@
 // very small buffers).
 
 use crate::prelude::*;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub(super) struct Lanczos3Stage {
     oversampling_amount: usize,
 
-    upsampling_kernel: Vec<f64>,
+    // Arc is used as the same data is shared among stages, so may as well
+    // have only one copy to hopefully improve cache locality.
+    // Same applies to downsampling_kernel
+    upsampling_kernel: Arc<[f64]>,
     upsampling_buffer: Vec<f64>,
     upsampling_write_pos: usize,
 
     additional_upsampling_latency: usize,
 
-    downsampling_kernel: Vec<f64>,
+    downsampling_kernel: Arc<[f64]>,
     downsampling_buffer: Vec<f64>,
     downsampling_write_pos: usize,
 
@@ -38,17 +42,13 @@ impl Lanczos3Stage {
         max_block_size: usize,
         stage_number: u32,
         quality_factor: u8,
+        upsampling_kernel: Arc<[f64]>,
+        downsampling_kernel: Arc<[f64]>,
     ) -> Self {
         assert_ne!(quality_factor, 0);
         let oversampling_amount = 2usize.pow(stage_number + 1);
 
-        let upsampling_kernel = lanczos_kernel(quality_factor, 1.0, true);
-        // the downsampling kernel is identical, but scaled by half to result in
-        // unity gain after oversampling.
-        let downsampling_kernel = lanczos_kernel(quality_factor, 0.5, true);
-
         let uncompensated_stage_latency = upsampling_kernel.len() * 2;
-
         let additional_upsampling_latency =
             (-(uncompensated_stage_latency as isize))
                 .rem_euclid(oversampling_amount as isize) as usize;
@@ -198,7 +198,7 @@ fn convolve(input_buffer: &[f64], kernel: &[f64], buffer_pos: usize) -> f64 {
         .sum()
 }
 
-/// Returns a vector containing points of a Lanczos kernel. `a_factor` is the "a"
+/* /// Returns a vector containing points of a Lanczos kernel. `a_factor` is the "a"
 /// variable in the kernel calculation. Only holds enough points to represent each lobe.
 /// Returns `4 * a_factor + 1` elements (when `trim_zeroes == false`).
 ///
@@ -236,4 +236,4 @@ fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
             }
         })
         .collect()
-}
+} */

@@ -1,5 +1,7 @@
 use super::*;
 
+const SIGNAL_EPSILON: f64 = MINUS_INFINITY_GAIN / 5.0;
+
 /// The main audio processing callback.
 pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     let dsp_start = std::time::Instant::now();
@@ -146,29 +148,27 @@ fn print_dsp_load(audio: &mut AudioModel, start_time: std::time::Instant) {
     }
 }
 
-fn callback_timer(audio: &mut AudioModel) {
+fn callback_timer(audio: &AudioModel) {
     // the chance of not being able to acquire the lock is very small here,
     // but because this is the audio thread, it's preferable to not block at
     // all. so if the lock can't be obtained, then the callback_time_elapsed
     // will temporarily not be reset. this won't cause issues in the context
     // of this program.
-    audio
-        .callback_time_elapsed
-        .try_lock()
-        .map_or((), |mut guard| {
-            if guard.elapsed().as_secs_f64() >= 0.0001 {
-                *guard = std::time::Instant::now();
-            }
-        });
+    if let Ok(mut guard) = audio.callback_time_elapsed.try_lock() {
+        if guard.elapsed().as_secs_f64() >= 0.0001 {
+            *guard = std::time::Instant::now();
+        }
+    }
 }
 
 /// Processes all audio FX.
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
-    // audio effects/processors
-
     // copy the audio buffer into the oversampling buffer so the channel layout
     // is compatible with the oversamplers.
     audio.oversampling_buffer.copy_from_buffer(buffer);
+
+    // compute gain information
+    audio.gain.next_block_exact(&mut audio.gain_data);
 
     // process the oversampling
     for ((ch, block), oversampler) in audio
@@ -184,11 +184,13 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                 .load(std::sync::atomic::Ordering::Relaxed),
             |upsampled| {
                 // a single channel iterating through each upsampled sample
-                for (i, sample) in upsampled.iter_mut().enumerate() {
-                    // *sample = audio.filter_lp[ch].process(*sample);
+                for (smp_idx, sample) in upsampled.iter_mut().enumerate() {
                     // *sample = audio.filter_comb[ch].process(*sample);
-                    *sample = audio.waveshaper[ch].process(*sample);
-                    *sample *= 2.5;
+                    // *sample = audio.waveshaper[ch].process(*sample);
+                    // *sample = audio.filter_lp[ch].process(*sample);
+                    // *sample *= 2.5;
+
+                    *sample *= audio.gain_data[smp_idx];
                 }
             },
         );
@@ -198,17 +200,24 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // correct channel layout.
     audio.oversampling_buffer.copy_to_buffer(buffer);
 
-    let mut is_processing = false;
+    // update spectral mask
+    if let Ok(guard) = audio.spectral_mask.lock() {
+        audio.spectral_filter.set_mask(&guard);
+    }
+    // process the spectral masking
+    audio.spectral_filter.process_block(buffer);
 
+    // final loop
+    let mut is_processing = false;
     for output in buffer.frames_mut() {
+        // hard-clip output
         output[0] = output[0].clamp(-1.0, 1.0);
         output[1] = output[1].clamp(-1.0, 1.0);
 
-        // this seems to be a better level to compare against than f64::EPSILON
-        let signal_epsilon = MINUS_INFINITY_GAIN / 5.0;
-
-        // used to decide whether to skip DSP processing in the next block or not.
-        if output[0].abs() > signal_epsilon || output[1].abs() > signal_epsilon
+        // used to decide whether to skip DSP processing in the next block or not
+        if (output[0].abs() > SIGNAL_EPSILON
+            || output[1].abs() > SIGNAL_EPSILON)
+            && !is_processing
         {
             is_processing = true;
         }

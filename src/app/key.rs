@@ -14,12 +14,10 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 model.audio_stream.play().unwrap();
             }
         }
-        Key::Z => {
-            model.octave.decrease();
-        }
-        Key::X => {
-            model.octave.increase();
-        }
+        Key::Z => model.octave.decrease(),
+        Key::X => model.octave.increase(),
+        Key::R => model.contours.reset_seed(),
+
         _ => (),
     };
 

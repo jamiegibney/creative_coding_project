@@ -101,13 +101,16 @@ pub fn sample_length() -> f64 {
 /// The unnormalised sinc function (`sin(x) / x`).
 ///
 /// For a normalised sinc function, multiply `x` by `π`.
+#[rustfmt::skip]
 pub fn sinc(x: f64) -> f64 {
-    if x == 0.0 {
-        1.0
-    }
-    else {
-        x.sin() / x
-    }
+    if x == 0.0 { 1.0 }
+    else { x.sin() / x }
+}
+
+/// Returns true if `value` is equal to `target`, with a tolerance of
+/// ±`f64::EPSILON`.
+pub fn epsilon_eq(value: f64, target: f64) -> bool {
+    (target - value).abs() < f64::EPSILON
 }
 
 /// Returns a vector containing points of a Lanczos kernel. `a_factor` is the "a"
@@ -122,6 +125,7 @@ pub fn sinc(x: f64) -> f64 {
 /// # Panics
 ///
 /// Panics if `a_factor == 0`.
+#[rustfmt::skip]
 pub fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
     assert_ne!(a_factor, 0);
 
@@ -130,24 +134,49 @@ pub fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
 
     (if trim_zeroes { 1..num_stages - 1 } else { 0..num_stages })
         .map(|i| {
-            if i % 2 == 0 {
-                0.0
-            }
+            if i % 2 == 0 { 0.0 }
             else {
                 let x = 2.0f64.mul_add(-a, i as f64) / 2.0;
 
-                if x == 0.0 {
-                    1.0
-                }
-                else if -a <= x && x < a {
+                if x == 0.0 { 1.0 }
+                else if -a < x && x < a {
                     sinc(PI * x) * sinc((PI * x) / a) * scale
                 }
-                else {
-                    0.0
-                }
+                else { 0.0 }
             }
         })
         .collect()
+}
+
+/// Returns a normalised value representing the logarithmic value of a frequency
+/// based on the current sample rate.
+///
+/// In other words, this function accepts a linear frequency value, scales it
+/// logarithmically such that octaves are evenly spaced, and then normalises
+/// it between `start_hz` Hz and the Nyquist rate such that the output range
+/// is `0.0` to `1.0`.
+///
+/// # Panics
+///
+/// Panics if `start_hz == 0`.
+///
+/// Panics in debug mode if either `freq_hz`, `start_hz`, or `sample_rate` is
+/// negative.
+///
+/// # Source
+///
+/// [Found by experimenting on Desmos.](https://www.desmos.com/calculator/nqgorlqxyw)
+pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
+    assert!(!epsilon_eq(start_hz, 0.0));
+    debug_assert!(
+        freq_hz.is_sign_positive()
+            && start_hz.is_sign_positive()
+            && sample_rate.is_sign_positive()
+    );
+    let log_start = start_hz.log10();
+    let norm = (sample_rate / 2.0 - log_start).log10().recip();
+
+    norm * (freq_hz.log10() - log_start)
 }
 
 #[cfg(test)]
