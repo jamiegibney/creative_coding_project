@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn update(_app: &App, model: &mut Model, _update: Update) {
+pub fn update(app: &App, model: &mut Model, update: Update) {
     model.contours.update();
 
     // TODO logarithmic frequency scaling for the mask
@@ -20,6 +20,6 @@ pub fn update(_app: &App, model: &mut Model, _update: Update) {
     // }
 
     if let Ok(mut mask) = model.spectral_mask.lock() {
-        model.contours.column(&mut mask, 0.5);
+        model.contours.column_to_mask(&mut mask, 0.5);
     }
 }

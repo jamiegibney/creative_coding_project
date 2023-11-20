@@ -8,13 +8,7 @@ use std::cell::RefCell;
 use std::ops::RangeInclusive;
 use std::sync::{Arc, Mutex};
 
-/// The number of threads to use for computing the contour lines.
-const CONTOUR_NUM_THREADS: usize = 16;
-
-/// Perlin noise contour line generator. Runs asynchronously via 16 threads.
-// TODO there must be a way of storing the threads rather than spawning them
-// each frame? thread pool?
-// TODO configurable number of threads (even just when constructing)
+/// Perlin noise contour line generator. Supports multi-threading.
 pub struct Contours {
     /// Noise generator.
     noise: Arc<Perlin>,
@@ -33,10 +27,7 @@ pub struct Contours {
     /// The internal image buffer (the buffer which holds pixel data).
     image_buffer: RefCell<ImageBuffer<Rgba<u8>, Vec<u8>>>,
 
-    column: Vec<Rgba<u8>>,
-    prev_col_idx: Option<usize>,
-
-    scratch_buffers: Vec<Arc<Mutex<Vec<Rgba<u8>>>>>,
+    thread_buffers: Vec<Arc<Mutex<Vec<Rgba<u8>>>>>,
     thread_pool: Option<ThreadPool>,
 }
 
@@ -44,13 +35,9 @@ impl Contours {
     /// Creates a new `Contours`.
     ///
     /// This object is responsible for handling its own texture and image buffer.
+    ///
+    /// Uses 1 thread by default — see [`with_num_threads()`](Self::with_num_threads).
     pub fn new(device: &wgpu::Device, win_rect: &Rect) -> Self {
-        // assert!(TODO.is_power_of_two());
-        let height_px = win_rect.h() as usize;
-
-        let _total_px = win_rect.w() as usize * win_rect.h() as usize;
-        // let thread_px = total_px / TODO;
-
         Self {
             noise: Arc::new(Perlin::new().set_seed(random())),
             z: 0.0,
@@ -75,12 +62,8 @@ impl Contours {
                 |_, _| Rgba([255, 255, 255, u8::MAX]),
             )),
 
-            column: vec![Rgba([255, 255, 255, u8::MAX]); height_px],
-            prev_col_idx: None,
-
-            scratch_buffers: Vec::new(),
-
             thread_pool: None,
+            thread_buffers: Vec::new(),
         }
     }
 
@@ -101,7 +84,9 @@ impl Contours {
 
     /// Uploads the internal image buffer to a texture, and passes it to `Draw`.
     ///
-    /// `device` and `frame` are used to upload the texture.
+    /// [`update()`](Self::update) should be called before this method.
+    ///
+    /// `device` and `frame` are used to upload the texture data.
     pub fn draw(&self, device: &wgpu::Device, draw: &Draw, frame: &Frame) {
         self.texture.upload_data(
             device,
@@ -122,7 +107,7 @@ impl Contours {
     /// the far-left and vice versa.
     ///
     /// If `x < 0.0 || 1.0 < x`, this method has no effect.
-    pub fn column(&mut self, mask: &mut SpectralMask, x: f64) {
+    pub fn column_to_mask(&mut self, mask: &mut SpectralMask, x: f64) {
         if !(0.0..=1.0).contains(&x) {
             return;
         }
@@ -130,7 +115,7 @@ impl Contours {
         let sr = unsafe { SAMPLE_RATE };
         let num_bins = mask.len();
 
-        // the first bin is skipped as it corresponds to the 0 Hz component.
+        // start at 1 to skip the 0 Hz component
         for i in 1..num_bins {
             // get the frequency of the current bin
             let bin_freq = mask.bin_freq(i, sr);
@@ -191,7 +176,7 @@ impl Contours {
     }
 
     /// Sets how much to increment the z value per frame to transition through
-    /// a thrid noise dimension.
+    /// a third noise dimension.
     pub fn set_z_increment(&mut self, z_increment: f64) {
         self.z_increment = z_increment;
     }
@@ -205,7 +190,7 @@ impl Contours {
     ///
     /// # Panics
     ///
-    /// Panics if `num_threads` is not a power of two value (required to efficiently
+    /// Panics if `num_threads` is not a power-of-two value (required to efficiently
     /// divide the image buffer up).
     pub fn with_num_threads(mut self, num_threads: usize) -> Option<Self> {
         if self.set_num_threads(num_threads) {
@@ -220,11 +205,11 @@ impl Contours {
     ///
     /// Returns `true` if the threads were successfully spawned, and false otherwise.
     ///
-    /// This method will allocate if the threads are spawned.
+    /// This method will allocate if new threads are successfully spawned.
     ///
     /// # Panics
     ///
-    /// Panics if `num_threads` is not a power of two value (required to efficiently
+    /// Panics if `num_threads` is not a power-of-two value (required to efficiently
     /// divide the image buffer up).
     pub fn set_num_threads(&mut self, num_threads: usize) -> bool {
         assert!(num_threads.is_power_of_two());
@@ -234,7 +219,7 @@ impl Contours {
 
         if let Ok(pool) = ThreadPool::build(num_threads) {
             self.thread_pool = Some(pool);
-            self.scratch_buffers = {
+            self.thread_buffers = {
                 let mut v = Vec::with_capacity(num_threads);
                 (0..num_threads).for_each(|_| {
                     v.push(Arc::new(Mutex::new(vec![
@@ -257,6 +242,17 @@ impl Contours {
         }
     }
 
+    /// The width of the image buffer in pixels.
+    pub fn width_px(&self) -> usize {
+        self.image_buffer.borrow().width() as usize
+    }
+
+    /// The height of the image buffer in pixels.
+    pub fn height_px(&self) -> usize {
+        self.image_buffer.borrow().width() as usize
+    }
+
+    /// Synchronously processes the contour lines on one thread.
     fn process(&mut self) {
         let width = self.width_px() as f64;
         let height = self.height_px() as f64;
@@ -292,7 +288,7 @@ impl Contours {
                 let num_contours = self.num_contours;
                 let noise = Arc::clone(&self.noise);
                 let range = Arc::clone(&self.range);
-                let buf = Arc::clone(&self.scratch_buffers[i]);
+                let buf = Arc::clone(&self.thread_buffers[i]);
 
                 let start_row = i * rows_per_thread;
 
@@ -330,23 +326,13 @@ impl Contours {
             .enumerate()
             .for_each(|(i, pxl)| {
                 if let Ok(guard) =
-                    self.scratch_buffers[i / pxl_per_thread].lock()
+                    self.thread_buffers[i / pxl_per_thread].lock()
                 {
                     if pxl_per_thread != 0 {
                         *pxl = guard[i % pxl_per_thread];
                     }
                 }
             });
-    }
-
-    /// The width of the image buffer in pixels.
-    pub fn width_px(&self) -> usize {
-        self.image_buffer.borrow().width() as usize
-    }
-
-    /// The height of the image buffer in pixels.
-    pub fn height_px(&self) -> usize {
-        self.image_buffer.borrow().width() as usize
     }
 
     /// The contouring method for the generator.
