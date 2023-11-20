@@ -20,6 +20,6 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
     // }
 
     if let Ok(mut mask) = model.spectral_mask.lock() {
-        model.contours.column_direct(&mut mask, 128);
+        model.contours.column(&mut mask, 0.5);
     }
 }

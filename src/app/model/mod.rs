@@ -101,6 +101,8 @@ impl Model {
             post_spectrum_analyzer,
 
             contours: Contours::new(app.main_window().device(), &contour_rect)
+                .with_num_threads(16)
+                .expect("failed to allocate 16 threads to contour generator")
                 .with_z_increment(0.003)
                 .with_num_contours(32)
                 .with_contour_range(0.3..=0.8),
