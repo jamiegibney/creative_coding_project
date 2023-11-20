@@ -78,8 +78,9 @@ impl SpectralMask {
         assert!(idx <= self.points.len());
         let size = self.points.len() as f64;
         let k = idx as f64;
+        let nyquist = sample_rate / 2.0;
 
-        (k * sample_rate) / size
+        k * (nyquist / size)
     }
 }
 

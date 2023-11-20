@@ -1,10 +1,12 @@
+use crate::dsp::SpectralMask;
+use crate::prelude::*;
+use crate::util::thread_pool::ThreadPool;
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::noise::{NoiseFn, Perlin, Seedable};
 use nannou::prelude::*;
 use std::cell::RefCell;
 use std::ops::RangeInclusive;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 /// The number of threads to use for computing the contour lines.
 const CONTOUR_NUM_THREADS: usize = 16;
@@ -35,7 +37,7 @@ pub struct Contours {
     prev_col_idx: Option<usize>,
 
     scratch_buffers: Vec<Arc<Mutex<Vec<Rgba<u8>>>>>,
-    // thread_handles: Vec<thread::JoinHandle<()>>,
+    thread_pool: ThreadPool,
 }
 
 impl Contours {
@@ -91,10 +93,12 @@ impl Contours {
                 });
                 v
             },
+
+            thread_pool: ThreadPool::build(CONTOUR_NUM_THREADS).unwrap(),
         }
     }
 
-    /// Updates the internal image buffer.
+    /// Updates the internal image buffer and noise generator.
     pub fn update(&mut self) {
         // synchronous version:
         /* self.image_buffer
@@ -133,26 +137,30 @@ impl Contours {
             }
         }); */
 
+        // important to update this first, as it ensures the generated image
+        // matches what is sampled from the noise generator before this method
+        // is called again
+        self.update_z();
+
+        // generate pixel information
         self.process_async();
 
         let pxl_per_thread = self.rows_per_thread() * self.width_px();
 
+        // copy generated information to the image buffer
         self.image_buffer
             .borrow_mut()
             .pixels_mut()
             .enumerate()
             .for_each(|(i, pxl)| {
-                let guard =
-                    self.scratch_buffers[i / pxl_per_thread].lock().unwrap();
-                if pxl_per_thread != 0 {
-                    *pxl = guard[i % pxl_per_thread];
+                if let Ok(guard) =
+                    self.scratch_buffers[i / pxl_per_thread].lock()
+                {
+                    if pxl_per_thread != 0 {
+                        *pxl = guard[i % pxl_per_thread];
+                    }
                 }
             });
-
-        self.z += self.z_increment;
-        if self.z > 100_000_000_000.0 {
-            self.z = 0.0;
-        }
     }
 
     /// Uploads the internal image buffer to a texture, and passes it to `Draw`.
@@ -196,6 +204,34 @@ impl Contours {
         }
 
         Some(&self.column)
+    }
+
+    pub fn column_direct(&mut self, mask: &mut SpectralMask, col_idx: usize) {
+        let buf = self.image_buffer.borrow();
+        if col_idx > buf.width() as usize {
+            return;
+        }
+
+        let sr = unsafe { SAMPLE_RATE };
+        let num_bins = mask.len();
+        let width = buf.width() as f64;
+
+        for i in 1..num_bins {
+            let bin_freq = mask.bin_freq(i, sr);
+
+            let x = col_idx as f64 / width;
+            let y = 1.0 - freq_log_norm(bin_freq, 20.0, sr);
+
+            let noise = self.noise.get([x, y, self.z]);
+            let mapped = ((noise + 1.0) / 2.0) * self.num_contours as f64;
+
+            if self.range.contains(&mod1(mapped)) {
+                mask[i] = 1.0;
+            }
+            else {
+                mask[i] = 0.0;
+            }
+        }
     }
 
     /// Adds the provided range to `self`.
@@ -259,7 +295,9 @@ impl Contours {
 
             let start_row = i * rows_per_thread;
 
-            thread::spawn(move || {
+            // TODO there must be a better way to handle this than spawning threads
+            // each time - thread pool?
+            self.thread_pool.execute(move || {
                 let mut buf = buf.lock().unwrap();
 
                 for x in 0..width {
@@ -298,6 +336,15 @@ impl Contours {
     /// The number of rows allocated to each thread.
     fn rows_per_thread(&self) -> usize {
         self.image_buffer.borrow().height() as usize / CONTOUR_NUM_THREADS
+    }
+
+    fn update_z(&mut self) {
+        self.z += self.z_increment;
+        // to maintain floating-point precision, just bounce the z value back
+        // and forth within this range
+        if self.z < -1_000_000.0 || 1_000_000.0 < self.z {
+            self.z_increment *= -1.0;
+        }
     }
 }
 

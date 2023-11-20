@@ -102,8 +102,8 @@ impl Model {
 
             contours: Contours::new(app.main_window().device(), &contour_rect)
                 .with_z_increment(0.003)
-                .with_num_contours(16)
-                .with_contour_range(0.2..=0.8),
+                .with_num_contours(32)
+                .with_contour_range(0.3..=0.8),
             mask_column: vec![Rgba([255, 255, 255, u8::MAX]); contour_size],
 
             spectral_mask,

@@ -23,31 +23,25 @@ pub enum PoolCreationError {
 
 #[derive(Debug)]
 struct Worker {
-    id: usize,
+    _id: usize,
     thread: Option<JoinHandle<()>>,
 }
 
 impl Worker {
     fn new(id: usize, receiver: ReceiverArc) -> IoResult<Self> {
         let builder = thread::Builder::new();
-        let thread = builder.spawn(move || {
-            loop {
-                let msg = receiver.lock().unwrap().recv();
+        let thread = builder.spawn(move || loop {
+            let msg = receiver.lock().unwrap().recv();
 
-                if msg.is_err() {
-                    break;
-                }
-
-                // println!("Thread #{id} started processing");
-
-                let mut job = msg.unwrap();
-                job();
+            if msg.is_err() {
+                break;
             }
 
-            // println!("Thread #{id} has finished");
+            let mut job = msg.unwrap();
+            job();
         })?;
 
-        Ok(Self { id, thread: Some(thread) })
+        Ok(Self { _id: id, thread: Some(thread) })
     }
 
     fn join(&mut self) {
@@ -58,6 +52,12 @@ impl Worker {
 }
 
 impl ThreadPool {
+    /// Builds a new `ThreadPool`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `PoolCreationError` if `num_threads == 0`, or if all the
+    /// requested threads failed to spawn.
     pub fn build(num_threads: usize) -> Result<Self, PoolCreationError> {
         if num_threads == 0 {
             return Err(PCE::ZeroThreads);
@@ -78,11 +78,18 @@ impl ThreadPool {
         Ok(Self { workers, sender: Some(sender) })
     }
 
+    /// Sends a closure to the thread pool.
+    #[allow(clippy::missing_panics_doc)]
     pub fn execute<F>(&self, f: F)
     where
         F: FnMut() + Send + 'static,
     {
         self.sender.as_ref().unwrap().send(Box::new(f)).unwrap();
+    }
+
+    /// Returns the number of threads held in the pool.
+    pub fn num_threads(&self) -> usize {
+        self.workers.len()
     }
 }
 
@@ -92,7 +99,6 @@ impl Drop for ThreadPool {
 
         for worker in &mut self.workers {
             worker.join();
-            // println!("Thread #{} has joined", worker.id);
         }
     }
 }

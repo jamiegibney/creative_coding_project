@@ -174,7 +174,7 @@ pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
             && sample_rate.is_sign_positive()
     );
     let log_start = start_hz.log10();
-    let norm = (sample_rate / 2.0 - log_start).log10().recip();
+    let norm = ((sample_rate / 2.0).log10() - log_start).recip();
 
     norm * (freq_hz.log10() - log_start)
 }

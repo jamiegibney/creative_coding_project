@@ -111,6 +111,7 @@ impl SpectrumAnalyzer {
     }
 
     fn draw_line(&mut self, draw: &Draw, color: Rgba) {
+        dbg!(&self.spectrum_line);
         draw.polyline().weight(2.5).points_colored(
             self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
         );
@@ -199,21 +200,22 @@ impl SpectrumAnalyzer {
         self.spectrum_line = decimate_points(&self.interpolated, 0.1)
             .iter()
             .map(|&i| {
-                let mut x = self.interpolated[i][0] - width / 2.0
-                    + self.rect.x() as f64;
+                let left = self.rect.left() as f64;
+                let bottom = self.rect.bottom() as f64;
+                let mut x = self.interpolated[i][0] - width / 2.0 + left;
                 let mut y = self.gain_to_ypos(self.interpolated[i][1]);
 
                 // TODO: find out why some of these points are not finite
                 if !x.is_finite() {
-                    x = width / 2.0;
+                    x = left;
                 }
                 if !y.is_finite() {
-                    y = self.height() / 2.0;
+                    y = bottom;
                 }
-                DVec2::new(x, y).clamp(
-                    self.rect.bottom_left().as_f64(),
-                    self.rect.top_right().as_f64(),
-                )
+                DVec2::new(x, y) /* .clamp(
+                                     self.rect.bottom_left().as_f64(),
+                                     self.rect.top_right().as_f64(),
+                                 ) */
             })
             .collect();
     }
@@ -276,7 +278,7 @@ impl SpectrumAnalyzer {
 
 fn xpos_to_freq(rect: &Rect, x: f64) -> f64 {
     let x = (x - rect.left() as f64) / (rect.w() as f64);
-    note_to_freq(x * (unsafe { SAMPLE_RATE } / 2.0))
+    note_to_freq(scale(x, NOTE_10_HZ, NOTE_30000_HZ))
 }
 
 fn freq_to_xpos(freq: f64, width: f64) -> f64 {

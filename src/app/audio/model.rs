@@ -191,9 +191,9 @@ impl AudioModel {
 
             filter_freq_receiver: None,
 
-            // start with 512 elements
             spectral_mask: Arc::new(Mutex::new(SpectralMask::new(
-                spectral_block_size.ilog2(),
+                // - 1 because the mask should be half of the fft block size
+                spectral_block_size.ilog2() - 1,
             ))),
             spectral_filter,
 
