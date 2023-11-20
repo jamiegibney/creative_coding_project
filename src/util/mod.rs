@@ -16,6 +16,11 @@ pub use smoothing::*;
 pub use thread_pool::ThreadPool;
 pub use xfer::SmoothingType;
 
+/// Calculates the modulo-1 value of a floating-point value.
+pub fn mod1(x: f64) -> f64 {
+    x - x.floor()
+}
+
 /// Calculates the frequency value of the provided MIDI note value.
 pub fn note_to_freq(note_value: f64) -> f64 {
     ((note_value - 69.0) / 12.0).exp2() * unsafe { TUNING_FREQ_HZ }

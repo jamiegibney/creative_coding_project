@@ -1,9 +1,11 @@
 use crate::dsp::SpectralMask;
 use crate::prelude::*;
 use crate::util::thread_pool::ThreadPool;
+
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::noise::{NoiseFn, Perlin, Seedable};
 use nannou::prelude::*;
+
 use std::cell::RefCell;
 use std::ops::RangeInclusive;
 use std::sync::{Arc, Mutex};
@@ -284,7 +286,8 @@ impl Contours {
         let z = self.z;
 
         if let Some(pool) = &self.thread_pool {
-            for i in 0..CONTOUR_NUM_THREADS {
+            let num_threads = pool.num_threads();
+            for i in 0..num_threads {
                 let num_contours = self.num_contours;
                 let noise = Arc::clone(&self.noise);
                 let range = Arc::clone(&self.range);
@@ -347,9 +350,13 @@ impl Contours {
 
     /// The number of rows allocated to each thread.
     fn rows_per_thread(&self) -> usize {
-        self.image_buffer.borrow().height() as usize / CONTOUR_NUM_THREADS
+        // SAFETY: this function is only called if the thread pool exists, so
+        // unwrapping it is fine.
+        let num_threads = self.thread_pool.as_ref().unwrap().num_threads();
+        self.image_buffer.borrow().height() as usize / num_threads
     }
 
+    /// Updates the internal z value used for the noise field's third dimension.
     fn update_z(&mut self) {
         self.z += self.z_increment;
         // to maintain floating-point precision, just bounce the z value back
@@ -358,9 +365,4 @@ impl Contours {
             self.z_increment *= -1.0;
         }
     }
-}
-
-/// Calculates the modulo-1 value of a floating-point value.
-fn mod1(x: f64) -> f64 {
-    x - x.floor()
 }
