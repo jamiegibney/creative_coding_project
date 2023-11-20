@@ -1,5 +1,5 @@
 //! Spectral frequency masking.
-use crate::prelude::*;
+
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug)]

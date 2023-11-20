@@ -46,7 +46,7 @@ impl Ramp {
         debug_assert_ne!(num_steps, 0);
 
         let Self {
-            steps_remaining, step_size, current_value, duration_ms, ..
+            steps_remaining, step_size, current_value,  ..
         } = self;
 
         if *steps_remaining <= 0 {
@@ -81,7 +81,7 @@ impl Ramp {
     /// values.
     pub fn next_block_exact(&mut self, block: &mut [f64]) {
         let Self {
-            steps_remaining, step_size, current_value, duration_ms, ..
+            steps_remaining, step_size, current_value,  ..
         } = self;
 
         let steps_remaining = *steps_remaining as usize;
@@ -92,7 +92,7 @@ impl Ramp {
             return;
         }
 
-        let mut filler = || {
+        let filler = || {
             *current_value += *step_size;
             *current_value
         };
@@ -119,8 +119,8 @@ impl Ramp {
     pub fn next_block_mapped<T, F>(
         &mut self,
         block: &mut [T],
-        block_len: usize,
-        mut function: F,
+        _block_len: usize,
+        function: F,
     ) where
         F: FnMut(f64) -> T,
         T: Smoothable,

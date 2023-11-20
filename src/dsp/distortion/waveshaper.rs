@@ -110,7 +110,7 @@ impl Waveshaper {
     where
         F: Fn(f64, f64) -> f64 + Send + 'static,
     {
-        let xfer = move |mut x: f64, d: f64| -> f64 {
+        let xfer = move |x: f64, d: f64| -> f64 {
             if x.is_sign_negative() {
                 -function(-x, d)
             }
@@ -129,7 +129,7 @@ impl Waveshaper {
     ) where
         F: Fn(f64) -> f64 + Send + 'static,
     {
-        let xfer = move |mut x: f64, _: f64| -> f64 {
+        let xfer = move |x: f64, _: f64| -> f64 {
             if x.is_sign_negative() {
                 -function(-x)
             }

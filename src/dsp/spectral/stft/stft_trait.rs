@@ -1,7 +1,7 @@
 //! Module for STFT traits used by [`StftHelper`].
 
 use crate::prelude::*;
-use crate::util::window;
+
 use nannou_audio::Buffer;
 
 /// A buffer which may be read by the `StftHelper`.

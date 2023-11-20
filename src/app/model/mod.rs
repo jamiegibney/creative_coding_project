@@ -8,7 +8,7 @@ use crate::generative::*;
 use crate::gui::spectrum::*;
 use crate::musical::*;
 use nannou::image::Rgba;
-use nannou::prelude::*;
+
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -59,7 +59,7 @@ impl Model {
             spectral_mask,
         } = build_audio_system();
 
-        let (w, h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
+        let (_w, _h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
         let rect = Rect::from_corners(pt2(250.0, -200.0), pt2(650.0, 200.0));
         let pre_spectrum_analyzer =
             RefCell::new(SpectrumAnalyzer::new(pre_spectrum, rect));

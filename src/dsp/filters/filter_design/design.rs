@@ -48,7 +48,7 @@ impl FilterDesign {
             *h = a * (*h) + b * n;
         }
 
-        let mut result = FIRCoefficients::with_coefs(hh.as_ref());
+        let result = FIRCoefficients::with_coefs(hh.as_ref());
         let cloned = Rc::clone(&result);
         let mut c = cloned.borrow_mut();
         let c = c.get_coefs_mut();

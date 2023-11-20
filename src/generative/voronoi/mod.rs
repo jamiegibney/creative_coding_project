@@ -1,5 +1,5 @@
 //! Voronoi (Worley) noise algorithms.
-use nannou::noise::{NoiseFn, RangeFunction, Worley};
+use nannou::noise::{RangeFunction, Worley};
 use nannou::prelude::*;
 
 pub struct Voronoi {

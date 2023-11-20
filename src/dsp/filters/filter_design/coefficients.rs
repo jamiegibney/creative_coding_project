@@ -2,7 +2,7 @@ use crate::prelude::*;
 use realfft::num_complex::{Complex64, ComplexFloat};
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
+
 
 const J: Complex64 = Complex64::new(0.0, 1.0);
 
@@ -214,15 +214,15 @@ impl Coefficients for IIRCoefficients {
         (numerator / denominator).abs()
     }
 
-    fn magnitude_for_freqs(&self, freqs: &[f64], sample_rate: f64) -> Vec<f64> {
+    fn magnitude_for_freqs(&self, _freqs: &[f64], _sample_rate: f64) -> Vec<f64> {
         unimplemented!()
     }
 
     fn magnitude_for_freqs_in_place(
         &self,
-        freqs: &[f64],
-        magnitudes: &mut [f64],
-        sample_rate: f64,
+        _freqs: &[f64],
+        _magnitudes: &mut [f64],
+        _sample_rate: f64,
     ) {
         unimplemented!()
     }
@@ -253,15 +253,15 @@ impl Coefficients for IIRCoefficients {
         (numerator / denominator).arg()
     }
 
-    fn phase_for_freqs(&self, freqs: &[f64], sample_rate: f64) -> Vec<f64> {
+    fn phase_for_freqs(&self, _freqs: &[f64], _sample_rate: f64) -> Vec<f64> {
         unimplemented!()
     }
 
     fn phase_for_freqs_in_place(
         &self,
-        freqs: &[f64],
-        phases: &mut [f64],
-        sample_rate: f64,
+        _freqs: &[f64],
+        _phases: &mut [f64],
+        _sample_rate: f64,
     ) {
         unimplemented!()
     }

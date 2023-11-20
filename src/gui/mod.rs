@@ -5,6 +5,6 @@ pub use spectrum::*;
 mod rdp;
 pub mod mesh;
 
-use crate::prelude::*;
-use earcutr::earcut;
-use rdp::decimate_points;
+
+
+

@@ -1,5 +1,5 @@
 use super::*;
 
-pub fn mouse_moved(_app: &App, model: &mut Model, p: Point2) {
+pub fn mouse_moved(_app: &App, _model: &mut Model, _p: Point2) {
     // 
 }

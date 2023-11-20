@@ -7,9 +7,9 @@ mod iir;
 pub use fir::FirCombFilter;
 pub use iir::IirCombFilter;
 pub use crate::dsp::*;
-use crate::prelude::*;
 
-use super::Filter;
+
+
 
 #[cfg(test)]
 mod tests {

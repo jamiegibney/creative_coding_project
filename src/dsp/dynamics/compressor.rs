@@ -94,7 +94,7 @@ impl Compressor {
     }
 
     /// Sets the compressor's RMS averaging window size in milliseconds.
-    pub fn set_rms_window_size_ms(&mut self, time_ms: f64) {
+    pub fn set_rms_window_size_ms(&mut self, _time_ms: f64) {
         unimplemented!()
     }
 
@@ -130,7 +130,7 @@ impl Compressor {
 }
 
 impl Effect for Compressor {
-    fn process_stereo(&mut self, in_l: f64, in_r: f64) -> (f64, f64) {
+    fn process_stereo(&mut self, _in_l: f64, _in_r: f64) -> (f64, f64) {
         todo!()
     }
 }

@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn update(app: &App, model: &mut Model, update: Update) {
+pub fn update(_app: &App, model: &mut Model, _update: Update) {
     model.contours.update();
 
     // TODO logarithmic frequency scaling for the mask

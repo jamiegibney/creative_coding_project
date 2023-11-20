@@ -48,7 +48,7 @@ impl Contours {
         // assert!(TODO.is_power_of_two());
         let height_px = win_rect.h() as usize;
 
-        let total_px = win_rect.w() as usize * win_rect.h() as usize;
+        let _total_px = win_rect.w() as usize * win_rect.h() as usize;
         // let thread_px = total_px / TODO;
 
         Self {

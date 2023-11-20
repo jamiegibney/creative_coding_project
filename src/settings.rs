@@ -6,7 +6,7 @@
 // for playing around and  experimentation. It also allows me to play around with race
 // conditions if I want, which seems like good practice...
 
-use nannou::prelude::Vec2;
+
 
 /// The global sample rate, set to 44.1 kHz as default.
 ///

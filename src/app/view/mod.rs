@@ -1,6 +1,6 @@
 use super::*;
-use crate::generative::*;
-use crate::gui;
+
+
 
 pub fn view(app: &App, model: &Model, frame: Frame) {
     let draw = &app.draw();
@@ -9,14 +9,14 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         draw.background().color(WHITE);
     }
 
-    let V2 { x: width, y: height } = WINDOW_SIZE;
+    let V2 { x: _width, y: _height } = WINDOW_SIZE;
 
     // if PRINT_DSP_LOAD {
     //
     // }
 
-    let pre_spectrum_mesh_color = Rgba::new(0.0, 0.0, 0.0, 0.3);
-    let post_spectrum_line_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
+    let _pre_spectrum_mesh_color = Rgba::new(0.0, 0.0, 0.0, 0.3);
+    let _post_spectrum_line_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
 
     // model.pre_spectrum_analyzer.borrow_mut().draw(
     //     draw,

@@ -2,7 +2,7 @@
 
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 use nannou::prelude::{DVec2, Vec2};
-use std::f64::consts::{PI, TAU};
+use std::f64::consts::{PI};
 
 pub mod interp;
 pub mod smoothing;

@@ -40,7 +40,7 @@ impl OversamplingBlock {
 
     pub fn from_oversampling_buffer(buffer: &mut OversamplingBuffer) -> Self {
         let num_channels = buffer.num_channels();
-        let num_samples = buffer.num_samples();
+        let _num_samples = buffer.num_samples();
 
         Self {
             channel_pointers: (0..num_channels)

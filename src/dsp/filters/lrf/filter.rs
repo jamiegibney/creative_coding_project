@@ -35,7 +35,7 @@ pub struct LinkwitzRileyFilter {
 }
 
 impl LinkwitzRileyFilter {
-    pub fn new(num_channels: usize) -> Self {
+    pub fn new(_num_channels: usize) -> Self {
         Self {
             coefs: LRFCoefs::default(),
             delayed: vec![0.0; 8],
@@ -152,7 +152,7 @@ impl Effect for LinkwitzRileyFilter {
         }
 
         let mut high_2 = [0.0, 0.0];
-        let mut band_2 = [0.0, 0.0];
+        let band_2 = [0.0, 0.0];
         let mut low_2 = [0.0, 0.0];
 
         for ch in 0..2 {

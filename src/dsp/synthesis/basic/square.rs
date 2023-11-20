@@ -6,7 +6,7 @@ pub struct SquareOsc {
 }
 
 impl SquareOsc {
-    pub fn new(freq_hz: f64) -> Self {
+    pub fn new(_freq_hz: f64) -> Self {
         todo!()
     }
 

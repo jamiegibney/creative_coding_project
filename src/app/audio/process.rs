@@ -171,7 +171,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     audio.gain.next_block_exact(&mut audio.gain_data);
 
     // process the oversampling
-    for ((ch, block), oversampler) in audio
+    for ((_ch, block), oversampler) in audio
         .oversampling_buffer
         .iter_mut()
         .enumerate()

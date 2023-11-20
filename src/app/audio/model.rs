@@ -238,7 +238,7 @@ impl AudioModel {
 
     /// Returns the `AudioModel`'s channel senders.
     pub fn message_channels(&mut self) -> AudioSenders {
-        let (envelope_trigger_sender, receiver) = channel();
+        let (envelope_trigger_sender, _receiver) = channel();
 
         let (filter_freq_sender, receiver) = channel();
         self.filter_freq_receiver = Some(receiver);
@@ -439,7 +439,7 @@ impl AudioModel {
     pub fn try_receive(&mut self) {
         // filter frequency
         if let Some(freq) = &self.filter_freq_receiver {
-            if let Ok(msg) = freq.try_recv() {
+            if let Ok(_msg) = freq.try_recv() {
                 // self.filter_freq.set(msg, self.glide_time);
             }
         }
