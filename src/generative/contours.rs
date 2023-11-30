@@ -333,6 +333,8 @@ impl Contours {
                     }
                 });
             }
+
+            pool.wait_until_done();
         }
 
         let pxl_per_thread = rows_per_thread * width;
