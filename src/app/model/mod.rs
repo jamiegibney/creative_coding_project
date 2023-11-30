@@ -38,7 +38,12 @@ pub struct Model {
     /// A string showing the (rough) DSP load.
     pub dsp_load: Option<String>,
 
+    /// A reference to the sample rate value.
     pub sample_rate_ref: Arc<AtomicF64>,
+
+    /// The time since the last call to `update()`.
+    pub delta_time: f64,
+    update_time: Instant,
 
     // NOTES
     /// Current octave for note input (via typing keyboard).
@@ -117,10 +122,13 @@ impl Model {
 
             contours,
             mask_scan_line_pos: 0.0,
-            mask_scan_line_increment: 0.001,
+            mask_scan_line_increment: 0.0,
 
             dsp_load,
             sample_rate_ref,
+
+            delta_time: 0.0,
+            update_time: Instant::now(),
         }
     }
 
@@ -142,7 +150,7 @@ impl Model {
 
     /// Increments the internal position of the mask scan line.
     pub fn increment_mask_scan_line(&mut self) {
-        self.mask_scan_line_pos += self.mask_scan_line_increment;
+        self.mask_scan_line_pos += self.mask_scan_line_increment * self.delta_time;
 
         if self.mask_scan_line_pos > 1.0 {
             self.mask_scan_line_pos -= 1.0;
@@ -169,6 +177,13 @@ impl Model {
             .points(pt2(x, y_bot), pt2(x, y_top))
             .weight(4.0)
             .color(rgba::<u8>(0, 200, 0, 100));
+    }
+
+    pub fn get_delta_time(&mut self) -> f64 {
+        self.delta_time = self.update_time.elapsed().as_secs_f64();
+        self.update_time = Instant::now();
+
+        self.delta_time
     }
 }
 
@@ -273,7 +288,7 @@ fn build_gui_elements(
         contours: Contours::new(app.main_window().device(), contour_rect)
             .with_num_threads(8)
             .expect("failed to allocate 8 threads to contour generator")
-            .with_z_increment(0.003)
+            .with_z_increment(0.1)
             .with_num_contours(64)
             .with_contour_range(0.1..=0.9),
 

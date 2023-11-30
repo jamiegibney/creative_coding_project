@@ -1,6 +1,5 @@
 use crate::dsp::SpectralMask;
 use crate::prelude::*;
-use crate::util::thread_pool::ThreadPool;
 
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::noise::{NoiseFn, Perlin, Seedable};
@@ -78,11 +77,11 @@ impl Contours {
     }
 
     /// Updates the internal image buffer and noise generator.
-    pub fn update(&mut self) {
+    pub fn update(&mut self, delta_time: f64) {
         // important to update this first, as it ensures the generated image
         // matches what is sampled from the noise generator before this method
         // is called again
-        self.update_z();
+        self.update_z(delta_time);
 
         if self.thread_pool.is_some() {
             self.process_async();
@@ -218,7 +217,7 @@ impl Contours {
     ///
     /// This method will allocate if new threads are successfully spawned.
     ///
-    /// # Panics
+    /// # Panics
     ///
     /// Panics if `num_threads` is not a power-of-two value (required to efficiently
     /// divide the image buffer up).
@@ -374,8 +373,8 @@ impl Contours {
     }
 
     /// Updates the internal z value used for the noise field's third dimension.
-    fn update_z(&mut self) {
-        self.z += self.z_increment;
+    fn update_z(&mut self, delta_time: f64) {
+        self.z += self.z_increment * delta_time;
         // to maintain floating-point precision, just bounce the z value back
         // and forth within this range
         if self.z < -1_000_000.0 || 1_000_000.0 < self.z {

@@ -1,8 +1,9 @@
 use super::*;
 
 pub fn update(app: &App, model: &mut Model, update: Update) {
+    let dt = model.get_delta_time();
     model.increment_mask_scan_line();
-    model.contours.update();
+    model.contours.update(dt);
 
     if let Ok(mut mask) = model.spectral_mask.lock() {
         model
