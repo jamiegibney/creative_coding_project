@@ -3,14 +3,10 @@ use crate::{dsp::*, gui::rdp::decimate_points, prelude::*};
 use nannou::prelude::*;
 use std::ptr::{addr_of, copy_nonoverlapping};
 
-const NUM_SPECTRUM_AVERAGES: usize = 16;
+const NUM_SPECTRUM_AVERAGES: usize = 24;
 
-const CURVE_RESOLUTION: usize = WINDOW_SIZE.x as usize;
-
-/// MIDI note value for 10 Hz.
-const NOTE_10_HZ: f64 = 3.486_820_576_35;
-/// MIDI note value for 30,000 Hz.
-const NOTE_30000_HZ: f64 = 142.095_782_001;
+const MIN_FREQ: f64 = 25.0;
+const MAX_FREQ: f64 = 22_050.0;
 
 pub struct SpectrumAnalyzer {
     bin_step: f64,
@@ -23,9 +19,6 @@ pub struct SpectrumAnalyzer {
 
     averaged_data: Vec<f64>,
 
-    /// The frequency bin points.
-    bin_points: Vec<[f64; 2]>,
-
     /// All the interpolated points used for the spectrum.
     interpolated: Vec<[f64; 2]>,
 
@@ -35,20 +28,28 @@ pub struct SpectrumAnalyzer {
     /// The bounding box of the analyzer.
     rect: Rect,
 
+    /// A filter for smoothing out the spectrum line.
     filter: FirstOrderFilter,
 
     mesh_points: Vec<DVec2>,
-    // spectrum_mesh: Vec<[f32; 2]>,
 }
 
 impl SpectrumAnalyzer {
     pub fn new(spectrum: SpectrumOutput, rect: Rect) -> Self {
         let width = rect.w() as f64;
+        let resolution = width as usize;
         let sample_rate = unsafe { SAMPLE_RATE };
 
         let mut filter = FirstOrderFilter::new(10.0);
         filter.set_type(FilterType::Lowpass);
-        filter.set_freq(1.0);
+        filter.set_freq(0.3);
+
+        let vec: Vec<[f64; 2]> = (0..resolution)
+            .map(|i| {
+                let xpos = (i as f64 / resolution as f64) * width;
+                [xpos, rect.bottom() as f64]
+            })
+            .collect();
 
         Self {
             spectrum,
@@ -63,27 +64,20 @@ impl SpectrumAnalyzer {
 
             bin_step: sample_rate / SPECTRUM_WINDOW_SIZE as f64,
 
-            bin_points: (0..width as usize)
-                .map(|i| {
-                    let xpos = (i as f64 / width) * width;
-                    [xpos_to_freq(&rect, xpos), MINUS_INFINITY_DB]
-                })
-                .collect(),
+            interpolated: vec.clone(),
 
-            interpolated: (0..CURVE_RESOLUTION)
-                .map(|i| {
-                    let xpos = (i as f64 / CURVE_RESOLUTION as f64) * width;
-                    [xpos, rect.h() as f64]
-                })
-                .collect(),
-
-            spectrum_line: Vec::with_capacity(CURVE_RESOLUTION),
+            spectrum_line: vec.iter().map(|p| DVec2::from_slice(p)).collect(),
             rect,
 
-            mesh_points: vec![DVec2::default(); CURVE_RESOLUTION + 2],
+            mesh_points: vec.iter().map(|p| DVec2::from_slice(p)).collect(),
 
             filter,
         }
+    }
+
+    /// Returns a reference to the bounding rect of the analyzer.
+    pub fn rect(&self) -> &Rect {
+        &self.rect
     }
 
     /// Draws the spectrum. If `None` is passed to either `line_color` or `mesh_color`, those
@@ -97,10 +91,6 @@ impl SpectrumAnalyzer {
     ) {
         if line_color.is_some() || mesh_color.is_some() {
             self.compute_spectrum();
-            draw.rect()
-                .wh(self.rect.wh())
-                .xy(self.rect.xy())
-                .color(WHITE);
         }
         if let Some(color) = mesh_color {
             self.draw_mesh(draw, color);
@@ -111,7 +101,6 @@ impl SpectrumAnalyzer {
     }
 
     fn draw_line(&mut self, draw: &Draw, color: Rgba) {
-        dbg!(&self.spectrum_line);
         draw.polyline().weight(2.5).points_colored(
             self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
         );
@@ -146,12 +135,14 @@ impl SpectrumAnalyzer {
 
     fn compute_spectrum(&mut self) {
         let width = self.width();
+        let left = self.rect.left() as f64;
+
         // first, average the spectrum data...
         self.average_spectrum_data();
 
         // then get an interpolated magnitude value for each point along the curve.
         for (i, pt) in self.interpolated.iter_mut().enumerate() {
-            let x = (i as f64 / (CURVE_RESOLUTION - 5) as f64) * width;
+            let x = (i as f64 / width) * width + left;
 
             // get the frequency bin index and its offset
             let (idx, interp) =
@@ -168,10 +159,10 @@ impl SpectrumAnalyzer {
 
             // catmull-rom interpolation is used to give a lovely smoothed shape
             // to the magnitude response.
-            let mut mag = cubic_catmull_db(slice, interp);
+            let mut mag = catmull_from_slice(slice, interp);
 
             // the magnitude is then clamped to -inf dB.
-            if mag < MINUS_INFINITY_DB {
+            if mag.is_nan() || mag < MINUS_INFINITY_DB {
                 mag = MINUS_INFINITY_DB;
             }
 
@@ -184,38 +175,21 @@ impl SpectrumAnalyzer {
         // reset for each frame, so has a little "blip" at DC.
         // ideally the blip would be off screen, but this works well enough and the
         // discontinuity is difficult to spot unless you're looking for it.
-        for i in 0..10 {
-            self.filter.process_mono(self.interpolated[i][1]);
+        for _ in 0..10 {
+            self.filter.process_mono(0.0);
         }
         self.interpolated.iter_mut().skip(10).for_each(|x| {
-            x[1] = self.filter.process_mono(x[1]);
+            // x[1] = self.filter.process_mono(x[1]);
         });
 
-        // reset the filter for the next frame
-        self.filter.reset();
-
-        // decimate points to optimise the line geometry for rendering.
-        // TODO: add a version of this function which mutates a buffer in-place,
-        // rather than creating a new vector each time.
-        self.spectrum_line = decimate_points(&self.interpolated, 0.1)
-            .iter()
-            .map(|&i| {
-                let left = self.rect.left() as f64;
-                let bottom = self.rect.bottom() as f64;
-                let mut x = self.interpolated[i][0] - width / 2.0 + left;
-                let mut y = self.gain_to_ypos(self.interpolated[i][1]);
-
-                // TODO: find out why some of these points are not finite
-                if !x.is_finite() {
-                    x = left;
-                }
-                if !y.is_finite() {
-                    y = bottom;
-                }
-                DVec2::new(x, y) /* .clamp(
-                                     self.rect.bottom_left().as_f64(),
-                                     self.rect.top_right().as_f64(),
-                                 ) */
+        // decimate points here
+        self.spectrum_line = decimate_points(&self.interpolated, 0.01)
+            .into_iter()
+            .map(|i| {
+                let point = self.interpolated[i];
+                let x = point[0];
+                let y = self.gain_to_ypos(point[1]);
+                dvec2(x, y)
             })
             .collect();
     }
@@ -276,17 +250,24 @@ impl SpectrumAnalyzer {
     }
 }
 
+/// Transposes an x (horizontal) value within a rectangle to a logarithmically-scaled
+/// frequency value.
 fn xpos_to_freq(rect: &Rect, x: f64) -> f64 {
-    let x = (x - rect.left() as f64) / (rect.w() as f64);
-    note_to_freq(scale(x, NOTE_10_HZ, NOTE_30000_HZ))
+    let norm = normalise(x, rect.left() as f64, rect.right() as f64);
+    freq_lin_from_log(norm, MIN_FREQ, MAX_FREQ * 2.0)
 }
 
-fn freq_to_xpos(freq: f64, width: f64) -> f64 {
-    let half = width / 2.0;
-    map(freq_to_note(freq), NOTE_10_HZ, NOTE_30000_HZ, -half, half)
+/// Transposes a frequency value to an x (horizontal) value logarithmically-scaled
+/// within a rectangle.
+fn freq_to_xpos(rect: &Rect, freq_hz: f64) -> f64 {
+    let left = rect.left() as f64;
+    let width = rect.w() as f64;
+
+    // MAX_FREQ * 2 as it acts as the sampling rate, which gets halved anyway
+    freq_log_norm(freq_hz, MIN_FREQ, MAX_FREQ * 2.0).mul_add(width, left)
 }
 
-fn cubic_catmull_db(points: &[f64], t: f64) -> f64 {
+fn catmull_from_slice(points: &[f64], t: f64) -> f64 {
     debug_assert!(points.len() >= 4);
     interp::cubic_catmull(points[0], points[1], points[2], points[3], t)
 }

@@ -2,7 +2,7 @@
 
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 use nannou::prelude::{DVec2, Vec2};
-use std::f64::consts::{PI};
+use std::f64::consts::PI;
 
 pub mod interp;
 pub mod smoothing;
@@ -11,6 +11,7 @@ pub mod window;
 pub mod xfer;
 
 pub use interp::InterpolationType as InterpType;
+
 pub use interp::{ilerp, lerp};
 pub use smoothing::*;
 pub use thread_pool::ThreadPool;
@@ -165,8 +166,7 @@ pub fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
 ///
 /// Panics if `start_hz == 0`.
 ///
-/// Panics in debug mode if either `freq_hz`, `start_hz`, or `sample_rate` is
-/// negative.
+/// Panics in debug mode if either `freq_hz`, `start_hz`, or `sample_rate` is negative.
 ///
 /// # Source
 ///
@@ -182,6 +182,44 @@ pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
     let norm = ((sample_rate / 2.0).log10() - log_start).recip();
 
     norm * (freq_hz.log10() - log_start)
+}
+
+/// The inverse of [`freq_log_norm()`](freq_log_norm).
+///
+/// The expectation of this function is that `freq_hz_log_norm` is a normalised value
+/// between `0.0` and `1.0`, and that it will transpose a logarithmically-scaled frequency
+/// value between `0.0` and `1.0` back to its original frequeny value between `0.0` and the
+/// Nyquist frequency.
+///
+/// # Panics
+///
+/// Panics if `start_hz == 0`.
+///
+/// Panics in debug mode if either `freq_hz`, `start_hz`, or `sample_rate` is negative.
+///
+/// # Source
+///
+/// [Found by experimenting on Desmos.](https://www.desmos.com/calculator/nqgorlqxyw)
+pub fn freq_lin_from_log(
+    freq_hz_log_norm: f64,
+    start_hz: f64,
+    sample_rate: f64,
+) -> f64 {
+    assert!(!epsilon_eq(start_hz, 0.0));
+    debug_assert!(
+        freq_hz_log_norm.is_sign_positive()
+            && start_hz.is_sign_positive()
+            && sample_rate.is_sign_positive()
+    );
+
+    let log_start = start_hz.log10();
+    // find the normalisation factor
+    let norm = ((sample_rate / 2.0).log10() - log_start).recip();
+    // denormalise and shift the original
+    let log = (freq_hz_log_norm / norm) + log_start;
+
+    // "de-log" the original
+    10.0_f64.powf(log)
 }
 
 #[cfg(test)]

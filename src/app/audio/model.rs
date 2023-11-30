@@ -1,4 +1,5 @@
 use super::*;
+use crate::dsp::{filters::comb::distortion::waveshaper, Generator};
 
 /// When the DSP stops , it will continue to process for this length of time to
 /// allow the audio spectrums to fully relax. After this time has passed, the DSP
@@ -22,7 +23,8 @@ pub struct AudioModel {
     /// A general audio context. Holds a reference to the input `NoteHandler`.
     pub context: AudioContext,
     /// Master gain level.
-    pub gain: Smoother<f64>,
+    pub voice_gain: Smoother<f64>,
+    pub master_gain: Smoother<f64>,
     pub gain_data: Vec<f64>,
     /// Amplitude envelope which is cloned to each voice upon spawning.
     pub amp_envelope: AdsrEnvelope,
@@ -80,13 +82,17 @@ pub struct AudioModel {
     pub spectral_mask: Arc<Mutex<SpectralMask>>,
 
     pub spectral_filter: SpectralFilter,
+
+    pub generator: Generator,
+
+    pub sample_rate: Arc<AtomicF64>,
 }
 
 impl AudioModel {
     /// Creates a new `AudioModel`.
     #[allow(clippy::too_many_lines)]
     pub fn new(context: AudioContext) -> Self {
-        let sample_rate = unsafe { SAMPLE_RATE };
+        let sample_rate = context.sample_rate;
 
         unsafe {
             update_oversampled_sample_rate(
@@ -136,10 +142,9 @@ impl AudioModel {
         let mut waveshaper = [Waveshaper::new(), Waveshaper::new()];
 
         for ws in &mut waveshaper {
-            ws.set_curve(0.8);
+            ws.set_curve(0.2);
             ws.set_asymmetric(false);
-            ws.set_drive(0.5);
-            ws.set_xfer_function(xfer::s_curve_round);
+            ws.set_drive(0.8);
         }
 
         let note_handler_ref = context.note_handler_ref();
@@ -147,11 +152,13 @@ impl AudioModel {
         let mut amp_envelope = AdsrEnvelope::new(sample_rate);
         amp_envelope.set_parameters(10.0, 300.0, 1.0, 10.0);
 
-        let spectral_block_size = 2048;
+        let spectral_block_size = 1 << 11; // 2048
 
         let mut spectral_filter =
             SpectralFilter::new(NUM_CHANNELS, 2usize.pow(14));
         spectral_filter.set_block_size(spectral_block_size);
+
+        let default_gain = 0.2;
 
         Self {
             callback_time_elapsed: Arc::new(Mutex::new(
@@ -159,9 +166,10 @@ impl AudioModel {
             )),
             voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
             context,
-            gain: Smoother::new(1.0, 0.1, upsampled_rate),
+            voice_gain: Smoother::new(1.0, 0.5, sample_rate),
+            master_gain: Smoother::new(1.0, default_gain, upsampled_rate),
             gain_data: vec![
-                0.1;
+                default_gain;
                 BUFFER_SIZE
                     * 2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32)
             ],
@@ -233,6 +241,10 @@ impl AudioModel {
             idle_timer_samples: 0,
 
             latency_samples: 0,
+
+            generator: Generator::Noise,
+
+            sample_rate: Arc::new(AtomicF64::new(sample_rate)),
         }
     }
 
@@ -294,6 +306,10 @@ impl AudioModel {
         self.set_filters();
     }
 
+    pub fn sample_rate_ref(&self) -> Arc<AtomicF64> {
+        Arc::clone(&self.sample_rate)
+    }
+
     /// Computes the pre-fx spectrum in the thread pool.
     ///
     /// If the mutexes to the buffer cache and spectrum processor cannot be
@@ -343,8 +359,8 @@ impl AudioModel {
 
         for lp in &mut self.filter_lp {
             lp.set_params(&params);
-            lp.set_freq(4000.0);
-            lp.set_q(BUTTERWORTH_Q);
+            lp.set_freq(10000.0);
+            lp.set_q(1.0);
         }
 
         for hp in &mut self.filter_hp {
@@ -485,6 +501,11 @@ impl AudioModel {
         else {
             0
         }
+    }
+
+    pub fn process_waveshaper(&mut self, left: &mut f64, right: &mut f64) {
+        *left = self.waveshaper[0].process(*left);
+        *right = self.waveshaper[1].process(*right);
     }
 
     pub fn is_idle(&self) -> bool {

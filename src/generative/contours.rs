@@ -26,6 +26,9 @@ pub struct Contours {
     /// A handle to a texture on the GPU.
     texture: wgpu::Texture,
 
+    /// The bounding rect of the visual.
+    rect: Rect,
+
     /// The internal image buffer (the buffer which holds pixel data).
     image_buffer: RefCell<ImageBuffer<Rgba<u8>, Vec<u8>>>,
 
@@ -39,7 +42,10 @@ impl Contours {
     /// This object is responsible for handling its own texture and image buffer.
     ///
     /// Uses 1 thread by default — see [`with_num_threads()`](Self::with_num_threads).
-    pub fn new(device: &wgpu::Device, win_rect: &Rect) -> Self {
+    pub fn new(device: &wgpu::Device, rect: Rect) -> Self {
+        let width = rect.w().floor() as u32;
+        let height = rect.h().floor() as u32;
+
         Self {
             noise: Arc::new(Perlin::new().set_seed(random())),
             z: 0.0,
@@ -49,7 +55,7 @@ impl Contours {
             num_contours: 1,
 
             texture: wgpu::TextureBuilder::new()
-                .size([win_rect.w() as u32, win_rect.h() as u32])
+                .size([width, height])
                 .mip_level_count(4)
                 .sample_count(1)
                 .format(wgpu::TextureFormat::Rgba8Unorm)
@@ -59,10 +65,12 @@ impl Contours {
                 )
                 .build(device),
             image_buffer: RefCell::new(ImageBuffer::from_fn(
-                win_rect.w().floor() as u32,
-                win_rect.h().floor() as u32,
+                width,
+                height,
                 |_, _| Rgba([255, 255, 255, u8::MAX]),
             )),
+
+            rect,
 
             thread_pool: None,
             thread_buffers: Vec::new(),
@@ -89,9 +97,10 @@ impl Contours {
     /// [`update()`](Self::update) should be called before this method.
     ///
     /// `device` and `frame` are used to upload the texture data.
-    pub fn draw(&self, device: &wgpu::Device, draw: &Draw, frame: &Frame) {
+    pub fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        let window = app.main_window();
         self.texture.upload_data(
-            device,
+            window.device(),
             &mut frame.command_encoder(),
             self.image_buffer.borrow().as_flat_samples().as_slice(),
         );
@@ -254,6 +263,10 @@ impl Contours {
         self.image_buffer.borrow().width() as usize
     }
 
+    pub fn rect(&self) -> &Rect {
+        &self.rect
+    }
+
     /// Synchronously processes the contour lines on one thread.
     fn process(&mut self) {
         let width = self.width_px() as f64;
@@ -287,16 +300,18 @@ impl Contours {
 
         if let Some(pool) = &self.thread_pool {
             let num_threads = pool.num_threads();
+
             for i in 0..num_threads {
                 let num_contours = self.num_contours;
-                let noise = Arc::clone(&self.noise);
                 let range = Arc::clone(&self.range);
+                let noise = Arc::clone(&self.noise);
                 let buf = Arc::clone(&self.thread_buffers[i]);
 
                 let start_row = i * rows_per_thread;
 
                 pool.execute(move || {
                     let mut buf = buf.lock().unwrap();
+
                     for x in 0..width {
                         for y in 0..rows_per_thread {
                             let actual_y = start_row + y;
@@ -320,7 +335,7 @@ impl Contours {
             }
         }
 
-        let pxl_per_thread = self.rows_per_thread() * self.width_px();
+        let pxl_per_thread = rows_per_thread * width;
 
         // copy generated information to the image buffer
         self.image_buffer

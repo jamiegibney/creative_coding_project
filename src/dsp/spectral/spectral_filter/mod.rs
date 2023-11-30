@@ -1,4 +1,4 @@
-use super::*;
+use super::{*, stft::stft_trait::StftInputMut};
 use crate::util::window::*;
 use nannou_audio::Buffer;
 use realfft::{
@@ -34,7 +34,7 @@ pub struct SpectralFilter {
 }
 
 impl SpectralFilter {
-    const OVERLAP_FACTOR: usize = 8;
+    const OVERLAP_FACTOR: usize = 4;
 
     /// # Panics
     ///
@@ -110,15 +110,15 @@ impl SpectralFilter {
 
     /// Processes a block of audio. This does not necessarily call the FFT algorithms.
     #[allow(clippy::missing_panics_doc)] // this function will not panic.
-    pub fn process_block(&mut self, buffer: &mut Buffer<f64>) {
+    pub fn process_block<B>(&mut self, buffer: &mut B) 
+        where B: StftInputMut,
+    {
         self.stft.process_overlap_add(
             buffer,
             Self::OVERLAP_FACTOR,
             |ch_idx, audio_block| {
                 // window the input
-                multiply_buffers(
-                    audio_block, &self.window_function,
-                );
+                multiply_buffers(audio_block, &self.window_function);
 
                 // to freq domain
                 self.fft
@@ -151,6 +151,7 @@ impl SpectralFilter {
     }
 
     pub fn compensation_factor(&self, block_size: usize) -> f64 {
-        ((block_size / Self::OVERLAP_FACTOR) as f64).recip()
+        // (Self::OVERLAP_FACTOR as f64 * 16.0).recip()
+        ((block_size / 2) as f64 / (Self::OVERLAP_FACTOR as f64 * 4.0)).recip()
     }
 }

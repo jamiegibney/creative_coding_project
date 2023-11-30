@@ -4,12 +4,13 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct AudioContext {
     pub note_handler: NoteHandlerRef,
+    pub sample_rate: f64,
 }
 
 impl AudioContext {
     /// Builds a new `AudioContext`.
-    pub fn build(note_handler_ref: NoteHandlerRef) -> Self {
-        Self { note_handler: note_handler_ref }
+    pub fn build(note_handler_ref: NoteHandlerRef, sample_rate: f64) -> Self {
+        Self { note_handler: note_handler_ref, sample_rate }
     }
 
     /// Returns a thread-safe reference to the `NoteHandler`.

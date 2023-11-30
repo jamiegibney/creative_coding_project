@@ -79,7 +79,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         let block_len = block_end - block_start;
 
         let mut gain = [0.0; MAX_BLOCK_SIZE];
-        audio.gain.next_block(&mut gain, block_len);
+        audio.voice_gain.next_block(&mut gain, block_len);
 
         voice_handler.process_block(buffer, block_start, block_end, gain);
 
@@ -163,15 +163,23 @@ fn callback_timer(audio: &AudioModel) {
 
 /// Processes all audio FX.
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+    // update spectral mask
+    if let Ok(guard) = audio.spectral_mask.lock() {
+        audio.spectral_filter.set_mask(&guard);
+    }
+
+    // process the spectral masking
+    audio.spectral_filter.process_block(buffer);
+
     // copy the audio buffer into the oversampling buffer so the channel layout
     // is compatible with the oversamplers.
     audio.oversampling_buffer.copy_from_buffer(buffer);
 
     // compute gain information
-    audio.gain.next_block_exact(&mut audio.gain_data);
+    audio.master_gain.next_block_exact(&mut audio.gain_data);
 
     // process the oversampling
-    for ((_ch, block), oversampler) in audio
+    for ((ch, block), oversampler) in audio
         .oversampling_buffer
         .iter_mut()
         .enumerate()
@@ -185,10 +193,8 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
             |upsampled| {
                 // a single channel iterating through each upsampled sample
                 for (smp_idx, sample) in upsampled.iter_mut().enumerate() {
-                    // *sample = audio.filter_comb[ch].process(*sample);
                     // *sample = audio.waveshaper[ch].process(*sample);
-                    // *sample = audio.filter_lp[ch].process(*sample);
-                    // *sample *= 2.5;
+                    *sample = audio.filter_lp[ch].process(*sample);
 
                     *sample *= audio.gain_data[smp_idx];
                 }
@@ -199,13 +205,6 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // copy the oversampling buffer content back to the main audio buffer with the
     // correct channel layout.
     audio.oversampling_buffer.copy_to_buffer(buffer);
-
-    // update spectral mask
-    if let Ok(guard) = audio.spectral_mask.lock() {
-        audio.spectral_filter.set_mask(&guard);
-    }
-    // process the spectral masking
-    audio.spectral_filter.process_block(buffer);
 
     // final loop
     let mut is_processing = false;

@@ -3,7 +3,7 @@ use crate::musical::*;
 // use crate::prelude::*;
 
 /// Function for handling keypresses.
-pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
+pub fn key_pressed(app: &App, model: &mut Model, key: Key) {
     match key {
         // stop audio playback
         Key::Space => {

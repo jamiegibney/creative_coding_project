@@ -107,6 +107,7 @@ impl VoiceHandler {
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
+            // generator: Generator::Saw(PhasorOsc::new(note_to_freq(note as f64))),
             generator: Generator::Noise,
         };
 

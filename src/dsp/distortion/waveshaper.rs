@@ -40,24 +40,22 @@ impl Waveshaper {
             drive_lower: MAX_DIST_MULT.recip(),
             asymmetric: false,
 
-            xfer_function: Box::new(xfer::s_curve),
+            xfer_function: Box::new(smooth_soft_clip),
         }
     }
 
     /// Processes a single sample through the waveshaper.
     #[must_use]
-    pub fn process(&self, mut sample: f64) -> f64 {
+    pub fn process(&self, sample: f64) -> f64 {
         let xfer = &self.xfer_function;
-        let mult = if sample.is_sign_negative() && self.asymmetric {
+        let drive = if sample.is_sign_negative() && self.asymmetric {
             self.drive_lower
         }
         else {
             self.drive
         } * MAX_DIST_MULT;
 
-        sample = (sample * mult).clamp(-1.0, 1.0);
-
-        xfer(sample, self.curve) / mult
+        xfer(sample * drive, self.curve) 
     }
 
     /// Moves `function` into the waveshaper, which will then use it as its

@@ -71,6 +71,8 @@ impl SpectralMask {
         Self { points: Vec::with_capacity(capacity) }
     }
 
+    /// Returns the frequency of bin with index `idx`.
+    ///
     /// # Panics
     ///
     /// Panics if idx is greater than the size of the mask.
@@ -83,69 +85,3 @@ impl SpectralMask {
         k * (nyquist / size)
     }
 }
-
-// #[derive(Clone)]
-// pub struct SpectralMask {
-//     frames: Vec<SpectralFrame>,
-// }
-//
-// impl SpectralMask {
-//     /// Creates a new spectral mask with `num_frames` frames, where each frame has
-//     /// `2 ^ frame_size_order` elements.
-//     ///
-//     /// # Panics
-//     ///
-//     /// Panics if `frame_size_order > 14` (`16,384` elements).
-//     ///
-//     /// # Orders
-//     ///
-//     /// `0 == 1`
-//     /// `1 == 2`
-//     /// `2 == 4`
-//     /// `3 == 8`
-//     /// `4 == 16`
-//     /// `5 == 32`
-//     /// `6 == 64`
-//     /// `7 == 128`
-//     /// `8 == 256`
-//     /// `9 == 512`
-//     /// `10 == 1,024`
-//     /// `11 == 2,048`
-//     /// `12 == 4,096`
-//     /// `13 == 8,192`
-//     /// `14 == 16,384`
-//     pub fn new(frame_size_order: u32, num_frames: usize) -> Self {
-//         Self { frames: vec![SpectralFrame::new(frame_size_order); num_frames] }
-//     }
-//
-//     /// # Panics
-//     ///
-//     /// Panics if `frame_size_order > 14`.
-//     pub fn resize(&mut self, frame_size_order: u32, num_frames: usize) {
-//         self.frames
-//             .resize(num_frames, SpectralFrame::new(frame_size_order));
-//     }
-//
-//     pub fn num_frames(&self) -> usize {
-//         self.frames.len()
-//     }
-//
-//     pub fn frame_size(&self) -> usize {
-//         // returns a number if no frames exist instead of Option
-//         self.frames.first().map_or(0, |frame| frame.len())
-//     }
-// }
-//
-// impl Deref for SpectralMask {
-//     type Target = Vec<SpectralFrame>;
-//
-//     fn deref(&self) -> &Self::Target {
-//         &self.frames
-//     }
-// }
-//
-// impl DerefMut for SpectralMask {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         &mut self.frames
-//     }
-// }
