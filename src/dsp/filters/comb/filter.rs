@@ -22,7 +22,7 @@ impl CombFilter {
     pub fn new(interpolation: bool, sample_rate: f64) -> Self {
         // allocates 1 second
         let mut buffer =
-            RingBuffer::new(sample_rate as usize / 10, sample_rate);
+            RingBuffer::new(sample_rate as usize,  sample_rate);
         buffer.set_smoothing(SmoothingType::Cosine, 0.05);
 
         Self {
@@ -70,7 +70,7 @@ impl CombFilter {
 
     fn assertions(&self) {
         debug_assert!(
-            10.0 <= self.freq
+            1.0 <= self.freq
                 && self.freq <= self.sample_rate / 2.0
                 && self.gain_db <= 0.0,
             "{}",

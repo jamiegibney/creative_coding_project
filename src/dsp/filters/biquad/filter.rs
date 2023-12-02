@@ -261,6 +261,10 @@ impl BiquadFilter {
         self.params.freq / self.params.q
     }
 
+    pub fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
+    }
+
     /// Returns the magnitude response at `freq` Hz in decibels.
     ///
     /// Method found in the comments at <https://www.musicdsp.org/en/latest/Analysis/186-frequency-response-from-biquad-coefficients.html>.

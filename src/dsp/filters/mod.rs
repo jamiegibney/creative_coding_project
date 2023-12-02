@@ -7,6 +7,7 @@ pub mod allpass;
 pub mod ballistics;
 pub mod biquad;
 pub mod comb;
+pub mod dc_filter;
 pub mod filter_design;
 pub mod first_order;
 pub mod lrf;

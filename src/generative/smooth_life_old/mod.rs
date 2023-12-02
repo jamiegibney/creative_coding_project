@@ -3,36 +3,33 @@ use nannou::image::{ImageBuffer, Rgba};
 use nannou::prelude::*;
 use std::ops::{Add, Rem};
 
+use std::cell::RefCell;
+
 mod grid;
 mod process;
-mod process_async;
 mod state;
 
-pub use grid::{random_f64, Grid};
-pub use process::SmoothLifeGenerator;
-pub use process_async::SmoothLifeGeneratorAsync;
-pub use state::SLState;
+use grid::Grid;
+use process::SmoothLifeGenerator;
+use state::SLState;
 
 pub struct SmoothLife {
-    generator: SmoothLifeGeneratorAsync,
-    rect: Rect,
+    gen: SmoothLifeGenerator,
     texture: wgpu::Texture,
     image_buffer: ImageBuffer<Rgba<u8>, Vec<u8>>,
 }
 
 impl SmoothLife {
+    /// # Panics
+    ///
+    /// Panics if `rect.w().floor() != rect.h().floor()`.
     pub fn new(device: &wgpu::Device, rect: Rect) -> Self {
         let w = rect.w().floor() as u32;
         let h = rect.h().floor() as u32;
-
-        let mut generator = SmoothLifeGeneratorAsync::new(64);
-        generator.set_speed(2.0);
-        generator.set_state(SLState::fluid());
-        generator.set_outer_radius(25.0);
+        assert!(epsilon_eq(w as f64, h as f64));
 
         Self {
-            generator,
-            rect,
+            gen: SmoothLifeGenerator::new(100),
             texture: wgpu::TextureBuilder::new()
                 .size([w, h])
                 .mip_level_count(4)
@@ -44,49 +41,30 @@ impl SmoothLife {
                 )
                 .build(device),
             image_buffer: ImageBuffer::from_fn(w, h, |_, _| {
-                Rgba([0, 0, 0, u8::MAX])
+                Rgba([255, 255, 255, u8::MAX])
             }),
         }
-    }
-
-    pub fn set_speed(&mut self, speed: f64) {
-        self.generator.set_speed(speed);
-    }
-
-    pub fn set_outer_radius(&mut self, ra: f64) {
-        self.generator.set_outer_radius(ra);
-    }
-
-    pub fn rect(&self) -> Rect {
-        self.rect
-    }
-
-    pub fn reset(&mut self) {
-        self.generator.reset();
-    }
-
-    fn update_image_buffer(&mut self) {
-        let w = self.image_buffer.width() as f64;
-        let h = self.image_buffer.height() as f64;
-
-        self.image_buffer
-            .enumerate_pixels_mut()
-            .for_each(|(x, y, pxl)| {
-                let xn = x as f64 / w;
-                let yn = y as f64 / h;
-
-                let br = (self.generator.get_value(xn, yn) * 255.0) as u8;
-                // let br = (self.generator.get_value_nn(xn, yn) * 255.0) as u8;
-
-                pxl.0 = [br, br, br, u8::MAX];
-            });
     }
 }
 
 impl DrawMask for SmoothLife {
     fn update(&mut self, delta_time: f64) {
-        self.generator.update(delta_time);
-        self.update_image_buffer();
+        self.gen.update(delta_time);
+
+        let width = self.image_buffer.width() as f64;
+        let height = self.image_buffer.height() as f64;
+
+        self.image_buffer
+            .enumerate_pixels_mut()
+            .for_each(|(x, y, pxl)| {
+                let x = x as f64 / width;
+                let y = y as f64 / height;
+                let value = self.gen.get_value(x, y);
+
+                let br = (value * 255.0) as u8;
+
+                pxl.0 = [br, br, br, u8::MAX];
+            });
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
@@ -99,7 +77,7 @@ impl DrawMask for SmoothLife {
         draw.texture(&self.texture);
     }
 
-    fn column_to_mask(&self, mask: &mut crate::dsp::SpectralMask, x: f64) {
+    fn column_to_mask(&mut self, mask: &mut crate::dsp::SpectralMask, x: f64) {
         if !(0.0..=1.0).contains(&x) {
             return;
         }
@@ -111,7 +89,7 @@ impl DrawMask for SmoothLife {
             let bin_freq = mask.bin_freq(i, sr);
             let y = 1.0 - freq_log_norm(bin_freq, 20.0, sr);
 
-            mask[i] = self.generator.get_value(x, y);
+            mask[i] = self.gen.get_value(x, y);
         }
     }
 }

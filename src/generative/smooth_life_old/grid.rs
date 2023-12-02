@@ -1,4 +1,4 @@
-use rand::{self, Rng};
+use super::*;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug)]
@@ -63,9 +63,8 @@ impl Grid {
         let (w, h) = wh;
         assert!(x <= w && y <= h && w <= self.width() && h <= self.height());
 
-        self.iter_mut().skip(x).take(w).for_each(|v| {
-            v.iter_mut().skip(y).take(h).for_each(|x| *x = random_f64());
-        });
+        self.iter_mut()
+            .for_each(|v| v.iter_mut().for_each(|x| *x = random_f64()));
     }
 
     pub fn value(&mut self, value: f64) {
@@ -111,8 +110,4 @@ impl DerefMut for Grid {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
-}
-
-pub fn random_f64() -> f64 {
-    rand::thread_rng().gen_range(0.0..=1.0)
 }

@@ -18,6 +18,7 @@ pub use filters::{
     allpass::Allpass,
     biquad::{BiquadFilter, BiquadParams},
     comb::{FirCombFilter, IirCombFilter},
+    dc_filter::DCFilter,
     first_order::FirstOrderFilter,
     lrf::LinkwitzRileyFilter,
     one_pole_lowpass::OnePoleLowpass,

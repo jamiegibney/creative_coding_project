@@ -8,14 +8,17 @@ use crate::dsp::SpectralMask;
 use crate::generative::*;
 use crate::gui::spectrum::*;
 use crate::musical::*;
-use nannou::image::Rgba;
 
 use std::{
     cell::RefCell,
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
     time::Instant,
 };
+
+mod constructors;
+use constructors::*;
+
 type CallbackTimerRef = Arc<Mutex<Instant>>;
 
 /// The app's model, i.e. its general state.
@@ -64,11 +67,17 @@ pub struct Model {
     pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
 
     /// A Perlin noise contour generator.
-    pub contours: Contours,
+    pub contours: Option<Arc<RwLock<Contours>>>,
+    /// A SmoothLife simulation.
+    pub smooth_life: Option<Arc<RwLock<SmoothLife>>>,
     /// The line which shows which column is being used as a spectral mask.
     pub mask_scan_line_pos: f64,
     /// The amount to increment the position of the mask scan line each frame.
     pub mask_scan_line_increment: f64,
+
+    pub mask_thread_pool: ThreadPool,
+
+    pub current_gen_algo: GenerativeAlgo,
 }
 
 impl Model {
@@ -96,10 +105,13 @@ impl Model {
 
         let GuiElements {
             contours,
+            smooth_life,
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
             dsp_load,
         } = build_gui_elements(app, pre_spectrum, post_spectrum);
+
+        let current_gen_algo = GenerativeAlgo::Contours;
 
         Self {
             window,
@@ -120,15 +132,31 @@ impl Model {
 
             spectral_mask,
 
-            contours,
+            contours: match current_gen_algo {
+                GenerativeAlgo::Contours => {
+                    Some(Arc::new(RwLock::new(contours)))
+                }
+                GenerativeAlgo::SmoothLife => None,
+            },
+            smooth_life: match current_gen_algo {
+                GenerativeAlgo::Contours => None,
+                GenerativeAlgo::SmoothLife => {
+                    Some(Arc::new(RwLock::new(smooth_life)))
+                }
+            },
             mask_scan_line_pos: 0.0,
-            mask_scan_line_increment: 0.0,
+            mask_scan_line_increment: 0.5,
+
+            mask_thread_pool: ThreadPool::build(2)
+                .expect("failed to build mask thread pool"),
 
             dsp_load,
             sample_rate_ref,
 
             delta_time: 0.0,
             update_time: Instant::now(),
+
+            current_gen_algo,
         }
     }
 
@@ -150,7 +178,8 @@ impl Model {
 
     /// Increments the internal position of the mask scan line.
     pub fn increment_mask_scan_line(&mut self) {
-        self.mask_scan_line_pos += self.mask_scan_line_increment * self.delta_time;
+        self.mask_scan_line_pos +=
+            self.mask_scan_line_increment * self.delta_time;
 
         if self.mask_scan_line_pos > 1.0 {
             self.mask_scan_line_pos -= 1.0;
@@ -160,17 +189,33 @@ impl Model {
         }
     }
 
+    pub fn set_mask(&mut self, mask: GenerativeAlgo) {
+        todo!();
+    }
+
+    pub fn mask_rect(&self) -> Rect {
+        self.contours.as_ref().map_or_else(
+            || {
+                self.smooth_life.as_ref().map_or_else(
+                    || unreachable!(),
+                    |sml| sml.read().unwrap().rect(),
+                )
+            },
+            |ctr| ctr.read().unwrap().rect(),
+        )
+    }
+
     pub fn draw_mask_scan_line(&self, draw: &Draw) {
-        let contour_rect = self.contours.rect();
-        let y_bot = contour_rect.bottom();
-        let y_top = contour_rect.top();
+        let rect = self.mask_rect();
+        let y_bot = rect.bottom();
+        let y_top = rect.top();
 
         let x = map(
             self.mask_scan_line_pos,
             0.0,
             1.0,
-            contour_rect.left() as f64,
-            contour_rect.right() as f64,
+            rect.left() as f64,
+            rect.right() as f64,
         ) as f32;
 
         draw.line()
@@ -187,125 +232,7 @@ impl Model {
     }
 }
 
-/// Builds the app window.
-fn build_window(app: &App, width: u32, height: u32) -> Id {
-    app.new_window()
-        .size(width, height)
-        .key_pressed(key::key_pressed)
-        .key_released(key::key_released)
-        .mouse_moved(mouse::mouse_moved)
-        .view(view)
-        .build()
-        .expect("failed to build app window!")
-}
-
-struct AudioSystem {
-    stream: Stream<AudioModel>,
-    sample_rate_ref: Arc<AtomicF64>,
-    senders: AudioSenders,
-    callback_timer_ref: CallbackTimerRef,
-    note_handler: NoteHandlerRef,
-    pre_spectrum: SpectrumOutput,
-    post_spectrum: SpectrumOutput,
-    spectral_mask: Arc<Mutex<SpectralMask>>,
-}
-
-/// Builds the audio stream, audio message channel senders, and input note handler.
-fn build_audio_system() -> AudioSystem {
-    // setup audio structs
-    let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
-    let audio_context =
-        AudioContext::build(Arc::clone(&note_handler), unsafe { SAMPLE_RATE });
-    let mut audio_model = AudioModel::new(audio_context);
-
-    audio_model.initialize();
-
-    // obtain audio message channels
-    let senders = audio_model.message_channels();
-
-    let (pre_spectrum, post_spectrum) = audio_model.spectrum_outputs();
-
-    let spectral_mask = audio_model.spectral_mask();
-
-    let callback_timer_ref = audio_model.callback_timer_ref();
-
-    let sample_rate_ref = audio_model.sample_rate_ref();
-
-    // setup audio stream
-    let audio_host = nannou_audio::Host::new();
-    let stream = audio_host
-        .new_output_stream(audio_model)
-        .render(audio::process)
-        .channels(NUM_CHANNELS)
-        .sample_rate(unsafe { SAMPLE_RATE } as u32)
-        .frames_per_buffer(BUFFER_SIZE)
-        .build()
-        .unwrap();
-
-    stream.play().unwrap();
-
-    AudioSystem {
-        stream,
-        sample_rate_ref,
-        senders,
-        callback_timer_ref,
-        note_handler,
-        pre_spectrum,
-        post_spectrum,
-        spectral_mask,
-    }
-}
-
-struct GuiElements {
-    pub contours: Contours,
-
-    pub pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
-    pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
-
-    pub dsp_load: Option<String>,
-}
-
-fn build_gui_elements(
-    app: &App,
-    pre_spectrum: SpectrumOutput,
-    post_spectrum: SpectrumOutput,
-) -> GuiElements {
-    let contour_size = 256;
-    let contour_size_fl = (contour_size / 2) as f32;
-    let contour_rect = Rect::from_corners(
-        pt2(-contour_size_fl, -contour_size_fl),
-        pt2(contour_size_fl, contour_size_fl),
-    );
-
-    let spectrum_rect =
-        Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
-    let pre_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
-    let post_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
-
-    GuiElements {
-        contours: Contours::new(app.main_window().device(), contour_rect)
-            .with_num_threads(8)
-            .expect("failed to allocate 8 threads to contour generator")
-            .with_z_increment(0.1)
-            .with_num_contours(64)
-            .with_contour_range(0.1..=0.9),
-
-        pre_spectrum_analyzer,
-        post_spectrum_analyzer,
-
-        dsp_load: None,
-    }
-}
-
-/// Builds the `HashMap` used to track which keys are currently pressed or not.
-fn build_pressed_keys_map() -> HashMap<Key, bool> {
-    let mut map = HashMap::new();
-
-    for k in KEYBOARD_MIDI_NOTES {
-        map.insert(k, false);
-    }
-
-    map
+pub enum GenerativeAlgo {
+    Contours,
+    SmoothLife,
 }

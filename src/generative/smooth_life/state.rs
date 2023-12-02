@@ -17,36 +17,53 @@ pub struct SLState {
 }
 
 impl SLState {
+    pub fn fluid() -> Self {
+        Self {
+            radius_inner: 10.0 / 3.0,
+            radius_outer: 10.0,
+            alpha_n: 0.028,
+            alpha_m: 0.147,
+            b1: 0.238,
+            b2: 0.465,
+            d1: 0.267,
+            d2: 0.445,
+            dt: 2.0,
+        }
+    }
+
     /// [`Source`](https://arxiv.org/abs/1111.1567)
     pub fn transition(&self, n: f64, m: f64) -> f64 {
-        self.sg_n(
+        self.sigmoid_n(
             n,
-            self.sg_m(self.b1, self.d1, m),
-            self.sg_m(self.b2, self.d2, m),
+            self.sigmoid_m(self.b1, self.d1, m),
+            self.sigmoid_m(self.b2, self.d2, m),
         )
     }
 
-    fn sg(x: f64, a: f64, alpha: f64) -> f64 {
-        (1.0 + (-(x - a) * 4.0 / alpha).exp()).recip()
+    fn sigmoid(x: f64, a: f64, alpha: f64) -> f64 {
+        1.0 / (1.0 + (-(x - a) * 4.0 / alpha).exp())
     }
 
-    fn sg_n(&self, x: f64, a: f64, b: f64) -> f64 {
-        Self::sg(x, a, self.alpha_n) * (1.0 - Self::sg(x, b, self.alpha_n))
+    fn sigmoid_n(&self, x: f64, a: f64, b: f64) -> f64 {
+        Self::sigmoid(x, a, self.alpha_n)
+            * (1.0 - Self::sigmoid(x, b, self.alpha_n))
     }
 
-    fn sg_m(&self, x: f64, y: f64, m: f64) -> f64 {
-        x.mul_add(
-            1.0 - Self::sg(m, 0.5, self.alpha_m),
-            y * (Self::sg(m, 0.5, self.alpha_m)),
-        )
+    #[allow(clippy::suboptimal_flops)]
+    fn sigmoid_m(&self, x: f64, y: f64, m: f64) -> f64 {
+        let sgm = Self::sigmoid(m, 0.5, self.alpha_m);
+
+        x * (1.0 - sgm) + y * sgm
     }
 }
+
+const RA: f64 = 11.0;
 
 impl Default for SLState {
     fn default() -> Self {
         Self {
-            radius_inner: 11.0 / 3.0,
-            radius_outer: 11.0,
+            radius_inner: RA / 3.0,
+            radius_outer: RA,
 
             alpha_n: 0.028,
             alpha_m: 0.147,
@@ -56,7 +73,8 @@ impl Default for SLState {
             d1: 0.267,
             d2: 0.445,
 
-            dt: 0.04,
+            // dt: 1_000_000.0,
+            dt: 0.005,
         }
     }
 }

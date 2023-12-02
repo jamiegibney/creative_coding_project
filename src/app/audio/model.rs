@@ -56,8 +56,10 @@ pub struct AudioModel {
     // pub filter_freq: Smoother<f64>,
     filter_freq_receiver: Option<Receiver<f64>>,
 
+    pub pre_dc_filter: [DCFilter; 2],
     pub waveshaper: [Waveshaper; 2],
     drive_amount_receiver: Option<Receiver<f64>>,
+    pub post_dc_filter: [DCFilter; 2],
 
     pub glide_time: f64,
     pub volume: f64,
@@ -100,11 +102,13 @@ impl AudioModel {
             );
         }
 
-        let upsampled_rate = unsafe { OVERSAMPLED_SAMPLE_RATE };
+        // let upsampled_rate = unsafe { OVERSAMPLED_SAMPLE_RATE };
+        let upsampled_rate = sample_rate;
         let biquad = BiquadFilter::new(upsampled_rate);
 
         let mut comb = IirCombFilter::with_interpolation(true, upsampled_rate);
-        comb.set_freq(12.0);
+        comb.set_freq(10.0);
+        comb.set_gain_db(-0.001);
 
         let mut comb_peak = BiquadFilter::new(upsampled_rate);
         comb_peak.set_params(&BiquadParams {
@@ -118,22 +122,21 @@ impl AudioModel {
         comb_lp.set_params(&BiquadParams {
             freq: 2652.0,
             gain: 0.0,
-            q: 2.0,
+            q: 8.0,
             filter_type: FilterType::Lowpass,
         });
 
         let mut comb_lp = FirstOrderFilter::new(upsampled_rate);
         comb_lp.set_type(FilterType::Lowpass);
-        comb_lp.set_freq(1000.0);
+        comb_lp.set_freq(3000.0);
 
         let mut comb_comb =
             IirCombFilter::with_interpolation(true, upsampled_rate);
-        comb_comb.set_freq(6324.0);
-        comb_comb.set_gain_db(-2.0);
+        comb_comb.set_freq(8.0);
+        comb_comb.set_gain_db(-0.01);
 
         comb.set_internal_filters(vec![
             Box::new(comb_peak),
-            Box::new(comb_comb),
             Box::new(comb_lp),
         ]);
 
@@ -142,23 +145,24 @@ impl AudioModel {
         let mut waveshaper = [Waveshaper::new(), Waveshaper::new()];
 
         for ws in &mut waveshaper {
-            ws.set_curve(0.2);
+            ws.set_curve(0.1);
             ws.set_asymmetric(false);
-            ws.set_drive(0.8);
+            ws.set_drive(0.1);
+            ws.set_xfer_function(xfer::s_curve);
         }
 
         let note_handler_ref = context.note_handler_ref();
 
         let mut amp_envelope = AdsrEnvelope::new(sample_rate);
-        amp_envelope.set_parameters(10.0, 300.0, 1.0, 10.0);
+        amp_envelope.set_parameters(0.0, 300.0, 0.0, 10.0);
 
-        let spectral_block_size = 1 << 11; // 2048
+        let spectral_block_size = 1 << 10; // 2048
 
         let mut spectral_filter =
             SpectralFilter::new(NUM_CHANNELS, 2usize.pow(14));
         spectral_filter.set_block_size(spectral_block_size);
 
-        let default_gain = 0.2;
+        let default_gain = 0.008;
 
         Self {
             callback_time_elapsed: Arc::new(Mutex::new(
@@ -194,8 +198,14 @@ impl AudioModel {
             filter_comb: [comb.clone(), comb],
             filter_peak_post: [biquad.clone(), biquad.clone()],
 
+            pre_dc_filter: std::array::from_fn(|_| {
+                DCFilter::new(upsampled_rate, 2)
+            }),
             waveshaper,
             drive_amount_receiver: None,
+            post_dc_filter: std::array::from_fn(|_| {
+                DCFilter::new(upsampled_rate, 2)
+            }),
 
             filter_freq_receiver: None,
 
@@ -360,7 +370,7 @@ impl AudioModel {
         for lp in &mut self.filter_lp {
             lp.set_params(&params);
             lp.set_freq(10000.0);
-            lp.set_q(1.0);
+            lp.set_q(6.0);
         }
 
         for hp in &mut self.filter_hp {

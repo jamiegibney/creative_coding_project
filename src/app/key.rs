@@ -1,4 +1,4 @@
-use super::{*};
+use super::*;
 use crate::musical::*;
 // use crate::prelude::*;
 
@@ -16,7 +16,21 @@ pub fn key_pressed(app: &App, model: &mut Model, key: Key) {
         }
         Key::Z => model.octave.decrease(),
         Key::X => model.octave.increase(),
-        Key::R => model.contours.reset_seed(),
+        Key::R => match model.current_gen_algo {
+            GenerativeAlgo::Contours => {
+                let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
+
+                ctr.reset_seed();
+                drop(ctr);
+            }
+            GenerativeAlgo::SmoothLife => {
+                let mut sml =
+                    model.smooth_life.as_mut().unwrap().write().unwrap();
+
+                sml.reset();
+                drop(sml);
+            }
+        },
 
         _ => (),
     };

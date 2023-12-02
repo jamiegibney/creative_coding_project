@@ -164,47 +164,65 @@ fn callback_timer(audio: &AudioModel) {
 /// Processes all audio FX.
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // update spectral mask
-    if let Ok(guard) = audio.spectral_mask.lock() {
+    if let Ok(guard) = audio.spectral_mask.try_lock() {
         audio.spectral_filter.set_mask(&guard);
     }
 
     // process the spectral masking
     audio.spectral_filter.process_block(buffer);
 
-    // copy the audio buffer into the oversampling buffer so the channel layout
-    // is compatible with the oversamplers.
-    audio.oversampling_buffer.copy_from_buffer(buffer);
-
-    // compute gain information
     audio.master_gain.next_block_exact(&mut audio.gain_data);
 
-    // process the oversampling
-    for ((ch, block), oversampler) in audio
-        .oversampling_buffer
-        .iter_mut()
-        .enumerate()
-        .zip(audio.oversamplers.iter_mut())
-    {
-        oversampler.process(
-            &mut block[..BUFFER_SIZE],
-            audio
-                .oversampling_factor
-                .load(std::sync::atomic::Ordering::Relaxed),
-            |upsampled| {
-                // a single channel iterating through each upsampled sample
-                for (smp_idx, sample) in upsampled.iter_mut().enumerate() {
-                    // *sample = audio.waveshaper[ch].process(*sample);
-                    *sample = audio.filter_lp[ch].process(*sample);
+    for (i, fr) in buffer.frames_mut().enumerate() {
+        for ch in 0..NUM_CHANNELS {
+            let mut sample = fr[ch];
+            sample = audio.pre_dc_filter[ch].process_mono(sample);
 
-                    *sample *= audio.gain_data[smp_idx];
-                }
-            },
-        );
+            sample = audio.filter_comb[ch].process(sample);
+            // sample = audio.waveshaper[ch].process(sample);
+
+            sample = audio.post_dc_filter[ch].process_mono(sample);
+            sample *= audio.gain_data[i];
+            fr[ch] = sample;
+        }
     }
 
-    // copy the oversampling buffer content back to the main audio buffer with the
-    // correct channel layout.
-    audio.oversampling_buffer.copy_to_buffer(buffer);
+    // // copy the audio buffer into the oversampling buffer so the channel layout
+    // // is compatible with the oversamplers.
+    // audio.oversampling_buffer.copy_from_buffer(buffer);
+    //
+    // // compute gain information
+    // audio.master_gain.next_block_exact(&mut audio.gain_data);
+    //
+    // // process the oversampling
+    // for ((ch, block), oversampler) in audio
+    //     .oversampling_buffer
+    //     .iter_mut()
+    //     .enumerate()
+    //     .zip(audio.oversamplers.iter_mut())
+    // {
+    //     oversampler.process(
+    //         &mut block[..BUFFER_SIZE],
+    //         audio
+    //             .oversampling_factor
+    //             .load(std::sync::atomic::Ordering::Relaxed),
+    //         |upsampled| {
+    //             // a single channel iterating through each upsampled sample
+    //             for (smp_idx, sample) in upsampled.iter_mut().enumerate() {
+    //                 *sample = audio.pre_dc_filter[ch].process_mono(*sample);
+    //                 *sample = audio.waveshaper[ch].process(*sample);
+    //                 *sample = audio.post_dc_filter[ch].process_mono(*sample);
+    //                 // *sample = audio.filter_lp[ch].process(*sample);
+    //
+    //                 *sample *= audio.gain_data[smp_idx];
+    //             }
+    //         },
+    //     );
+    // }
+    //
+    // // copy the oversampling buffer content back to the main audio buffer with the
+    // // correct channel layout.
+    // audio.oversampling_buffer.copy_to_buffer(buffer);
 
     // final loop
     let mut is_processing = false;

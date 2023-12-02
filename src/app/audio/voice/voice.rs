@@ -102,12 +102,16 @@ impl VoiceHandler {
         note: u8,
         envelope: Option<AdsrEnvelope>,
     ) -> &mut Voice {
+        let sr = unsafe { SAMPLE_RATE };
         let mut new_voice = Voice {
             id: self.next_voice_id(),
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
-            // generator: Generator::Saw(PhasorOsc::new(note_to_freq(note as f64))),
+            // generator: Generator::Saw(Phasor::new(
+            //     note_to_freq(note as f64),
+            //     sr,
+            // )),
             generator: Generator::Noise,
         };
 

@@ -2,49 +2,36 @@ use super::*;
 
 pub struct SmoothLifeGenerator {
     /// The internal state of the simulation.
-    pub state: SLState,
+    state: SLState,
     /// The current state of the grid.
     pub grid: Grid,
     /// Scratch buffer for computing the next grid.
     diff: Grid,
+    /// The internal thread pool.
+    // TODO async processing
+    pool: ThreadPool,
 }
 
 impl SmoothLifeGenerator {
     pub fn new(size: usize) -> Self {
         let grid = Grid::new_square(size).with_random();
-
         Self {
-            state: SLState::fluid(),
+            state: SLState::default(),
             diff: grid.clone(),
             grid,
+
+            pool: ThreadPool::build(4)
+                .expect("failed to build thread pool for SmoothLifeGenerator"),
         }
     }
 
     pub fn update(&mut self, delta_time: f64) {
-        self.compute_diff();
+        self.compute();
         self.apply_diff(delta_time);
     }
 
     pub fn grid(&self) -> &Grid {
         &self.grid
-    }
-
-    pub fn state_mut(&mut self) -> &mut SLState {
-        &mut self.state
-    }
-
-    pub fn reset(&mut self) {
-        self.grid.randomize();
-        self.sync_diff();
-    }
-
-    pub fn sync_diff(&mut self) {
-        self.diff
-            .iter_mut()
-            .zip(self.grid.iter())
-            .for_each(|(df, gr)| {
-                df.clone_from_slice(gr);
-            });
     }
 
     /// This method expects `x` an `y` to be in the range `0.0` to `1.0`.
@@ -72,7 +59,7 @@ impl SmoothLifeGenerator {
     }
 
     #[allow(clippy::many_single_char_names)]
-    fn compute_diff(&mut self) {
+    fn compute(&mut self) {
         let w = self.grid.width();
         let h = self.grid.height();
         let ri = self.state.radius_inner;
@@ -83,16 +70,16 @@ impl SmoothLifeGenerator {
             for cy in 0..h {
                 let (mut m, mut m_norm, mut n, mut n_norm) =
                     (0.0, 0.0, 0.0, 0.0);
-                let ra_1 = ra - 1.0;
+                let ra_1 = self.state.radius_outer - 1.0;
                 let min = (-ra_1) as usize;
                 let max = ra_1 as usize;
 
                 for dx in min..=max {
                     for dy in min..=max {
-                        let x = emod(cx + dx, w);
-                        let y = emod(cy + dy, h);
+                        let x = wrap(cx + dx, w);
+                        let y = wrap(cy + dy, h);
 
-                        let d = (dx + dx + dy * dy) as f64;
+                        let d = (dx * dx + dy * dy) as f64;
 
                         if d <= ri * ri {
                             m += self.grid[x][y];
@@ -116,39 +103,18 @@ impl SmoothLifeGenerator {
 
     fn apply_diff(&mut self, delta_time: f64) {
         let dt = self.state.dt * delta_time;
-        let w = self.grid().width();
-        let h = self.grid().height();
 
-        for x in 0..w {
-            for y in 0..h {
-                self.grid[x][y] = dt
-                    .mul_add(self.diff[x][y], self.grid[x][y] + 0.002)
-                    .clamp(0.0, 1.0);
+        for (gr, df) in self.grid.iter_mut().zip(self.diff.iter()) {
+            for (grid, &diff) in gr.iter_mut().zip(df.iter()) {
+                *grid = dt.mul_add(diff, *grid).clamp(0.0, 1.0);
             }
         }
     }
 }
 
-// TODO does this actually work?
 fn wrap<T>(value: T, bound: T) -> T
 where
     T: Add<Output = T> + Rem<Output = T> + Copy,
 {
     (value % bound + bound) % bound
-}
-
-fn emod(value: usize, bound: usize) -> usize {
-    (value % bound + bound) % bound
-}
-
-pub fn lerp(a: f64, b: f64, mut t: f64) -> f64 {
-    t = t.clamp(0.0, 1.0);
-    if t <= f64::EPSILON {
-        return a;
-    }
-    else if t >= 1.0 - f64::EPSILON {
-        return b;
-    }
-
-    t.mul_add(b - a, a)
 }

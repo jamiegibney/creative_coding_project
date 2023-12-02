@@ -29,7 +29,7 @@ pub struct Contours {
     rect: Rect,
 
     /// The internal image buffer (the buffer which holds pixel data).
-    image_buffer: RefCell<ImageBuffer<Rgba<u8>, Vec<u8>>>,
+    image_buffer: ImageBuffer<Rgba<u8>, Vec<u8>>,
 
     thread_buffers: Vec<Arc<Mutex<Vec<Rgba<u8>>>>>,
     thread_pool: Option<ThreadPool>,
@@ -63,11 +63,9 @@ impl Contours {
                         | wgpu::TextureUsages::TEXTURE_BINDING,
                 )
                 .build(device),
-            image_buffer: RefCell::new(ImageBuffer::from_fn(
-                width,
-                height,
-                |_, _| Rgba([255, 255, 255, u8::MAX]),
-            )),
+            image_buffer: ImageBuffer::from_fn(width, height, |_, _| {
+                Rgba([255, 255, 255, u8::MAX])
+            }),
 
             rect,
 
@@ -76,70 +74,9 @@ impl Contours {
         }
     }
 
-    /// Updates the internal image buffer and noise generator.
-    pub fn update(&mut self, delta_time: f64) {
-        // important to update this first, as it ensures the generated image
-        // matches what is sampled from the noise generator before this method
-        // is called again
-        self.update_z(delta_time);
-
-        if self.thread_pool.is_some() {
-            self.process_async();
-        }
-        else {
-            self.process();
-        }
-    }
-
-    /// Uploads the internal image buffer to a texture, and passes it to `Draw`.
-    ///
-    /// [`update()`](Self::update) should be called before this method.
-    ///
-    /// `device` and `frame` are used to upload the texture data.
-    pub fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
-        let window = app.main_window();
-        self.texture.upload_data(
-            window.device(),
-            &mut frame.command_encoder(),
-            self.image_buffer.borrow().as_flat_samples().as_slice(),
-        );
-
-        draw.texture(&self.texture);
-    }
-
     /// Sets the internal noise seed to a random value.
     pub fn reset_seed(&mut self) {
         self.noise = Arc::new(self.noise.set_seed(random()));
-    }
-
-    /// Directly mutates a `SpectralMask`, placing the contour information at
-    /// `x` in it. `x` is expected to be between `0.0` and `1.0`, where `0.0` is
-    /// the far-left and vice versa.
-    ///
-    /// If `x < 0.0 || 1.0 < x`, this method has no effect.
-    pub fn column_to_mask(&mut self, mask: &mut SpectralMask, x: f64) {
-        if !(0.0..=1.0).contains(&x) {
-            return;
-        }
-
-        let sr = unsafe { SAMPLE_RATE };
-        let num_bins = mask.len();
-
-        // start at 1 to skip the 0 Hz component
-        for i in 1..num_bins {
-            // get the frequency of the current bin
-            let bin_freq = mask.bin_freq(i, sr);
-
-            // get a logarithmically scaled, normalised frequency value
-            let y = 1.0 - freq_log_norm(bin_freq, 20.0, sr);
-
-            // get the noise value at the bin's position
-            let noise = self.noise.get([x, y, self.z]);
-            let mapped = ((noise + 1.0) / 2.0) * self.num_contours as f64;
-
-            // apply the contouring method
-            mask[i] = self.contour(mod1(mapped));
-        }
     }
 
     /// Adds the provided range to `self`.
@@ -254,24 +191,23 @@ impl Contours {
 
     /// The width of the image buffer in pixels.
     pub fn width_px(&self) -> usize {
-        self.image_buffer.borrow().width() as usize
+        self.image_buffer.width() as usize
     }
 
     /// The height of the image buffer in pixels.
     pub fn height_px(&self) -> usize {
-        self.image_buffer.borrow().width() as usize
+        self.image_buffer.width() as usize
     }
 
-    pub fn rect(&self) -> &Rect {
-        &self.rect
+    pub fn rect(&self) -> Rect {
+        self.rect
     }
 
     /// Synchronously processes the contour lines on one thread.
-    fn process(&mut self) {
+    fn compute(&mut self) {
         let width = self.width_px() as f64;
         let height = self.height_px() as f64;
         self.image_buffer
-            .borrow_mut()
             .enumerate_pixels_mut()
             .for_each(|(x, y, pxl)| {
                 pxl.0 = [255, 255, 255, u8::MAX];
@@ -291,7 +227,7 @@ impl Contours {
 
     /// Asynchronously processes the contour lines on multiple threads, where
     /// each thread is responsible for a portion of the rows.
-    fn process_async(&mut self) {
+    fn compute_async(&mut self) {
         let rows_per_thread = self.rows_per_thread();
         let width = self.width_px();
         let height = self.height_px();
@@ -340,7 +276,6 @@ impl Contours {
 
         // copy generated information to the image buffer
         self.image_buffer
-            .borrow_mut()
             .pixels_mut()
             .enumerate()
             .for_each(|(i, pxl)| {
@@ -369,7 +304,7 @@ impl Contours {
         // SAFETY: this function is only called if the thread pool exists, so
         // unwrapping it is fine.
         let num_threads = self.thread_pool.as_ref().unwrap().num_threads();
-        self.image_buffer.borrow().height() as usize / num_threads
+        self.image_buffer.height() as usize / num_threads
     }
 
     /// Updates the internal z value used for the noise field's third dimension.
@@ -379,6 +314,63 @@ impl Contours {
         // and forth within this range
         if self.z < -1_000_000.0 || 1_000_000.0 < self.z {
             self.z_increment *= -1.0;
+        }
+    }
+}
+
+impl DrawMask for Contours {
+    /// Updates the internal image buffer and noise generator.
+    fn update(&mut self, delta_time: f64) {
+        // important to update this first, as it ensures the generated image
+        // matches what is sampled from the noise generator before this method
+        // is called again
+        self.update_z(delta_time);
+
+        if self.thread_pool.is_some() {
+            self.compute_async();
+        }
+        else {
+            self.compute();
+        }
+    }
+
+    fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        self.texture.upload_data(
+            app.main_window().device(),
+            &mut frame.command_encoder(),
+            self.image_buffer.as_flat_samples().as_slice(),
+        );
+
+        draw.texture(&self.texture);
+    }
+
+    /// Directly mutates a `SpectralMask`, placing the contour information at
+    /// `x` in it. `x` is expected to be between `0.0` and `1.0`, where `0.0` is
+    /// the far-left and vice versa.
+    ///
+    /// If `x < 0.0 || 1.0 < x`, this method has no effect.
+    fn column_to_mask(&self, mask: &mut SpectralMask, x: f64) {
+        if !(0.0..=1.0).contains(&x) {
+            return;
+        }
+
+        let sr = unsafe { SAMPLE_RATE };
+        let num_bins = mask.len();
+
+        // start at 1 to skip the 0 Hz component
+        for i in 1..num_bins {
+            // get the frequency of the current bin
+            let bin_freq = mask.bin_freq(i, sr);
+
+            // get a logarithmically scaled, normalised frequency value
+            let y = 1.0 - freq_log_norm(bin_freq, 20.0, sr);
+
+            // get the noise value at the bin's position
+            let noise = self.noise.get([x, y, self.z]);
+            let mapped = ((noise + 1.0) / 2.0) * self.num_contours as f64;
+
+            // apply the contouring method
+            mask[i] = self.contour(mod1(mapped));
         }
     }
 }

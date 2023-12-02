@@ -3,17 +3,14 @@ use nannou::prelude::*;
 use nannou::LoopMode::RefreshSync;
 use nannou_audio;
 
-
-
-
 pub mod audio;
 mod key;
 mod model;
 mod mouse;
-mod view;
 mod update;
+mod view;
 
-pub use model::Model;
+pub use model::{GenerativeAlgo, Model};
 use update::update;
 
 /// Runs the app via Nannou.

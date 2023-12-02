@@ -1,4 +1,4 @@
-use super::{*, stft::stft_trait::StftInputMut};
+use super::{stft::stft_trait::StftInputMut, *};
 use crate::util::window::*;
 use nannou_audio::Buffer;
 use realfft::{
@@ -110,8 +110,9 @@ impl SpectralFilter {
 
     /// Processes a block of audio. This does not necessarily call the FFT algorithms.
     #[allow(clippy::missing_panics_doc)] // this function will not panic.
-    pub fn process_block<B>(&mut self, buffer: &mut B) 
-        where B: StftInputMut,
+    pub fn process_block<B>(&mut self, buffer: &mut B)
+    where
+        B: StftInputMut,
     {
         self.stft.process_overlap_add(
             buffer,
@@ -132,6 +133,8 @@ impl SpectralFilter {
                     .for_each(|(bin, &mask)| {
                         *bin *= mask;
                     });
+
+                self.complex_buffers[ch_idx][0] *= 0.0;
 
                 // back to time domain
                 self.ifft

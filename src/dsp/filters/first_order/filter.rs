@@ -84,6 +84,10 @@ impl FirstOrderFilter {
         self.z1 = 0.0;
     }
 
+    pub fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
+    }
+
     fn set_lowpass_coefs(&mut self) {
         self.set_common_coefs();
         let Coefs { a0, a1, b1 } = &mut self.coefs;
@@ -96,18 +100,16 @@ impl FirstOrderFilter {
         self.set_common_coefs();
         let Coefs { a0, a1, b1 } = &mut self.coefs;
 
-        *a0 = (1.0 - *b1) / 2.0;
+        *a0 = (1.0 - *b1) * 0.5;
         *a1 = -(*a0);
     }
 
     fn set_common_coefs(&mut self) {
         let freq = self.freq;
         let sr = self.sample_rate;
-        let b1 = &mut self.coefs.b1;
-
         let phi = (TAU * freq) / sr;
 
-        *b1 = (-phi.cos()) / (1.0 + phi.sin());
+        self.coefs.b1 = (-phi.cos()) / (1.0 + phi.sin());
     }
 
     fn debug_assertions(&self) {

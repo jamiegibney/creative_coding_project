@@ -37,11 +37,25 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     outline_rect(model.pre_spectrum_analyzer.borrow().rect(), draw, 2.0);
 
-    // model.flow_field.draw(window.device(), draw, &frame);
-    model.contours.draw(app, draw, &frame);
+    match model.current_gen_algo {
+        GenerativeAlgo::Contours => model
+            .contours
+            .as_ref()
+            .unwrap()
+            .read()
+            .unwrap()
+            .draw(app, draw, &frame),
+        GenerativeAlgo::SmoothLife => model
+            .smooth_life
+            .as_ref()
+            .unwrap()
+            .read()
+            .unwrap()
+            .draw(app, draw, &frame),
+    }
     model.draw_mask_scan_line(draw);
 
-    outline_rect(model.contours.rect(), draw, 2.0);
+    outline_rect(&model.mask_rect(), draw, 2.0);
 
     // if the frame fails to draw, we'll just ignore it
     let _ = draw.to_frame(app, &frame);
