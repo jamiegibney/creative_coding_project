@@ -164,8 +164,11 @@ fn callback_timer(audio: &AudioModel) {
 /// Processes all audio FX.
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // update spectral mask
-    if let Ok(guard) = audio.spectral_mask.try_lock() {
-        audio.spectral_filter.set_mask(&guard);
+    // if let Ok(guard) = audio.spectral_mask.try_lock() {
+    //     audio.spectral_filter.set_mask(&guard);
+    // }
+    if audio.spectral_mask.update() {
+        audio.spectral_filter.set_mask(audio.spectral_mask.read());
     }
 
     // process the spectral masking

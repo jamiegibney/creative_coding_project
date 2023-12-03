@@ -108,11 +108,11 @@ impl VoiceHandler {
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
-            // generator: Generator::Saw(Phasor::new(
-            //     note_to_freq(note as f64),
-            //     sr,
-            // )),
-            generator: Generator::Noise,
+            generator: Generator::Saw(Phasor::new(
+                note_to_freq(note as f64),
+                sr,
+            )),
+            // generator: Generator::Noise,
         };
 
         new_voice.envelope.set_trigger(true);

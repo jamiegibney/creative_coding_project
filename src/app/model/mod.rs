@@ -32,7 +32,8 @@ pub struct Model {
     pub audio_senders: AudioSenders,
 
     /// A thread-safe reference to the mask used for spectral filtering.
-    pub spectral_mask: Arc<Mutex<SpectralMask>>,
+    // pub spectral_mask: Arc<Mutex<SpectralMask>>,
+    pub spectral_mask: Arc<Mutex<triple_buffer::Input<SpectralMask>>>,
 
     /// A thread-safe reference to the timer which tracks when the audio callback
     /// was last called.
@@ -87,6 +88,7 @@ impl Model {
     ///
     /// Panics if a new window cannot be initialized.
     pub fn build(app: &App) -> Self {
+        let max_spectral_block_size = 1 << 14; // 16,384
         let AudioSystem {
             stream: audio_stream,
             sample_rate_ref,
@@ -96,7 +98,7 @@ impl Model {
             pre_spectrum,
             post_spectrum,
             spectral_mask,
-        } = build_audio_system();
+        } = build_audio_system(max_spectral_block_size);
 
         let (_w, _h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
 
@@ -130,7 +132,7 @@ impl Model {
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
 
-            spectral_mask,
+            spectral_mask: Arc::new(Mutex::new(spectral_mask)),
 
             contours: match current_gen_algo {
                 GenerativeAlgo::Contours => {

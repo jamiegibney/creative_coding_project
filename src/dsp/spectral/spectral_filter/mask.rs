@@ -44,6 +44,9 @@ impl SpectralMask {
     /// `13 == 8,192`
     /// `14 == 16,384`
     pub fn new(order: u32) -> Self {
+        todo!(
+            r#"this needs to allocate the maximum size, and then requires a "working" block size."#
+        );
         assert!(order <= 14); // 16,384 max elements
 
         Self { points: vec![1.0; 2usize.pow(order)] }

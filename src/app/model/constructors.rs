@@ -20,15 +20,26 @@ pub struct AudioSystem {
     pub(super) note_handler: NoteHandlerRef,
     pub(super) pre_spectrum: SpectrumOutput,
     pub(super) post_spectrum: SpectrumOutput,
-    pub(super) spectral_mask: Arc<Mutex<SpectralMask>>,
+    // pub(super) spectral_mask: Arc<Mutex<SpectralMask>>,
+    pub(super) spectral_mask: triple_buffer::Input<SpectralMask>,
 }
 
 /// Builds the audio stream, audio message channel senders, and input note handler.
-pub fn build_audio_system() -> AudioSystem {
+pub fn build_audio_system(spectral_block_size: usize) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
-    let audio_context =
-        AudioContext::build(Arc::clone(&note_handler), unsafe { SAMPLE_RATE });
+    let (spectral_mask_input, spectral_mask_output) =
+        triple_buffer::TripleBuffer::new(&SpectralMask::new(
+            spectral_block_size.ilog2() - 1,
+        ))
+        .split();
+
+    let audio_context = AudioContext {
+        note_handler: Arc::clone(&note_handler),
+        sample_rate: unsafe { SAMPLE_RATE },
+        spectral_mask_output: Some(spectral_mask_output),
+    };
+    // AudioContext::build(Arc::clone(&note_handler), unsafe { SAMPLE_RATE });
     let mut audio_model = AudioModel::new(audio_context);
 
     audio_model.initialize();
@@ -38,7 +49,7 @@ pub fn build_audio_system() -> AudioSystem {
 
     let (pre_spectrum, post_spectrum) = audio_model.spectrum_outputs();
 
-    let spectral_mask = audio_model.spectral_mask();
+    // let spectral_mask = audio_model.spectral_mask();
 
     let callback_timer_ref = audio_model.callback_timer_ref();
 
@@ -65,7 +76,7 @@ pub fn build_audio_system() -> AudioSystem {
         note_handler,
         pre_spectrum,
         post_spectrum,
-        spectral_mask,
+        spectral_mask: spectral_mask_input,
     }
 }
 

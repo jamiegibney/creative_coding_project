@@ -12,25 +12,29 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
 
     match model.current_gen_algo {
         GenerativeAlgo::Contours => {
-            let ctr = Arc::clone(&model.contours.as_mut().unwrap());
+            let ctr = Arc::clone(model.contours.as_mut().unwrap());
 
             model.mask_thread_pool.execute(move || {
                 let mut mask = mask.lock().unwrap();
                 let mut ctr = ctr.write().unwrap();
 
                 ctr.update(dt);
-                ctr.column_to_mask(&mut mask, pos);
+                ctr.column_to_mask(mask.input_buffer(), pos);
+                drop(ctr);
+                mask.publish();
             });
         }
         GenerativeAlgo::SmoothLife => {
-            let sml = Arc::clone(&model.smooth_life.as_mut().unwrap());
+            let sml = Arc::clone(model.smooth_life.as_mut().unwrap());
 
             model.mask_thread_pool.execute(move || {
                 let mut mask = mask.lock().unwrap();
                 let mut sml = sml.write().unwrap();
 
                 sml.update(dt);
-                sml.column_to_mask(&mut mask, pos);
+                sml.column_to_mask(mask.input_buffer(), pos);
+                drop(sml);
+                mask.publish();
             });
         }
     }

@@ -5,13 +5,14 @@ use std::sync::Arc;
 pub struct AudioContext {
     pub note_handler: NoteHandlerRef,
     pub sample_rate: f64,
+    pub spectral_mask_output: Option<triple_buffer::Output<SpectralMask>>,
 }
 
 impl AudioContext {
-    /// Builds a new `AudioContext`.
-    pub fn build(note_handler_ref: NoteHandlerRef, sample_rate: f64) -> Self {
-        Self { note_handler: note_handler_ref, sample_rate }
-    }
+    // /// Builds a new `AudioContext`.
+    // pub fn build(note_handler_ref: NoteHandlerRef, sample_rate: f64, ) -> Self {
+    //     Self { note_handler: note_handler_ref, sample_rate }
+    // }
 
     /// Returns a thread-safe reference to the `NoteHandler`.
     pub fn note_handler_ref(&self) -> NoteHandlerRef {

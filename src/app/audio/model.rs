@@ -1,5 +1,6 @@
 use super::*;
 use crate::dsp::{filters::comb::distortion::waveshaper, Generator};
+use triple_buffer::TripleBuffer;
 
 /// When the DSP stops , it will continue to process for this length of time to
 /// allow the audio spectrums to fully relax. After this time has passed, the DSP
@@ -81,7 +82,8 @@ pub struct AudioModel {
 
     pub latency_samples: u32,
 
-    pub spectral_mask: Arc<Mutex<SpectralMask>>,
+    // pub spectral_mask: Arc<Mutex<SpectralMask>>,
+    pub spectral_mask: triple_buffer::Output<SpectralMask>,
 
     pub spectral_filter: SpectralFilter,
 
@@ -93,7 +95,7 @@ pub struct AudioModel {
 impl AudioModel {
     /// Creates a new `AudioModel`.
     #[allow(clippy::too_many_lines)]
-    pub fn new(context: AudioContext) -> Self {
+    pub fn new(mut context: AudioContext) -> Self {
         let sample_rate = context.sample_rate;
 
         unsafe {
@@ -154,7 +156,7 @@ impl AudioModel {
         let note_handler_ref = context.note_handler_ref();
 
         let mut amp_envelope = AdsrEnvelope::new(sample_rate);
-        amp_envelope.set_parameters(0.0, 300.0, 0.0, 10.0);
+        amp_envelope.set_parameters(0.0, 300.0, 1.0, 10.0);
 
         let spectral_block_size = 1 << 10; // 2048
 
@@ -169,7 +171,6 @@ impl AudioModel {
                 std::time::Instant::now(),
             )),
             voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
-            context,
             voice_gain: Smoother::new(1.0, 0.5, sample_rate),
             master_gain: Smoother::new(1.0, default_gain, upsampled_rate),
             gain_data: vec![
@@ -209,10 +210,7 @@ impl AudioModel {
 
             filter_freq_receiver: None,
 
-            spectral_mask: Arc::new(Mutex::new(SpectralMask::new(
-                // - 1 because the mask should be half of the fft block size
-                spectral_block_size.ilog2() - 1,
-            ))),
+            spectral_mask: context.spectral_mask_output.take().unwrap(),
             spectral_filter,
 
             volume: db_to_level(-24.0),
@@ -255,6 +253,7 @@ impl AudioModel {
             generator: Generator::Noise,
 
             sample_rate: Arc::new(AtomicF64::new(sample_rate)),
+            context,
         }
     }
 
@@ -306,9 +305,9 @@ impl AudioModel {
     }
 
     /// Returns a thread-safe reference to the audio processor's spectral mask.
-    pub fn spectral_mask(&mut self) -> Arc<Mutex<SpectralMask>> {
-        Arc::clone(&self.spectral_mask)
-    }
+    // pub fn spectral_mask(&mut self) -> Arc<Mutex<SpectralMask>> {
+    //     Arc::clone(&self.spectral_mask)
+    // }
 
     /// Initializes the `AudioModel`, returning an `AudioSenders` instance containing
     /// the channel senders used to communicate with the audio thread.
