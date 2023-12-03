@@ -1,10 +1,16 @@
 use nannou_audio::Buffer;
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 
 use super::note::NoteHandler;
 use crate::dsp::synthesis::*;
 use crate::dsp::*;
 use crate::prelude::*;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum VoiceEvent {
+    ReleaseAll,
+    KillAll,
+}
 
 /// A struct to represent each individual voice.
 #[derive(Clone, Debug)]
@@ -50,6 +56,7 @@ pub struct VoiceHandler {
     pub note_handler_ref: Arc<Mutex<NoteHandler>>,
     /// The array of voices.
     pub voices: [Option<Voice>; NUM_VOICES as usize],
+    voice_event_receiver: mpsc::Receiver<VoiceEvent>,
     /// Internal counter for assigning new IDs.
     id_counter: u64,
 }
@@ -59,10 +66,14 @@ impl VoiceHandler {
     ///
     /// The `NoteHandler` reference is used to obtain new note events
     /// automatically.
-    pub fn build(note_handler_ref: Arc<Mutex<NoteHandler>>) -> Self {
+    pub fn build(
+        note_handler_ref: Arc<Mutex<NoteHandler>>,
+        voice_event_receiver: mpsc::Receiver<VoiceEvent>,
+    ) -> Self {
         Self {
             note_handler_ref,
             voices: std::array::from_fn(|_| None),
+            voice_event_receiver,
             id_counter: 0,
         }
     }
@@ -76,6 +87,16 @@ impl VoiceHandler {
     ) {
         let block_len = block_end - block_start;
         let mut voice_amp_envelope = [0.0; MAX_BLOCK_SIZE];
+
+        // process any received voice events
+        if let Ok(msg) = self.voice_event_receiver.try_recv() {
+            match msg {
+                VoiceEvent::ReleaseAll => {
+                    self.start_release_for_active_voices();
+                }
+                VoiceEvent::KillAll => self.kill_active_voices(),
+            }
+        }
 
         for voice in self.voices.iter_mut().filter_map(|v| v.as_mut()) {
             voice
@@ -157,6 +178,25 @@ impl VoiceHandler {
                 _ => (),
             }
         }
+    }
+
+    /// Starts the release stage for all active voices.
+    pub fn start_release_for_active_voices(&mut self) {
+        self.voices.iter_mut().for_each(|v| {
+            if let Some(voice) = v {
+                voice.releasing = true;
+                voice.envelope.set_trigger(false);
+            }
+        });
+    }
+
+    /// Immediately terminates all active voices.
+    pub fn kill_active_voices(&mut self) {
+        self.voices.iter_mut().for_each(|v| {
+            if v.is_some() {
+                *v = None;
+            }
+        });
     }
 
     /// Terminates all voices which are releasing and which have an

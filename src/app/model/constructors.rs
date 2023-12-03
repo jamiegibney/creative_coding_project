@@ -1,4 +1,5 @@
 use super::*;
+use std::sync::mpsc;
 
 /// Builds the app window.
 pub fn build_window(app: &App, width: u32, height: u32) -> Id {
@@ -20,7 +21,7 @@ pub struct AudioSystem {
     pub(super) note_handler: NoteHandlerRef,
     pub(super) pre_spectrum: SpectrumOutput,
     pub(super) post_spectrum: SpectrumOutput,
-    // pub(super) spectral_mask: Arc<Mutex<SpectralMask>>,
+    pub(super) voice_event_sender: mpsc::Sender<VoiceEvent>,
     pub(super) spectral_mask: triple_buffer::Input<SpectralMask>,
 }
 
@@ -28,28 +29,31 @@ pub struct AudioSystem {
 pub fn build_audio_system(spectral_block_size: usize) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
-    let (spectral_mask_input, spectral_mask_output) =
-        triple_buffer::TripleBuffer::new(&SpectralMask::new(
-            spectral_block_size.ilog2() - 1,
-        ))
+    let (spectral_mask, spectral_mask_output) =
+        triple_buffer::TripleBuffer::new(
+            &SpectralMask::new(spectral_block_size).with_size(512),
+        )
         .split();
 
+    let (voice_event_sender, voice_event_receiver) = mpsc::channel();
+
+    // build the audio context
     let audio_context = AudioContext {
         note_handler: Arc::clone(&note_handler),
         sample_rate: unsafe { SAMPLE_RATE },
         spectral_mask_output: Some(spectral_mask_output),
+        voice_event_sender: voice_event_sender.clone(),
+        voice_event_receiver: Some(voice_event_receiver),
     };
-    // AudioContext::build(Arc::clone(&note_handler), unsafe { SAMPLE_RATE });
-    let mut audio_model = AudioModel::new(audio_context);
 
+    // create the audio model
+    let mut audio_model = AudioModel::new(audio_context);
     audio_model.initialize();
 
     // obtain audio message channels
     let senders = audio_model.message_channels();
 
     let (pre_spectrum, post_spectrum) = audio_model.spectrum_outputs();
-
-    // let spectral_mask = audio_model.spectral_mask();
 
     let callback_timer_ref = audio_model.callback_timer_ref();
 
@@ -68,6 +72,7 @@ pub fn build_audio_system(spectral_block_size: usize) -> AudioSystem {
 
     stream.play().unwrap();
 
+    // construct audio system
     AudioSystem {
         stream,
         sample_rate_ref,
@@ -76,7 +81,8 @@ pub fn build_audio_system(spectral_block_size: usize) -> AudioSystem {
         note_handler,
         pre_spectrum,
         post_spectrum,
-        spectral_mask: spectral_mask_input,
+        voice_event_sender,
+        spectral_mask,
     }
 }
 

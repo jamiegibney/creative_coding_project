@@ -12,7 +12,7 @@ use crate::musical::*;
 use std::{
     cell::RefCell,
     collections::HashMap,
-    sync::{Arc, Mutex, RwLock},
+    sync::{mpsc, Arc, Mutex, RwLock},
     time::Instant,
 };
 
@@ -35,6 +35,8 @@ pub struct Model {
     // pub spectral_mask: Arc<Mutex<SpectralMask>>,
     pub spectral_mask: Arc<Mutex<triple_buffer::Input<SpectralMask>>>,
 
+    pub voice_event_sender: mpsc::Sender<VoiceEvent>,
+
     /// A thread-safe reference to the timer which tracks when the audio callback
     /// was last called.
     pub audio_callback_timer: CallbackTimerRef,
@@ -44,10 +46,6 @@ pub struct Model {
 
     /// A reference to the sample rate value.
     pub sample_rate_ref: Arc<AtomicF64>,
-
-    /// The time since the last call to `update()`.
-    pub delta_time: f64,
-    update_time: Instant,
 
     // NOTES
     /// Current octave for note input (via typing keyboard).
@@ -62,10 +60,11 @@ pub struct Model {
     // GUI
     /// The pre-FX spectrogram.
     pub pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
-    // unfortunately the view function has to take an immutable
-    // reference to the Model, so RefCell it is...
     /// The post-FX spectrogram.
     pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
+    /// The time since the last call to `update()`.
+    pub delta_time: f64,
+    update_time: Instant,
 
     /// A Perlin noise contour generator.
     pub contours: Option<Arc<RwLock<Contours>>>,
@@ -97,6 +96,7 @@ impl Model {
             note_handler,
             pre_spectrum,
             post_spectrum,
+            voice_event_sender,
             spectral_mask,
         } = build_audio_system(max_spectral_block_size);
 
@@ -132,6 +132,8 @@ impl Model {
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
 
+            voice_event_sender,
+
             spectral_mask: Arc::new(Mutex::new(spectral_mask)),
 
             contours: match current_gen_algo {
@@ -147,7 +149,7 @@ impl Model {
                 }
             },
             mask_scan_line_pos: 0.0,
-            mask_scan_line_increment: 0.5,
+            mask_scan_line_increment: 0.1,
 
             mask_thread_pool: ThreadPool::build(2)
                 .expect("failed to build mask thread pool"),

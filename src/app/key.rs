@@ -1,19 +1,19 @@
 use super::*;
+use crate::app::audio::VoiceEvent;
 use crate::musical::*;
 // use crate::prelude::*;
 
 /// Function for handling keypresses.
-pub fn key_pressed(app: &App, model: &mut Model, key: Key) {
+pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
     match key {
         // stop audio playback
-        Key::Space => {
-            if model.audio_stream.is_playing() {
-                model.audio_stream.pause().unwrap();
-            }
-            else {
-                model.audio_stream.play().unwrap();
-            }
-        }
+        // Key::Space => {
+        //     model.voice_event_sender.send(VoiceEvent::KillAll).unwrap();
+        // }
+        Key::Space => model
+            .voice_event_sender
+            .send(VoiceEvent::ReleaseAll)
+            .unwrap(),
         Key::Z => model.octave.decrease(),
         Key::X => model.octave.increase(),
         Key::R => match model.current_gen_algo {

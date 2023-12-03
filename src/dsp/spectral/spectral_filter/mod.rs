@@ -63,7 +63,7 @@ impl SpectralFilter {
             fft: RealFftPlanner::new().plan_fft_forward(max_block_size),
             ifft: RealFftPlanner::new().plan_fft_inverse(max_block_size),
 
-            mask: SpectralMask::new(max_block_size.ilog2() - 1),
+            mask: SpectralMask::new(max_block_size).with_size(max_block_size / 2),
         }
     }
 

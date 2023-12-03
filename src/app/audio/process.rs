@@ -181,7 +181,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
             let mut sample = fr[ch];
             sample = audio.pre_dc_filter[ch].process_mono(sample);
 
-            sample = audio.filter_comb[ch].process(sample);
+            // sample = audio.filter_comb[ch].process(sample);
             // sample = audio.waveshaper[ch].process(sample);
 
             sample = audio.post_dc_filter[ch].process_mono(sample);

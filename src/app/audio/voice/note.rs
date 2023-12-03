@@ -2,7 +2,7 @@ use crate::prelude::*;
 use std::collections::VecDeque as Deque;
 
 /// An enum to represent individual note states and their data.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoteEvent {
     NoteOn {
         /// The MIDI note value of the note.
@@ -22,8 +22,7 @@ impl NoteEvent {
     /// Returns the MIDI note value of the event.
     pub fn note_value(&self) -> u8 {
         match self {
-            Self::NoteOn { note, .. } => *note,
-            Self::NoteOff { note, .. } => *note,
+            Self::NoteOn { note, .. } | Self::NoteOff { note, .. } => *note,
         }
     }
 
@@ -35,8 +34,9 @@ impl NoteEvent {
     /// Returns the sample timing of the event.
     pub fn timing(&self) -> u32 {
         match self {
-            Self::NoteOn { timing, .. } => *timing,
-            Self::NoteOff { timing, .. } => *timing,
+            Self::NoteOn { timing, .. } | Self::NoteOff { timing, .. } => {
+                *timing
+            }
         }
     }
 }
@@ -57,9 +57,15 @@ impl NoteHandler {
         self.events.push_back(event);
     }
 
-    /// Obtains the next event in the internal queue, or returns `None` if 
+    /// Obtains the next event in the internal queue, or returns `None` if
     /// there are no events.
     pub fn next_event(&mut self) -> Option<NoteEvent> {
         self.events.pop_front()
+    }
+}
+
+impl Default for NoteHandler {
+    fn default() -> Self {
+        Self::new()
     }
 }

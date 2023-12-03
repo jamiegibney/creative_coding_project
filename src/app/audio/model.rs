@@ -137,10 +137,7 @@ impl AudioModel {
         comb_comb.set_freq(8.0);
         comb_comb.set_gain_db(-0.01);
 
-        comb.set_internal_filters(vec![
-            Box::new(comb_peak),
-            Box::new(comb_lp),
-        ]);
+        comb.set_internal_filters(vec![Box::new(comb_peak), Box::new(comb_lp)]);
 
         let glide_time = 0.001;
 
@@ -170,7 +167,12 @@ impl AudioModel {
             callback_time_elapsed: Arc::new(Mutex::new(
                 std::time::Instant::now(),
             )),
-            voice_handler: VoiceHandler::build(Arc::clone(&note_handler_ref)),
+            // TODO: need to construct the channel, and store a sender on both
+            // the audio and main thread? or just main thread?
+            voice_handler: VoiceHandler::build(
+                Arc::clone(&note_handler_ref),
+                context.voice_event_receiver.take().unwrap(),
+            ),
             voice_gain: Smoother::new(1.0, 0.5, sample_rate),
             master_gain: Smoother::new(1.0, default_gain, upsampled_rate),
             gain_data: vec![

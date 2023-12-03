@@ -22,56 +22,49 @@ impl DerefMut for SpectralMask {
 }
 
 impl SpectralMask {
+    /// Creates a new `SpectralMask` with `max_size` capacity.
+    ///
+    /// Note that in order to have usable elements, you need to call the
+    /// [`with_size`](Self::with_size) constructor after this call.
+    ///
     /// # Panics
     ///
-    /// Panics if `order > 14`.
-    ///
-    /// # Orders
-    ///
-    /// `0 == 1`
-    /// `1 == 2`
-    /// `2 == 4`
-    /// `3 == 8`
-    /// `4 == 16`
-    /// `5 == 32`
-    /// `6 == 64`
-    /// `7 == 128`
-    /// `8 == 256`
-    /// `9 == 512`
-    /// `10 == 1,024`
-    /// `11 == 2,048`
-    /// `12 == 4,096`
-    /// `13 == 8,192`
-    /// `14 == 16,384`
-    pub fn new(order: u32) -> Self {
-        todo!(
-            r#"this needs to allocate the maximum size, and then requires a "working" block size."#
-        );
-        assert!(order <= 14); // 16,384 max elements
+    /// Panics if `max_size` is not a power-of-two value, or if it is greater
+    /// than 2^14 (16,384).
+    pub fn new(max_size: usize) -> Self {
+        assert!(max_size.is_power_of_two() && max_size <= 1 << 14);
 
-        Self { points: vec![1.0; 2usize.pow(order)] }
+        Self { points: Vec::with_capacity(max_size) }
     }
 
-    /// # Panics
+    /// Sets the "working size" of the mask.
     ///
-    /// Panics if `vec` is empty.
-    pub fn from_vec(vec: Vec<f64>) -> Self {
-        assert!(!vec.is_empty());
+    /// # Panics
+    ///
+    /// Panics if `size` is not a power-of-two value, or is greater than 
+    /// `self.max_size()`.
+    pub fn with_size(mut self, size: usize) -> Self {
+        assert!(size.is_power_of_two() && size <= self.max_size());
 
-        Self { points: vec }
+        self.points.resize(size, 0.0);
+        self
     }
 
-    /// # Panics
+    /// Sets the "working size" of the mask. This will not allocate.
     ///
-    /// Panics if `vec` is empty.
-    pub fn from_vec_cloned(vec: &[f64]) -> Self {
-        assert!(!vec.is_empty());
+    /// # Panics
+    ///
+    /// Panics if `size` is not a power-of-two value, or if it is greater than
+    /// the maximum size set when the mask was created.
+    pub fn set_mask_size(&mut self, size: usize) {
+        assert!(size.is_power_of_two() && size <= self.points.capacity());
 
-        Self { points: Vec::from(vec) }
+        self.points.resize(size, 0.0);
     }
 
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self { points: Vec::with_capacity(capacity) }
+    /// Returns the maximum size of the mask.
+    pub fn max_size(&self) -> usize {
+        self.points.capacity()
     }
 
     /// Returns the frequency of bin with index `idx`.
