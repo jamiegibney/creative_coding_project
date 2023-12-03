@@ -29,9 +29,7 @@ impl OversamplingBlock {
             channel_pointers: (0..num_channels)
                 .map(|ch| {
                     (0..num_samples)
-                        .map(|smp| {
-                            &mut buffer[smp * num_channels + ch] as *mut f64
-                        })
+                        .map(|smp| &mut buffer[smp * num_channels + ch] as *mut f64)
                         .collect()
                 })
                 .collect(),
@@ -50,19 +48,14 @@ impl OversamplingBlock {
     }
 
     /// Creates a new `OversamplingBlock` from a slice of `f64`.
-    pub fn from_interleaved_slice(
-        slice: &mut [f64],
-        num_channels: usize,
-    ) -> Self {
+    pub fn from_interleaved_slice(slice: &mut [f64], num_channels: usize) -> Self {
         let num_samples = slice.len() / num_channels;
 
         Self {
             channel_pointers: (0..num_channels)
                 .map(|ch| {
                     (0..num_samples)
-                        .map(|smp| {
-                            &mut slice[smp * num_channels + ch] as *mut f64
-                        })
+                        .map(|smp| &mut slice[smp * num_channels + ch] as *mut f64)
                         .collect()
                 })
                 .collect(),
@@ -93,14 +86,14 @@ impl OversamplingBlock {
     pub fn num_samples(&self) -> usize {
         if let Some(s) = self.channel_pointers.first() {
             s.len()
-        }
-        else {
+        } else {
             0
         }
     }
 }
 
 /// A struct for holding owned audio data, used for Oversampling.
+#[derive(Default)]
 pub struct OversamplingBuffer {
     data: Vec<Vec<f64>>,
 }
@@ -108,7 +101,9 @@ pub struct OversamplingBuffer {
 impl OversamplingBuffer {
     /// Creates a new buffer holding `num_channels` channels of `num_samples` samples.
     pub fn new(num_channels: usize, num_samples: usize) -> Self {
-        Self { data: vec![vec![0.0; num_samples]; num_channels] }
+        Self {
+            data: vec![vec![0.0; num_samples]; num_channels],
+        }
     }
 
     /// Copies the contents of `buffer` into the `OversamplingBuffer`. This essentially

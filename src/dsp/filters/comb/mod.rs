@@ -4,12 +4,9 @@
 mod filter;
 mod fir;
 mod iir;
+pub use crate::dsp::*;
 pub use fir::FirCombFilter;
 pub use iir::IirCombFilter;
-pub use crate::dsp::*;
-
-
-
 
 #[cfg(test)]
 mod tests {

@@ -11,7 +11,11 @@ struct Coefs {
 
 impl Coefs {
     pub fn identity() -> Self {
-        Self { a0: 1.0, a1: 0.0, b1: 0.0 }
+        Self {
+            a0: 1.0,
+            a1: 0.0,
+            b1: 0.0,
+        }
     }
 }
 
@@ -46,8 +50,10 @@ impl Filter for FirstOrderFilter {
             FilterType::Highpass => self.set_highpass_coefs(),
             _ => {
                 self.identity();
-                dbg!(&self.filter_type,
-                     "only low/highpass filters are implemented for first order filters");
+                dbg!(
+                    &self.filter_type,
+                    "only low/highpass filters are implemented for first order filters"
+                );
             }
         }
 
@@ -60,7 +66,10 @@ impl Filter for FirstOrderFilter {
 
 impl FirstOrderFilter {
     pub fn new(sample_rate: f64) -> Self {
-        Self { sample_rate, ..Self::default() }
+        Self {
+            sample_rate,
+            ..Self::default()
+        }
     }
 
     pub fn reset_sample_rate(&mut self, new_sample_rate: f64) {

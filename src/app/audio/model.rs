@@ -99,9 +99,7 @@ impl AudioModel {
         let sample_rate = context.sample_rate;
 
         unsafe {
-            update_oversampled_sample_rate(
-                2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32),
-            );
+            update_oversampled_sample_rate(2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32));
         }
 
         // let upsampled_rate = unsafe { OVERSAMPLED_SAMPLE_RATE };
@@ -132,8 +130,7 @@ impl AudioModel {
         comb_lp.set_type(FilterType::Lowpass);
         comb_lp.set_freq(3000.0);
 
-        let mut comb_comb =
-            IirCombFilter::with_interpolation(true, upsampled_rate);
+        let mut comb_comb = IirCombFilter::with_interpolation(true, upsampled_rate);
         comb_comb.set_freq(8.0);
         comb_comb.set_gain_db(-0.01);
 
@@ -157,16 +154,13 @@ impl AudioModel {
 
         let spectral_block_size = 1 << 10; // 2048
 
-        let mut spectral_filter =
-            SpectralFilter::new(NUM_CHANNELS, 2usize.pow(14));
+        let mut spectral_filter = SpectralFilter::new(NUM_CHANNELS, 2usize.pow(14));
         spectral_filter.set_block_size(spectral_block_size);
 
         let default_gain = 0.008;
 
         Self {
-            callback_time_elapsed: Arc::new(Mutex::new(
-                std::time::Instant::now(),
-            )),
+            callback_time_elapsed: Arc::new(Mutex::new(std::time::Instant::now())),
             // TODO: need to construct the channel, and store a sender on both
             // the audio and main thread? or just main thread?
             voice_handler: VoiceHandler::build(
@@ -177,22 +171,13 @@ impl AudioModel {
             master_gain: Smoother::new(1.0, default_gain, upsampled_rate),
             gain_data: vec![
                 default_gain;
-                BUFFER_SIZE
-                    * 2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32)
+                BUFFER_SIZE * 2usize.pow(DEFAULT_OVERSAMPLING_FACTOR as u32)
             ],
 
             pre_spectrum: Arc::new(Mutex::new(None)),
-            pre_buffer_cache: Arc::new(Mutex::new(vec![
-                0.0;
-                BUFFER_SIZE
-                    * NUM_CHANNELS
-            ])),
+            pre_buffer_cache: Arc::new(Mutex::new(vec![0.0; BUFFER_SIZE * NUM_CHANNELS])),
             post_spectrum: Arc::new(Mutex::new(None)),
-            post_buffer_cache: Arc::new(Mutex::new(vec![
-                0.0;
-                BUFFER_SIZE
-                    * NUM_CHANNELS
-            ])),
+            post_buffer_cache: Arc::new(Mutex::new(vec![0.0; BUFFER_SIZE * NUM_CHANNELS])),
             spectrum_thread_pool: ThreadPool::build(2).unwrap(),
 
             filter_lp: [biquad.clone(), biquad.clone()],
@@ -201,14 +186,10 @@ impl AudioModel {
             filter_comb: [comb.clone(), comb],
             filter_peak_post: [biquad.clone(), biquad.clone()],
 
-            pre_dc_filter: std::array::from_fn(|_| {
-                DCFilter::new(upsampled_rate, 2)
-            }),
+            pre_dc_filter: std::array::from_fn(|_| DCFilter::new(upsampled_rate, 2)),
             waveshaper,
             drive_amount_receiver: None,
-            post_dc_filter: std::array::from_fn(|_| {
-                DCFilter::new(upsampled_rate, 2)
-            }),
+            post_dc_filter: std::array::from_fn(|_| DCFilter::new(upsampled_rate, 2)),
 
             filter_freq_receiver: None,
 
@@ -228,21 +209,16 @@ impl AudioModel {
                 );
                 NUM_CHANNELS
             ],
-            oversampling_factor: Arc::new(AtomicUsize::new(
-                DEFAULT_OVERSAMPLING_FACTOR,
-            )),
+            oversampling_factor: Arc::new(AtomicUsize::new(DEFAULT_OVERSAMPLING_FACTOR)),
 
             // oversampling_buffer: vec![vec![0.0; MAX_BUFFER_SIZE]; NUM_CHANNELS],
-            oversampling_buffer: OversamplingBuffer::new(
-                NUM_CHANNELS, MAX_BUFFER_SIZE,
-            ),
+            oversampling_buffer: OversamplingBuffer::new(NUM_CHANNELS, MAX_BUFFER_SIZE),
 
             average_load: vec![
                 0.0;
                 if PRINT_DSP_LOAD {
                     DSP_LOAD_AVERAGING_SAMPLES
-                }
-                else {
+                } else {
                     0
                 }
             ],
@@ -413,10 +389,7 @@ impl AudioModel {
     }
 
     /// Processes the selected filters.
-    pub fn process_filters(
-        &mut self,
-        (sample_l, sample_r): (f64, f64),
-    ) -> (f64, f64) {
+    pub fn process_filters(&mut self, (sample_l, sample_r): (f64, f64)) -> (f64, f64) {
         // let l =
         //     self.filter_peak[0].process(self.filter_hp[0].process(sample_l));
         // let r =
@@ -428,10 +401,7 @@ impl AudioModel {
     }
 
     /// Processes the "post" peak filters.
-    pub fn process_post_peak_filters(
-        &mut self,
-        (sample_l, sample_r): (f64, f64),
-    ) -> (f64, f64) {
+    pub fn process_post_peak_filters(&mut self, (sample_l, sample_r): (f64, f64)) -> (f64, f64) {
         let l = self.filter_peak_post[0].process(sample_l);
         let r = self.filter_peak_post[1].process(sample_r);
 
@@ -439,10 +409,7 @@ impl AudioModel {
     }
 
     /// Processes the comb filters.
-    pub fn process_comb_filters(
-        &mut self,
-        (sample_l, sample_r): (f64, f64),
-    ) -> (f64, f64) {
+    pub fn process_comb_filters(&mut self, (sample_l, sample_r): (f64, f64)) -> (f64, f64) {
         let l = self.filter_comb[0].process(sample_l);
         let r = self.filter_comb[1].process(sample_r);
 
@@ -450,10 +417,7 @@ impl AudioModel {
     }
 
     /// Processes the waveshaper.
-    pub fn process_distortion(
-        &mut self,
-        (sample_l, sample_r): (f64, f64),
-    ) -> (f64, f64) {
+    pub fn process_distortion(&mut self, (sample_l, sample_r): (f64, f64)) -> (f64, f64) {
         let l = self.waveshaper[0].process(sample_l);
         let r = self.waveshaper[1].process(sample_r);
 
@@ -505,11 +469,9 @@ impl AudioModel {
     pub fn set_idle_timer(&mut self, is_processing: bool) {
         self.idle_timer_samples = if is_processing {
             (unsafe { SAMPLE_RATE } * DSP_IDLE_HOLD_TIME_SECS) as usize
-        }
-        else if self.idle_timer_samples > 0 {
+        } else if self.idle_timer_samples > 0 {
             self.idle_timer_samples - 1
-        }
-        else {
+        } else {
             0
         }
     }
@@ -529,8 +491,7 @@ impl AudioModel {
     /// but should be more than adequate for things like note events.
     pub fn current_sample_idx(&self) -> u32 {
         let guard = self.callback_time_elapsed.lock().unwrap();
-        let samples_exact =
-            guard.elapsed().as_secs_f64() * unsafe { SAMPLE_RATE };
+        let samples_exact = guard.elapsed().as_secs_f64() * unsafe { SAMPLE_RATE };
 
         samples_exact.round() as u32 % BUFFER_SIZE as u32
     }

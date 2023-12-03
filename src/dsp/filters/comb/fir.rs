@@ -15,8 +15,7 @@ impl Filter for FirCombFilter {
     fn process(&mut self, sample: f64) -> f64 {
         self.filter.buffer.push(sample);
 
-        sample
-            .mul_add(self.filter.a0, self.filter.buffer.read() * self.filter.bd)
+        sample.mul_add(self.filter.a0, self.filter.buffer.read() * self.filter.bd)
     }
 }
 
@@ -24,7 +23,9 @@ impl FirCombFilter {
     /// Creates a new, initialized filter with an internal buffer holding
     /// one second of samples.
     pub fn with_interpolation(interpolation: bool, sample_rate: f64) -> Self {
-        Self { filter: CombFilter::new(interpolation, sample_rate) }
+        Self {
+            filter: CombFilter::new(interpolation, sample_rate),
+        }
     }
 
     /// Use this if you change the sample rate to reallocate the internal buffer.
@@ -51,7 +52,11 @@ impl FirCombFilter {
         self.filter.set_gain_db(gain_db);
 
         let level = db_to_level(gain_db);
-        let polarity = if self.filter.positive_polarity { 1.0 } else { -1.0 };
+        let polarity = if self.filter.positive_polarity {
+            1.0
+        } else {
+            -1.0
+        };
         self.filter.bd = (1.0 - level) / 2.0 * polarity;
         // self.filter.a0 = 1.0 - self.filter.bd.abs();
     }

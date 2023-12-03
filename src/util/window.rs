@@ -55,8 +55,7 @@ pub fn parzen_in_place(slice: &mut [f64]) {
             let s1 = 6.0 * (n / l_2).powi(2);
             let s2 = 1.0 - (n_abs / l_2);
             1.0 - s1 * s2
-        }
-        else if l_4 <= n_abs && n_abs <= l_2 {
+        } else if l_4 <= n_abs && n_abs <= l_2 {
             2.0 * (1.0 - (n_abs / l_2)).powi(3)
         }
         // this is surely unreachable?
@@ -135,8 +134,7 @@ pub fn tukey_in_place(slice: &mut [f64], width: f64) {
 
         if 0.0 <= n && n < c1 {
             slice[i] = wn;
-        }
-        else if c1 <= n && n <= half_size {
+        } else if c1 <= n && n <= half_size {
             slice[i] = 1.0;
         }
 
@@ -249,13 +247,16 @@ pub fn flat_top(size: usize) -> Vec<f64> {
 
 /// In-place variant of `flat_top()`.
 pub fn flat_top_in_place(slice: &mut [f64]) {
-    cosine_sum(slice, &[
-        0.21557895,
-        0.41663158,
-        0.27726316,
-        -0.083578947,
-        -0.006947368,
-    ]);
+    cosine_sum(
+        slice,
+        &[
+            0.21557895,
+            0.41663158,
+            0.27726316,
+            -0.083578947,
+            -0.006947368,
+        ],
+    );
 }
 
 #[cfg(test)]

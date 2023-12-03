@@ -8,7 +8,10 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     if frame.nth() < 2 {}
     draw.background().color(WHITE);
 
-    let V2 { x: _width, y: _height } = WINDOW_SIZE;
+    let V2 {
+        x: _width,
+        y: _height,
+    } = WINDOW_SIZE;
 
     // if PRINT_DSP_LOAD {
     //
@@ -29,11 +32,10 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     drop(pre_spectrum);
 
-    model.post_spectrum_analyzer.borrow_mut().draw(
-        draw,
-        None,
-        Some(post_spectrum_mesh_color),
-    );
+    model
+        .post_spectrum_analyzer
+        .borrow_mut()
+        .draw(draw, None, Some(post_spectrum_mesh_color));
 
     outline_rect(model.pre_spectrum_analyzer.borrow().rect(), draw, 2.0);
 

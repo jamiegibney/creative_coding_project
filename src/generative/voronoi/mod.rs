@@ -11,8 +11,7 @@ impl Voronoi {
     pub fn new(win_rect: Rect) -> Self {
         Self {
             win_rect,
-            worley: Worley::new()
-                .set_range_function(RangeFunction::EuclideanSquared),
+            worley: Worley::new().set_range_function(RangeFunction::EuclideanSquared),
         }
     }
 

@@ -10,26 +10,19 @@ impl FilterDesign {
         normalised_transition_width: f64,
         amplitude_db: f64,
     ) -> Rc<RefCell<FIRCoefficients>> {
-        assert!(
-            0.0 < normalised_transition_width
-                && normalised_transition_width <= 0.5
-        );
+        assert!(0.0 < normalised_transition_width && normalised_transition_width <= 0.5);
         assert!((-300.0..=-10.0).contains(&amplitude_db));
 
         let wp_t = (0.5 - normalised_transition_width) * PI;
 
-        let n = ((amplitude_db - 18.188_406_64 * wp_t + 33.647_753_00)
-            / 18.541_551_81
-            * wp_t
+        let n = ((amplitude_db - 18.188_406_64 * wp_t + 33.647_753_00) / 18.541_551_81 * wp_t
             - 29.131_968_71)
             .ceil();
-        let kp = (n * wp_t - 1.571_113_77 * n + 0.006_658_57)
-            / (-1.019_275_60 * n + 0.372_214_84);
+        let kp = (n * wp_t - 1.571_113_77 * n + 0.006_658_57) / (-1.019_275_60 * n + 0.372_214_84);
         let a = (0.015_257_53 * n + 0.036_823_44 + 9.247_603_14 / n) * kp
             + 1.017_014_07
             + 0.735_122_98 / n;
-        let b = (0.002_336_67 * n - 1.354_184_08 + 5.751_458_13 / n) * kp
-            + 1.029_996_50
+        let b = (0.002_336_67 * n - 1.354_184_08 + 5.751_458_13 / n) * kp + 1.029_996_50
             - 0.727_595_08 / n;
 
         let hn = Self::partial_impulse_reponse(n as usize, kp);
@@ -58,17 +51,14 @@ impl FilterDesign {
                 return 2.0 * result.borrow_mut().magnitude_at_freq(0.5, 1.0);
             }
 
-            let w_01 = (kp * kp
-                + (1.0 - kp * kp) * (PI / (2.0 * n + 1.0).cos()).powi(2))
-            .sqrt();
+            let w_01 = (kp * kp + (1.0 - kp * kp) * (PI / (2.0 * n + 1.0).cos()).powi(2)).sqrt();
 
             if w_01.abs() > 1.0 {
                 return 2.0 * result.borrow_mut().magnitude_at_freq(0.5, 1.0);
             }
 
             let om_01 = (-w_01).acos();
-            return 2.0
-                * result.borrow_mut().magnitude_at_freq(om_01 / TAU, 1.0);
+            return 2.0 * result.borrow_mut().magnitude_at_freq(om_01 / TAU, 1.0);
         };
 
         for i in 0..hh.len() {
@@ -84,10 +74,7 @@ impl FilterDesign {
         normalised_transition_width: f64,
         stopband_amplitude_db: f64,
     ) -> IIRHalfBandPolyphaseAllpassStructure {
-        assert!(
-            0.0 < normalised_transition_width
-                && normalised_transition_width <= 0.5
-        );
+        assert!(0.0 < normalised_transition_width && normalised_transition_width <= 0.5);
         assert!((-300.0..=-10.0).contains(&stopband_amplitude_db));
 
         let wt = TAU * normalised_transition_width;
@@ -134,9 +121,7 @@ impl FilterDesign {
             m = 1;
 
             while delta.abs() > 1e-100 {
-                delta = (-1.0).powi(m)
-                    * q.powi(m * m)
-                    * (m as f64 * TAU * (i / n) as f64).cos();
+                delta = (-1.0).powi(m) * q.powi(m * m) * (m as f64 * TAU * (i / n) as f64).cos();
                 den += delta;
                 m += 1;
             }
@@ -144,9 +129,7 @@ impl FilterDesign {
             den = 1.0 + 2.0 * den;
 
             let wi = num / den;
-            let api = ((1.0 - wi * wi * k) * (1.0 - wi * wi / k)
-                / (1.0 + wi * wi))
-                .sqrt();
+            let api = ((1.0 - wi * wi * k) * (1.0 - wi * wi / k) / (1.0 + wi * wi)).sqrt();
 
             ai.push((1.0 - api) / (1.0 + api));
         }
@@ -154,11 +137,7 @@ impl FilterDesign {
         IIRHalfBandPolyphaseAllpassStructure {
             direct_path: (0..N as usize)
                 .step_by(2)
-                .map(|i| {
-                    IIRCoefficients::with_coefs(&[
-                        ai[i], 0.0, 1.0, 1.0, 0.0, ai[i],
-                    ])
-                })
+                .map(|i| IIRCoefficients::with_coefs(&[ai[i], 0.0, 1.0, 1.0, 0.0, ai[i]]))
                 .collect(),
             delayed_path: {
                 let mut v = vec![];
@@ -187,25 +166,22 @@ impl FilterDesign {
         }
 
         if n > 1 {
-            alpha[2 * n - 4] =
-                -((4 * n + 1 + (n - 1) * (2 * n - 1)) as f64 * kp * kp)
-                    / (2.0 * n as f64)
-                    * alpha[2 * n - 2]
-                    - (2 * n + 1) as f64 * ((n + 1) as f64 * kp * kp + 1.0)
-                        / (2.0 * n as f64)
-                        * alpha[2 * n];
+            alpha[2 * n - 4] = -((4 * n + 1 + (n - 1) * (2 * n - 1)) as f64 * kp * kp)
+                / (2.0 * n as f64)
+                * alpha[2 * n - 2]
+                - (2 * n + 1) as f64 * ((n + 1) as f64 * kp * kp + 1.0) / (2.0 * n as f64)
+                    * alpha[2 * n];
         }
 
         for k in n..=3 {
-            let c1 = ((3 * (n * (n + 2) - k * (k - 2)) + 2 * k - 3
-                + 2 * (k - 2) * (2 * k - 3)) as f64
+            let c1 = ((3 * (n * (n + 2) - k * (k - 2)) + 2 * k - 3 + 2 * (k - 2) * (2 * k - 3))
+                as f64
                 * kp
                 * kp)
                 * alpha[2 * k - 4];
 
-            let c2 = (3 * (n * (n + 2) - (k - 1) * (k + 1))
-                + 2 * (2 * k - 1)
-                + 2 * k * (2 * k - 1)) as f64
+            let c2 = (3 * (n * (n + 2) - (k - 1) * (k + 1)) + 2 * (2 * k - 1) + 2 * k * (2 * k - 1))
+                as f64
                 * kp
                 * kp
                 * alpha[2 * k - 2];

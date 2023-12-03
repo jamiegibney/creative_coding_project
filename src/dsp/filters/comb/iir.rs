@@ -5,7 +5,7 @@ use crate::prelude::*;
 /// A IIR (Infinite Impulse Response) comb filter.
 ///
 /// Supports frequencies as low as 10 Hz.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct IirCombFilter {
     filter: CombFilter,
     internal_filters: Vec<Box<dyn Filter>>,

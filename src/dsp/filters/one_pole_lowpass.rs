@@ -83,6 +83,10 @@ impl Effect for OnePoleLowpass {
 
 impl Default for OnePoleLowpass {
     fn default() -> Self {
-        Self { a0: 1.0, b1: 0.0, old: 0.0 }
+        Self {
+            a0: 1.0,
+            b1: 0.0,
+            old: 0.0,
+        }
     }
 }

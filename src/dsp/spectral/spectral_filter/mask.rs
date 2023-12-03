@@ -2,7 +2,7 @@
 
 use std::ops::{Deref, DerefMut};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct SpectralMask {
     points: Vec<f64>,
 }
@@ -33,15 +33,19 @@ impl SpectralMask {
     /// than 2^14 (16,384).
     pub fn new(max_size: usize) -> Self {
         assert!(max_size.is_power_of_two() && max_size <= 1 << 14);
+        let mut points = Vec::with_capacity(max_size);
+        points.resize(max_size / 2, 0.0);
 
-        Self { points: Vec::with_capacity(max_size) }
+        Self {
+            points,
+        }
     }
 
     /// Sets the "working size" of the mask.
     ///
     /// # Panics
     ///
-    /// Panics if `size` is not a power-of-two value, or is greater than 
+    /// Panics if `size` is not a power-of-two value, or is greater than
     /// `self.max_size()`.
     pub fn with_size(mut self, size: usize) -> Self {
         assert!(size.is_power_of_two() && size <= self.max_size());

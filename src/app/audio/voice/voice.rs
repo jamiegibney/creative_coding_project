@@ -33,12 +33,7 @@ pub struct Voice {
 }
 
 impl Voice {
-    pub fn new(
-        id: u64,
-        note: u8,
-        generator: Generator,
-        envelope: Option<AdsrEnvelope>,
-    ) -> Self {
+    pub fn new(id: u64, note: u8, generator: Generator, envelope: Option<AdsrEnvelope>) -> Self {
         Self {
             id,
             note,
@@ -103,8 +98,7 @@ impl VoiceHandler {
                 .envelope
                 .next_block(&mut voice_amp_envelope, block_len);
 
-            for (value_idx, sample_idx) in (block_start..block_end).enumerate()
-            {
+            for (value_idx, sample_idx) in (block_start..block_end).enumerate() {
                 let amp = gain[value_idx] * voice_amp_envelope[value_idx];
 
                 let (sample_l, sample_r) = voice.generator.process();
@@ -118,30 +112,21 @@ impl VoiceHandler {
 
     /// Starts a new voice.
     #[allow(clippy::missing_panics_doc)] // this function should not panic
-    pub fn start_voice(
-        &mut self,
-        note: u8,
-        envelope: Option<AdsrEnvelope>,
-    ) -> &mut Voice {
+    pub fn start_voice(&mut self, note: u8, envelope: Option<AdsrEnvelope>) -> &mut Voice {
         let sr = unsafe { SAMPLE_RATE };
         let mut new_voice = Voice {
             id: self.next_voice_id(),
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
-            generator: Generator::Saw(Phasor::new(
-                note_to_freq(note as f64),
-                sr,
-            )),
+            generator: Generator::Saw(Phasor::new(note_to_freq(note as f64), sr)),
             // generator: Generator::Noise,
         };
 
         new_voice.envelope.set_trigger(true);
 
         // is there a free voice?
-        if let Some(free_idx) =
-            self.voices.iter().position(|voice| voice.is_none())
-        {
+        if let Some(free_idx) = self.voices.iter().position(|voice| voice.is_none()) {
             self.voices[free_idx] = Some(new_voice);
             return self.voices[free_idx].as_mut().unwrap();
         }
@@ -169,9 +154,7 @@ impl VoiceHandler {
                     releasing,
                     envelope,
                     ..
-                }) if voice_id == Some(*candidate_id)
-                    || note == *candidate_note =>
-                {
+                }) if voice_id == Some(*candidate_id) || note == *candidate_note => {
                     *releasing = true;
                     envelope.set_trigger(false);
                 }

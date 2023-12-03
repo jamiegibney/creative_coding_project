@@ -14,7 +14,10 @@ impl Phasor {
         debug_assert!(0.0 < freq_hz && freq_hz <= sample_rate / 2.0);
         let phase_increment = freq_hz / sample_rate;
 
-        Self { phase: 0.0, phase_increment }
+        Self {
+            phase: 0.0,
+            phase_increment,
+        }
     }
 
     #[allow(clippy::should_implement_trait)] // hush clippy

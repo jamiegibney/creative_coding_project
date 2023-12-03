@@ -45,8 +45,7 @@ impl SLState {
     }
 
     fn sigmoid_n(&self, x: f64, a: f64, b: f64) -> f64 {
-        Self::sigmoid(x, a, self.alpha_n)
-            * (1.0 - Self::sigmoid(x, b, self.alpha_n))
+        Self::sigmoid(x, a, self.alpha_n) * (1.0 - Self::sigmoid(x, b, self.alpha_n))
     }
 
     #[allow(clippy::suboptimal_flops)]

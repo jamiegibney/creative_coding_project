@@ -44,9 +44,7 @@ impl StateVariableFilter {
     }
 
     pub fn set_cutoff_freq(&mut self, freq: f64) {
-        assert!(
-            freq.is_sign_positive() && freq <= unsafe { SAMPLE_RATE } / 2.0
-        );
+        assert!(freq.is_sign_positive() && freq <= unsafe { SAMPLE_RATE } / 2.0);
         self.cutoff_freq = freq;
         self.update();
     }

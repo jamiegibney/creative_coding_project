@@ -38,14 +38,9 @@ impl SmoothLife {
                 .mip_level_count(4)
                 .sample_count(1)
                 .format(wgpu::TextureFormat::Rgba8Unorm)
-                .usage(
-                    wgpu::TextureUsages::COPY_DST
-                        | wgpu::TextureUsages::TEXTURE_BINDING,
-                )
+                .usage(wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING)
                 .build(device),
-            image_buffer: ImageBuffer::from_fn(w, h, |_, _| {
-                Rgba([0, 0, 0, u8::MAX])
-            }),
+            image_buffer: ImageBuffer::from_fn(w, h, |_, _| Rgba([0, 0, 0, u8::MAX])),
         }
     }
 

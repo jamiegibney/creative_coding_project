@@ -2,8 +2,8 @@
 
 #![allow(unused, clippy::must_use_candidate)]
 mod filter;
-use crate::util;
 use super::{Filter, FilterType};
+use crate::util;
 
 pub use filter::*;
 

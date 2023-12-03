@@ -1,7 +1,7 @@
 use super::*;
 use crate::util::interp::InterpolationType as InterpType;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct CombFilter {
     // coefficients
     pub a0: f64,
@@ -21,8 +21,7 @@ impl CombFilter {
     #[must_use]
     pub fn new(interpolation: bool, sample_rate: f64) -> Self {
         // allocates 1 second
-        let mut buffer =
-            RingBuffer::new(sample_rate as usize,  sample_rate);
+        let mut buffer = RingBuffer::new(sample_rate as usize, sample_rate);
         buffer.set_smoothing(SmoothingType::Cosine, 0.05);
 
         Self {
@@ -70,9 +69,7 @@ impl CombFilter {
 
     fn assertions(&self) {
         debug_assert!(
-            1.0 <= self.freq
-                && self.freq <= self.sample_rate / 2.0
-                && self.gain_db <= 0.0,
+            1.0 <= self.freq && self.freq <= self.sample_rate / 2.0 && self.gain_db <= 0.0,
             "{}",
             self.freq
         );

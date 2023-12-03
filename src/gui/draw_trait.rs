@@ -1,5 +1,5 @@
-use nannou::prelude::*;
 use crate::dsp::SpectralMask;
+use nannou::prelude::*;
 
 pub trait DrawMask {
     fn update(&mut self, delta_time: f64);

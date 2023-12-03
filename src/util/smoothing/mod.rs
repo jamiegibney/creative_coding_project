@@ -9,7 +9,6 @@ pub mod smoothable_types;
 pub mod smoother;
 /// Atomic value smoothing.
 // pub mod smoother_atomic;
-
 pub use smoothable_types::{Smoothable, SmoothableAtomic};
 pub use smoother::Smoother;
 // pub use smoother_atomic::SmootherAtomic;

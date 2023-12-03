@@ -48,18 +48,14 @@ impl Lanczos3Stage {
         let oversampling_amount = 2usize.pow(stage_number + 1);
 
         let uncompensated_stage_latency = upsampling_kernel.len() * 2;
-        let additional_upsampling_latency =
-            (-(uncompensated_stage_latency as isize))
-                .rem_euclid(oversampling_amount as isize) as usize;
+        let additional_upsampling_latency = (-(uncompensated_stage_latency as isize))
+            .rem_euclid(oversampling_amount as isize)
+            as usize;
 
         Self {
             oversampling_amount,
 
-            upsampling_buffer: vec![
-                0.0;
-                upsampling_kernel.len()
-                    + additional_upsampling_latency
-            ],
+            upsampling_buffer: vec![0.0; upsampling_kernel.len() + additional_upsampling_latency],
             upsampling_kernel,
             upsampling_write_pos: 0,
 
@@ -83,8 +79,7 @@ impl Lanczos3Stage {
 
     pub fn effective_latency(&self) -> u32 {
         let uncompensated_stage_latency = self.stage_latency() * 2;
-        let total_stage_latency =
-            uncompensated_stage_latency + self.additional_upsampling_latency;
+        let total_stage_latency = uncompensated_stage_latency + self.additional_upsampling_latency;
 
         (total_stage_latency as f64 / self.oversampling_amount as f64) as u32
     }
@@ -99,39 +94,33 @@ impl Lanczos3Stage {
             self.scratch_buffer[i * 2 + 1] = 0.0;
         }
 
-        let mut direct_read_pos = (self.upsampling_write_pos
-            + self.stage_latency())
-            % self.upsampling_buffer.len();
+        let mut direct_read_pos =
+            (self.upsampling_write_pos + self.stage_latency()) % self.upsampling_buffer.len();
 
         for out_idx in 0..output_length {
-            self.upsampling_buffer[self.upsampling_write_pos] =
-                self.scratch_buffer[out_idx];
+            self.upsampling_buffer[self.upsampling_write_pos] = self.scratch_buffer[out_idx];
 
             self.increment_up_write_positions(&mut direct_read_pos);
 
-            self.scratch_buffer[out_idx] =
-                if out_idx % 2 == (self.stage_latency() % 2) {
-                    debug_assert!(
-                        self.upsampling_buffer[(direct_read_pos
-                            + self.upsampling_buffer.len()
-                            - 1)
-                            % self.upsampling_buffer.len()]
-                            <= f64::EPSILON
-                    );
-                    debug_assert!(
-                        self.upsampling_buffer[(direct_read_pos + 1)
-                            % self.upsampling_buffer.len()]
-                            <= f64::EPSILON
-                    );
+            self.scratch_buffer[out_idx] = if out_idx % 2 == (self.stage_latency() % 2) {
+                debug_assert!(
+                    self.upsampling_buffer[(direct_read_pos + self.upsampling_buffer.len() - 1)
+                        % self.upsampling_buffer.len()]
+                        <= f64::EPSILON
+                );
+                debug_assert!(
+                    self.upsampling_buffer[(direct_read_pos + 1) % self.upsampling_buffer.len()]
+                        <= f64::EPSILON
+                );
 
-                    self.upsampling_buffer[direct_read_pos]
-                }
-                else {
-                    convolve(
-                        &self.upsampling_buffer, &self.upsampling_kernel,
-                        self.upsampling_write_pos,
-                    )
-                }
+                self.upsampling_buffer[direct_read_pos]
+            } else {
+                convolve(
+                    &self.upsampling_buffer,
+                    &self.upsampling_kernel,
+                    self.upsampling_write_pos,
+                )
+            }
         }
     }
 
@@ -140,8 +129,7 @@ impl Lanczos3Stage {
         assert!(input_length <= self.scratch_buffer.len());
 
         for input_idx in 0..input_length {
-            self.downsampling_buffer[self.downsampling_write_pos] =
-                self.scratch_buffer[input_idx];
+            self.downsampling_buffer[self.downsampling_write_pos] = self.scratch_buffer[input_idx];
 
             self.increment_down_write_pos();
 
@@ -149,7 +137,8 @@ impl Lanczos3Stage {
                 let output_idx = input_idx / 2;
 
                 block[output_idx] = convolve(
-                    &self.downsampling_buffer, &self.downsampling_kernel,
+                    &self.downsampling_buffer,
+                    &self.downsampling_kernel,
                     self.downsampling_write_pos,
                 );
             }

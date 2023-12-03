@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 /// A wrapper around a highpass [`FirstOrderFilter`](crate::dsp::FirstOrderFilter)
 /// tailored for filtering out 0.0 Hz (DC) signals.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct DCFilter {
     filters: Vec<BiquadFilter>,
 }
@@ -16,7 +16,9 @@ impl DCFilter {
     pub fn new(sample_rate: f64, num_filters: usize) -> Self {
         assert_ne!(num_filters, 0);
         assert!(sample_rate.is_sign_positive());
-        Self { filters: vec![Self::create_filter(sample_rate); num_filters] }
+        Self {
+            filters: vec![Self::create_filter(sample_rate); num_filters],
+        }
     }
 
     /// # Panics

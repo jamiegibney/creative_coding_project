@@ -11,7 +11,9 @@ pub struct TriOsc {
 
 impl TriOsc {
     pub fn new(freq_hz: f64, sample_rate: f64) -> Self {
-        Self { phasor: Phasor::new(freq_hz, sample_rate) }
+        Self {
+            phasor: Phasor::new(freq_hz, sample_rate),
+        }
     }
 }
 

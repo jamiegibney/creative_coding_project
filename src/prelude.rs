@@ -2,10 +2,10 @@ use crate::app::audio::NoteHandler;
 use std::sync::{Arc, Mutex};
 
 pub use crate::app::audio::NoteEvent;
+pub use crate::gui::DrawMask;
 pub use crate::settings::*;
 pub use crate::simd::{SimdBuffer, SimdType};
 pub use crate::util::*;
-pub use crate::gui::DrawMask;
 pub use atomic_float::AtomicF64;
 pub use nannou::prelude::Vec2;
 pub use nannou::rand::{random_f64, random_range};

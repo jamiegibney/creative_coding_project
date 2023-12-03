@@ -43,13 +43,7 @@ pub fn db_to_level(db_value: f64) -> f64 {
 }
 
 /// Maps a value from the provided input range to the provided output range.
-pub fn map(
-    value: f64,
-    in_min: f64,
-    in_max: f64,
-    out_min: f64,
-    out_max: f64,
-) -> f64 {
+pub fn map(value: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> f64 {
     scale(normalise(value, in_min, in_max), out_min, out_max)
 }
 
@@ -174,9 +168,7 @@ pub fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
 pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
     assert!(!epsilon_eq(start_hz, 0.0));
     debug_assert!(
-        freq_hz.is_sign_positive()
-            && start_hz.is_sign_positive()
-            && sample_rate.is_sign_positive()
+        freq_hz.is_sign_positive() && start_hz.is_sign_positive() && sample_rate.is_sign_positive()
     );
     let log_start = start_hz.log10();
     let norm = ((sample_rate / 2.0).log10() - log_start).recip();
@@ -200,11 +192,7 @@ pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
 /// # Source
 ///
 /// [Found by experimenting on Desmos.](https://www.desmos.com/calculator/nqgorlqxyw)
-pub fn freq_lin_from_log(
-    freq_hz_log_norm: f64,
-    start_hz: f64,
-    sample_rate: f64,
-) -> f64 {
+pub fn freq_lin_from_log(freq_hz_log_norm: f64, start_hz: f64, sample_rate: f64) -> f64 {
     assert!(!epsilon_eq(start_hz, 0.0));
     debug_assert!(
         freq_hz_log_norm.is_sign_positive()

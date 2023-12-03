@@ -107,7 +107,12 @@ impl Compressor {
     ///
     /// From *Audio Processes by David Creasey*.
     pub fn gain_function(&self, input: f64) -> f64 {
-        let Self { threshold_db: thresh, knee_width: width, ratio, .. } = self;
+        let Self {
+            threshold_db: thresh,
+            knee_width: width,
+            ratio,
+            ..
+        } = self;
         let half_width = width / 2.0;
 
         // below the knee
@@ -115,12 +120,8 @@ impl Compressor {
             0.0
         }
         // within the knee
-        else if (thresh - half_width) < input
-            && input <= (thresh + half_width)
-        {
-            (2.0 * width).recip()
-                * (ratio.recip() - 1.0)
-                * (input - thresh + half_width).powi(2)
+        else if (thresh - half_width) < input && input <= (thresh + half_width) {
+            (2.0 * width).recip() * (ratio.recip() - 1.0) * (input - thresh + half_width).powi(2)
         }
         // above the knee
         else {

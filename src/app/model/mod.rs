@@ -102,8 +102,7 @@ impl Model {
 
         let (_w, _h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
 
-        let window =
-            build_window(app, WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32);
+        let window = build_window(app, WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32);
 
         let GuiElements {
             contours,
@@ -137,22 +136,17 @@ impl Model {
             spectral_mask: Arc::new(Mutex::new(spectral_mask)),
 
             contours: match current_gen_algo {
-                GenerativeAlgo::Contours => {
-                    Some(Arc::new(RwLock::new(contours)))
-                }
+                GenerativeAlgo::Contours => Some(Arc::new(RwLock::new(contours))),
                 GenerativeAlgo::SmoothLife => None,
             },
             smooth_life: match current_gen_algo {
                 GenerativeAlgo::Contours => None,
-                GenerativeAlgo::SmoothLife => {
-                    Some(Arc::new(RwLock::new(smooth_life)))
-                }
+                GenerativeAlgo::SmoothLife => Some(Arc::new(RwLock::new(smooth_life))),
             },
             mask_scan_line_pos: 0.0,
             mask_scan_line_increment: 0.1,
 
-            mask_thread_pool: ThreadPool::build(2)
-                .expect("failed to build mask thread pool"),
+            mask_thread_pool: ThreadPool::build(2).expect("failed to build mask thread pool"),
 
             dsp_load,
             sample_rate_ref,
@@ -174,21 +168,18 @@ impl Model {
     /// handled quite quickly in the audio thread.
     pub fn current_sample_idx(&self) -> u32 {
         self.audio_callback_timer.lock().map_or(0, |guard| {
-            let samples_exact =
-                guard.elapsed().as_secs_f64() * unsafe { SAMPLE_RATE };
+            let samples_exact = guard.elapsed().as_secs_f64() * unsafe { SAMPLE_RATE };
             samples_exact.round() as u32 % BUFFER_SIZE as u32
         })
     }
 
     /// Increments the internal position of the mask scan line.
     pub fn increment_mask_scan_line(&mut self) {
-        self.mask_scan_line_pos +=
-            self.mask_scan_line_increment * self.delta_time;
+        self.mask_scan_line_pos += self.mask_scan_line_increment * self.delta_time;
 
         if self.mask_scan_line_pos > 1.0 {
             self.mask_scan_line_pos -= 1.0;
-        }
-        else if self.mask_scan_line_pos < 0.0 {
+        } else if self.mask_scan_line_pos < 0.0 {
             self.mask_scan_line_pos += 1.0;
         }
     }
@@ -200,10 +191,9 @@ impl Model {
     pub fn mask_rect(&self) -> Rect {
         self.contours.as_ref().map_or_else(
             || {
-                self.smooth_life.as_ref().map_or_else(
-                    || unreachable!(),
-                    |sml| sml.read().unwrap().rect(),
-                )
+                self.smooth_life
+                    .as_ref()
+                    .map_or_else(|| unreachable!(), |sml| sml.read().unwrap().rect())
             },
             |ctr| ctr.read().unwrap().rect(),
         )

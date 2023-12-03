@@ -81,8 +81,7 @@ impl SmoothLifeGenerator {
         // TODO refactor into more idiomatic rust
         for cx in 0..w {
             for cy in 0..h {
-                let (mut m, mut m_norm, mut n, mut n_norm) =
-                    (0.0, 0.0, 0.0, 0.0);
+                let (mut m, mut m_norm, mut n, mut n_norm) = (0.0, 0.0, 0.0, 0.0);
                 let ra_1 = ra - 1.0;
                 let min = (-ra_1) as usize;
                 let max = ra_1 as usize;
@@ -97,8 +96,7 @@ impl SmoothLifeGenerator {
                         if d <= ri * ri {
                             m += self.grid[x][y];
                             m_norm += 1.0;
-                        }
-                        else if d <= ra * ra {
+                        } else if d <= ra * ra {
                             n += self.grid[x][y];
                             n_norm += 1.0;
                         }
@@ -145,8 +143,7 @@ pub fn lerp(a: f64, b: f64, mut t: f64) -> f64 {
     t = t.clamp(0.0, 1.0);
     if t <= f64::EPSILON {
         return a;
-    }
-    else if t >= 1.0 - f64::EPSILON {
+    } else if t >= 1.0 - f64::EPSILON {
         return b;
     }
 

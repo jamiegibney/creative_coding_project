@@ -33,8 +33,7 @@ pub fn linear(a: f64, b: f64, t: f64) -> f64 {
     let t = t.clamp(0.0, 1.0);
     if t == 0.0 {
         return a;
-    }
-    else if t == 1.0 {
+    } else if t == 1.0 {
         return b;
     }
 
@@ -92,9 +91,10 @@ pub fn cubic(p0: f64, p1: f64, p2: f64, p3: f64, t: f64) -> f64 {
 /// `panic!`s if `points` holds less than four values.
 pub fn cubic_vec(points: &[f64], t: f64) -> f64 {
     assert!(
-        points.len() >= 4, 
-            "pa::interp::cubic_vec passed a vector containing {} values, but the function needs 4",
-               points.len());
+        points.len() >= 4,
+        "pa::interp::cubic_vec passed a vector containing {} values, but the function needs 4",
+        points.len()
+    );
 
     cubic(points[0], points[1], points[2], points[3], t)
 }
@@ -147,15 +147,7 @@ pub fn cubic_catmull_vec(points: Vec<f64>, t: f64) -> f64 {
 ///
 /// `bias`: positive values "skew" toward the last point, and negative values toward the first.
 /// `0` is the default, "unaffected" value.
-pub fn cubic_hermite(
-    p0: f64,
-    p1: f64,
-    p2: f64,
-    p3: f64,
-    t: f64,
-    tension: f64,
-    bias: f64,
-) -> f64 {
+pub fn cubic_hermite(p0: f64, p1: f64, p2: f64, p3: f64, t: f64, tension: f64, bias: f64) -> f64 {
     // this is used to prevent unnecessary computations in specific cases
     if bias == 0.0 {
         if tension == 0.0 {
@@ -187,12 +179,7 @@ pub fn cubic_hermite(
 /// Performs `Interp::cubic_hermite`, but with a vector of four points.
 ///
 /// `panic!`s if `points` holds less than four values.
-pub fn cubic_hermite_vec(
-    points: Vec<f64>,
-    t: f64,
-    tension: f64,
-    bias: f64,
-) -> f64 {
+pub fn cubic_hermite_vec(points: Vec<f64>, t: f64, tension: f64, bias: f64) -> f64 {
     if points.len() < 4 {
         panic!("pa::Interp::cubic_hermite_vec passed a vector containing {} values, but the function needs 4",
                points.len());

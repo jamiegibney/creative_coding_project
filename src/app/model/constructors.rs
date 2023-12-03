@@ -30,10 +30,8 @@ pub fn build_audio_system(spectral_block_size: usize) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
     let (spectral_mask, spectral_mask_output) =
-        triple_buffer::TripleBuffer::new(
-            &SpectralMask::new(spectral_block_size).with_size(512),
-        )
-        .split();
+        triple_buffer::TripleBuffer::new(&SpectralMask::new(spectral_block_size).with_size(512))
+            .split();
 
     let (voice_event_sender, voice_event_receiver) = mpsc::channel();
 
@@ -108,12 +106,9 @@ pub fn build_gui_elements(
         pt2(contour_size_fl, contour_size_fl),
     );
 
-    let spectrum_rect =
-        Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
-    let pre_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
-    let post_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
+    let spectrum_rect = Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
+    let pre_spectrum_analyzer = RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
+    let post_spectrum_analyzer = RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
 
     GuiElements {
         contours: Contours::new(app.main_window().device(), contour_rect)

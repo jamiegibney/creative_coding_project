@@ -69,9 +69,7 @@ impl<T: Smoothable> Smoother<T> {
                 ST::SineTop => lerp(a, b, xfer::sine_upper(t)),
                 ST::SineBottom => lerp(a, b, xfer::sine_lower(t)),
                 ST::CurveNormal(c) => lerp(a, b, xfer::s_curve(t, c)),
-                ST::CurveLinearStart(c) => {
-                    lerp(a, b, xfer::s_curve_linear_centre(t, c))
-                }
+                ST::CurveLinearStart(c) => lerp(a, b, xfer::s_curve_linear_centre(t, c)),
                 ST::CurveRounder(c) => lerp(a, b, xfer::s_curve_round(t, c)),
             })
         });
@@ -156,15 +154,11 @@ impl<T: Smoothable> Smoother<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => {
-                interp::lerp(a, b, xfer::s_curve(t, tension))
-            }
+            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => {
-                interp::lerp(a, b, xfer::s_curve_round(t, tension))
-            }
+            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
         });
 
         self.current_value
@@ -178,15 +172,11 @@ impl<T: Smoothable> Smoother<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => {
-                interp::lerp(a, b, xfer::s_curve(t, tension))
-            }
+            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => {
-                interp::lerp(a, b, xfer::s_curve_round(t, tension))
-            }
+            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
         })
     }
 }

@@ -5,7 +5,7 @@ const DEFAULT_SMOOTHING_TIME: f64 = 0.01;
 
 /// A resizable ring buffer which supports interpolation and parameter
 /// smoothing (for delay time).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RingBuffer {
     /// The internal data buffer.
     data: Vec<f64>,
@@ -57,29 +57,38 @@ impl RingBuffer {
         use InterpType as IT;
         let (read_pos, interp) = self.get_read_pos_and_interp();
         // r1 is the same as read_pos
-        let (r0, r1, r2, r3) =
-            if matches!(self.interpolation_type, IT::NoInterp) {
-                (0, read_pos, 0, 0)
-            }
-            else {
-                self.get_cubic_read_positions(read_pos)
-            };
+        let (r0, r1, r2, r3) = if matches!(self.interpolation_type, IT::NoInterp) {
+            (0, read_pos, 0, 0)
+        } else {
+            self.get_cubic_read_positions(read_pos)
+        };
 
         match self.interpolation_type {
             IT::NoInterp => self.data[r1],
             IT::Linear => lerp(self.data[r1], self.data[r2], interp),
             IT::Cosine => interp::cosine(self.data[r1], self.data[r2], interp),
             IT::DefaultCubic => interp::cubic(
-                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
+                self.data[r0],
+                self.data[r1],
+                self.data[r2],
+                self.data[r3],
                 interp,
             ),
             IT::CatmullCubic => interp::cubic_catmull(
-                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
+                self.data[r0],
+                self.data[r1],
+                self.data[r2],
+                self.data[r3],
                 interp,
             ),
             IT::HermiteCubic(tension, bias) => interp::cubic_hermite(
-                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
-                interp, tension, bias,
+                self.data[r0],
+                self.data[r1],
+                self.data[r2],
+                self.data[r3],
+                interp,
+                tension,
+                bias,
             ),
         }
     }
@@ -108,11 +117,7 @@ impl RingBuffer {
 
     /// Sets the smoothing method and time for the `RingBuffer`. This affects
     /// how the buffer responds to changes in delay time.
-    pub fn set_smoothing(
-        &mut self,
-        smoothing_type: SmoothingType,
-        smoothing_time_secs: f64,
-    ) {
+    pub fn set_smoothing(&mut self, smoothing_type: SmoothingType, smoothing_time_secs: f64) {
         self.delay_secs.set_smoothing_type(smoothing_type);
 
         self.smoothing_type = smoothing_type;
@@ -176,8 +181,7 @@ impl RingBuffer {
         let read_pos = if samples_exact > self.write_pos {
             let overrun = self.size() + self.write_pos;
             overrun - samples_exact
-        }
-        else {
+        } else {
             self.write_pos - samples_exact
         };
 
@@ -187,14 +191,19 @@ impl RingBuffer {
     /// Returns the read positions +1, at, -1, and -2 relative to the read
     /// position, used for interpolation.
     // TODO: try to account for delay time less than 2 samples?
-    fn get_cubic_read_positions(
-        &self,
-        read_pos: usize,
-    ) -> (usize, usize, usize, usize) {
+    fn get_cubic_read_positions(&self, read_pos: usize) -> (usize, usize, usize, usize) {
         let size = self.size();
         let r0 = (read_pos + 1) % size;
-        let r2 = if read_pos == 0 { size - 1 } else { read_pos - 1 };
-        let r3 = if read_pos <= 1 { size - 2 + read_pos } else { read_pos - 2 };
+        let r2 = if read_pos == 0 {
+            size - 1
+        } else {
+            read_pos - 1
+        };
+        let r3 = if read_pos <= 1 {
+            size - 2 + read_pos
+        } else {
+            read_pos - 2
+        };
 
         (r0, read_pos, r2, r3)
     }

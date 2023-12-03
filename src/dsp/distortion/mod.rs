@@ -1,8 +1,8 @@
 use super::*;
 
-pub mod waveshaper;
-pub mod ring_modulation;
-pub mod freq_shifter;
 pub mod decimation;
+pub mod freq_shifter;
+pub mod ring_modulation;
+pub mod waveshaper;
 
 pub use waveshaper::Waveshaper;

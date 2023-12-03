@@ -8,9 +8,9 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use thread_pool::ThreadPool;
 
-// pub mod buffer;
 pub mod context;
 pub mod model;
+pub mod model_new;
 pub mod process;
 pub mod voice;
 

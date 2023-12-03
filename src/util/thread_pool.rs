@@ -48,11 +48,7 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(
-        id: usize,
-        receiver: ReceiverArc,
-        queue: Arc<AtomicUsize>,
-    ) -> IoResult<Self> {
+    fn new(id: usize, receiver: ReceiverArc, queue: Arc<AtomicUsize>) -> IoResult<Self> {
         let builder = thread::Builder::new();
 
         let is_idle = Arc::new(AtomicBool::new(true));
@@ -81,7 +77,11 @@ impl Worker {
             job();
         })?;
 
-        Ok(Self { _id: id, thread: Some(thread), is_idle })
+        Ok(Self {
+            _id: id,
+            thread: Some(thread),
+            is_idle,
+        })
     }
 
     fn join(&mut self) {
@@ -116,7 +116,11 @@ impl ThreadPool {
             }
         }
 
-        Ok(Self { workers, sender: Some(sender), queue })
+        Ok(Self {
+            workers,
+            sender: Some(sender),
+            queue,
+        })
     }
 
     /// Sends a closure to the thread pool, which adds it to a queue where it
@@ -150,8 +154,7 @@ impl ThreadPool {
 
     /// Returns whether all of the `ThreadPool`'s worker threads are idle or not.
     pub fn is_idle(&self) -> bool {
-        self.workers.iter().all(|w| w.is_idle.load(Relaxed))
-            && self.queued_jobs() == 0
+        self.workers.iter().all(|w| w.is_idle.load(Relaxed)) && self.queued_jobs() == 0
     }
 
     /// Returns the number of idle worker threads in the `ThreadPool`.

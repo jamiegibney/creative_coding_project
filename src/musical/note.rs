@@ -5,7 +5,7 @@ use Note::*;
 use Octave::*;
 
 pub fn midi_note_value_from(octave: Octave, note: Note) -> u8 {
-    octave.starting_midi_note() + note.note_value() 
+    octave.starting_midi_note() + note.note_value()
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -69,9 +69,7 @@ impl Octave {
             84..=95 => C6,
             96..=107 => C7,
             108..=119 => C8,
-            _ => panic!(
-                "value provided ({note}) is outside of the acceptable range"
-            ),
+            _ => panic!("value provided ({note}) is outside of the acceptable range"),
         }
     }
 

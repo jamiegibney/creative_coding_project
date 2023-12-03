@@ -16,19 +16,13 @@ impl Lanczos3Oversampler {
     /// # Panics
     ///
     /// Panics if `quality_factor == 0`, or if `max_factor == 0`.
-    pub fn new(
-        max_block_size: usize,
-        max_factor: usize,
-        quality_factor: u8,
-    ) -> Self {
+    pub fn new(max_block_size: usize, max_factor: usize, quality_factor: u8) -> Self {
         assert_ne!(max_factor, 0);
         let mut stages = Vec::with_capacity(max_factor);
-        let upsampling_kernel =
-            Arc::from(lanczos_kernel(quality_factor, 1.0, true));
+        let upsampling_kernel = Arc::from(lanczos_kernel(quality_factor, 1.0, true));
         // the downsampling kernel is identical, but scaled by half to result in
         // unity gain after oversampling.
-        let downsampling_kernel =
-            Arc::from(lanczos_kernel(quality_factor, 0.5, true));
+        let downsampling_kernel = Arc::from(lanczos_kernel(quality_factor, 0.5, true));
 
         for stage in 0..max_factor {
             stages.push(Lanczos3Stage::new(
@@ -67,12 +61,7 @@ impl Lanczos3Oversampler {
         self.stages.len()
     }
 
-    pub fn process(
-        &mut self,
-        block: &mut [f64],
-        factor: usize,
-        f: impl FnOnce(&mut [f64]),
-    ) {
+    pub fn process(&mut self, block: &mut [f64], factor: usize, f: impl FnOnce(&mut [f64])) {
         if factor == 0 {
             f(block);
             return;
@@ -88,11 +77,7 @@ impl Lanczos3Oversampler {
         self.downsample_to(block, factor);
     }
 
-    pub fn upsample_from(
-        &mut self,
-        block: &[f64],
-        factor: usize,
-    ) -> &mut [f64] {
+    pub fn upsample_from(&mut self, block: &[f64], factor: usize) -> &mut [f64] {
         debug_assert_ne!(factor, 0);
         debug_assert!(factor <= self.stages.len());
 
@@ -101,8 +86,7 @@ impl Lanczos3Oversampler {
         let mut previous_block_len = block.len() * 2;
 
         for to_stage_idx in 1..factor {
-            let ([.., from], [to, ..]) = self.stages.split_at_mut(to_stage_idx)
-            else {
+            let ([.., from], [to, ..]) = self.stages.split_at_mut(to_stage_idx) else {
                 unreachable!()
             };
 
@@ -113,11 +97,7 @@ impl Lanczos3Oversampler {
         &mut self.stages[factor - 1].scratch_buffer[..previous_block_len]
     }
 
-    pub fn upsample_only<'a>(
-        &'a mut self,
-        block: &'a mut [f64],
-        factor: usize,
-    ) -> &'a mut [f64] {
+    pub fn upsample_only<'a>(&'a mut self, block: &'a mut [f64], factor: usize) -> &'a mut [f64] {
         debug_assert!(factor <= self.stages.len());
 
         if factor == 0 {
@@ -139,8 +119,7 @@ impl Lanczos3Oversampler {
         let mut next_block_len = block.len() * 2usize.pow(factor as u32 - 1);
 
         for to_stage_idx in (1..factor).rev() {
-            let ([.., to], [from, ..]) = self.stages.split_at_mut(to_stage_idx)
-            else {
+            let ([.., to], [from, ..]) = self.stages.split_at_mut(to_stage_idx) else {
                 unreachable!()
             };
 

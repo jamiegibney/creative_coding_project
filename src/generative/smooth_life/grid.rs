@@ -8,7 +8,9 @@ pub struct Grid {
 
 impl Grid {
     pub fn new(width: usize, height: usize) -> Self {
-        Self { data: vec![vec![0.0; width]; height] }
+        Self {
+            data: vec![vec![0.0; width]; height],
+        }
     }
 
     pub fn new_square(size: usize) -> Self {
@@ -23,11 +25,7 @@ impl Grid {
     /// # Panics
     ///
     /// Panics if the chunk is outside the bounds of the grid, or if `w < x || h < y`.
-    pub fn with_random_chunk(
-        mut self,
-        xy: (usize, usize),
-        wh: (usize, usize),
-    ) -> Self {
+    pub fn with_random_chunk(mut self, xy: (usize, usize), wh: (usize, usize)) -> Self {
         self.randomize_chunk(xy, wh);
         self
     }
@@ -40,12 +38,7 @@ impl Grid {
     /// # Panics
     ///
     /// Panics if the chunk is outside the bounds of the grid, or if `w < x || h < y`.
-    pub fn with_value_chunk(
-        mut self,
-        xy: (usize, usize),
-        wh: (usize, usize),
-        value: f64,
-    ) -> Self {
+    pub fn with_value_chunk(mut self, xy: (usize, usize), wh: (usize, usize), value: f64) -> Self {
         self.value_chunk(xy, wh, value);
         self
     }
@@ -76,12 +69,7 @@ impl Grid {
     /// # Panics
     ///
     /// Panics if the chunk is outside the bounds of the grid, or if `w < x || h < y`.
-    pub fn value_chunk(
-        &mut self,
-        xy: (usize, usize),
-        wh: (usize, usize),
-        value: f64,
-    ) {
+    pub fn value_chunk(&mut self, xy: (usize, usize), wh: (usize, usize), value: f64) {
         let (x, y) = xy;
         let (w, h) = wh;
         assert!(x <= w && y <= h && w <= self.width() && h <= self.height());

@@ -63,7 +63,8 @@ impl SpectralFilter {
             fft: RealFftPlanner::new().plan_fft_forward(max_block_size),
             ifft: RealFftPlanner::new().plan_fft_inverse(max_block_size),
 
-            mask: SpectralMask::new(max_block_size).with_size(max_block_size / 2),
+            mask: SpectralMask::new(max_block_size)
+                .with_size(max_block_size / 2),
         }
     }
 
@@ -154,7 +155,26 @@ impl SpectralFilter {
     }
 
     pub fn compensation_factor(&self, block_size: usize) -> f64 {
-        // (Self::OVERLAP_FACTOR as f64 * 16.0).recip()
         ((block_size / 2) as f64 / (Self::OVERLAP_FACTOR as f64 * 4.0)).recip()
+    }
+}
+
+impl Default for SpectralFilter {
+    fn default() -> Self {
+        const DEFAULT_BLOCK_SIZE: usize = 1 << 14;
+
+        Self {
+            stft: StftHelper::new(NUM_CHANNELS, DEFAULT_BLOCK_SIZE, 0),
+            fft: RealFftPlanner::new().plan_fft_forward(DEFAULT_BLOCK_SIZE),
+            ifft: RealFftPlanner::new().plan_fft_inverse(DEFAULT_BLOCK_SIZE),
+
+            mask: SpectralMask::new(DEFAULT_BLOCK_SIZE)
+                .with_size(DEFAULT_BLOCK_SIZE / 2),
+
+            compensated_window_function: Vec::default(),
+            window_function: Vec::default(),
+
+            complex_buffers: Vec::default(),
+        }
     }
 }

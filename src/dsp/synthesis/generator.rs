@@ -37,3 +37,9 @@ impl Generator {
         }
     }
 }
+
+impl Default for Generator {
+    fn default() -> Self {
+        Self::Sine(SineOsc::new(440.0, unsafe { SAMPLE_RATE }))
+    }
+}

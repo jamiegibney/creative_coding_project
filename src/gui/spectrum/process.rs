@@ -3,9 +3,7 @@
 use crate::dsp::StftHelper;
 use crate::prelude::*;
 use crate::util::window::{hann, multiply_buffers};
-use realfft::{
-    num_complex::Complex64, RealFftPlanner, RealToComplex,
-};
+use realfft::{num_complex::Complex64, RealFftPlanner, RealToComplex};
 use std::sync::Arc;
 use triple_buffer::TripleBuffer;
 
@@ -84,10 +82,7 @@ impl SpectrumInput {
             //     .collect(),
             window_function: hann(SPECTRUM_WINDOW_SIZE),
 
-            complex_buffer: vec![
-                Complex64::default();
-                SPECTRUM_WINDOW_SIZE / 2 + 1
-            ],
+            complex_buffer: vec![Complex64::default(); SPECTRUM_WINDOW_SIZE / 2 + 1],
         };
 
         input.update_timing();
@@ -104,31 +99,25 @@ impl SpectrumInput {
     ///
     /// Should be called if the sample rate changes.
     pub fn update_timing(&mut self) {
-        let effective_sample_rate = unsafe { SAMPLE_RATE }
-            / SPECTRUM_WINDOW_SIZE as f64
+        let effective_sample_rate = unsafe { SAMPLE_RATE } / SPECTRUM_WINDOW_SIZE as f64
             * SPECTRUM_OVERLAP_FACTOR as f64
             * self.num_channels as f64;
 
         // 0.25 is used to represent a -12dB change in amplitude.
         let minus_12_db = 0.25f64;
-        let attack_samples =
-            SPECTRUM_ATTACK_MS / 1000.0 * effective_sample_rate;
+        let attack_samples = SPECTRUM_ATTACK_MS / 1000.0 * effective_sample_rate;
         self.attack_weight = minus_12_db.powf(attack_samples.recip());
 
-        let release_samples =
-            SPECTRUM_RELEASE_MS / 1000.0 * effective_sample_rate;
+        let release_samples = SPECTRUM_RELEASE_MS / 1000.0 * effective_sample_rate;
         self.release_weight = minus_12_db.powf(release_samples.recip());
     }
-
 
     /// Computes the spectral information for an audio buffer and sends
     /// it to the output spectrum pair.
     #[allow(clippy::missing_panics_doc)] // this function should not panic
     pub fn compute(&mut self, buffer: &[f64]) {
-        self.stft.process_forward_only(
-            &buffer,
-            SPECTRUM_OVERLAP_FACTOR,
-            |_, real_buffer| {
+        self.stft
+            .process_forward_only(&buffer, SPECTRUM_OVERLAP_FACTOR, |_, real_buffer| {
                 // apply the window function
                 multiply_buffers(real_buffer, &self.window_function);
 
@@ -146,23 +135,17 @@ impl SpectrumInput {
                     let mag = bin.norm();
 
                     if mag > *spectrum {
-                        *spectrum = (*spectrum).mul_add(
-                            self.attack_weight,
-                            mag * (1.0 - self.attack_weight),
-                        );
-                    }
-                    else {
-                        *spectrum = (*spectrum).mul_add(
-                            self.release_weight,
-                            mag * (1.0 - self.release_weight),
-                        );
+                        *spectrum = (*spectrum)
+                            .mul_add(self.attack_weight, mag * (1.0 - self.attack_weight));
+                    } else {
+                        *spectrum = (*spectrum)
+                            .mul_add(self.release_weight, mag * (1.0 - self.release_weight));
                     }
                 }
 
                 // send to the triple buffer output
                 self.triple_buffer_input
                     .write(self.spectrum_result_buffer.clone());
-            },
-        );
+            });
     }
 }

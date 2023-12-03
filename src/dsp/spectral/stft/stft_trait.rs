@@ -13,11 +13,7 @@ pub trait StftInput {
     fn num_channels(&self) -> usize;
 
     /// Obtains a copy of a specific sample without any bounds checking.
-    unsafe fn get_sample_unchecked(
-        &self,
-        channel_idx: usize,
-        sample_idx: usize,
-    ) -> f64;
+    unsafe fn get_sample_unchecked(&self, channel_idx: usize, sample_idx: usize) -> f64;
 }
 
 /// A buffer which may be written to by the `StftHelper`.
@@ -43,11 +39,7 @@ impl StftInput for Buffer<f64> {
     }
 
     #[inline]
-    unsafe fn get_sample_unchecked(
-        &self,
-        channel_idx: usize,
-        sample_idx: usize,
-    ) -> f64 {
+    unsafe fn get_sample_unchecked(&self, channel_idx: usize, sample_idx: usize) -> f64 {
         // the samples of this buffer are interleaved, hence channel * 2
         unsafe { *self.get_unchecked(sample_idx * 2 + channel_idx) }
     }
@@ -70,8 +62,7 @@ impl StftInput for [&[f64]] {
     fn num_samples(&self) -> usize {
         if self.is_empty() {
             0
-        }
-        else {
+        } else {
             self[0].len()
         }
     }
@@ -82,11 +73,7 @@ impl StftInput for [&[f64]] {
     }
 
     #[inline]
-    unsafe fn get_sample_unchecked(
-        &self,
-        channel_idx: usize,
-        sample_idx: usize,
-    ) -> f64 {
+    unsafe fn get_sample_unchecked(&self, channel_idx: usize, sample_idx: usize) -> f64 {
         unsafe { *self.get_unchecked(channel_idx).get_unchecked(sample_idx) }
     }
 }
@@ -96,8 +83,7 @@ impl StftInput for [&mut [f64]] {
     fn num_samples(&self) -> usize {
         if self.is_empty() {
             0
-        }
-        else {
+        } else {
             self[0].len()
         }
     }
@@ -108,11 +94,7 @@ impl StftInput for [&mut [f64]] {
     }
 
     #[inline]
-    unsafe fn get_sample_unchecked(
-        &self,
-        channel_idx: usize,
-        sample_idx: usize,
-    ) -> f64 {
+    unsafe fn get_sample_unchecked(&self, channel_idx: usize, sample_idx: usize) -> f64 {
         unsafe { *self.get_unchecked(channel_idx).get_unchecked(sample_idx) }
     }
 }
@@ -143,11 +125,7 @@ impl StftInput for &[f64] {
     }
 
     #[inline]
-    unsafe fn get_sample_unchecked(
-        &self,
-        channel_idx: usize,
-        sample_idx: usize,
-    ) -> f64 {
+    unsafe fn get_sample_unchecked(&self, channel_idx: usize, sample_idx: usize) -> f64 {
         // the samples of this buffer are interleaved, hence channel * 2
         unsafe { *self.get_unchecked(sample_idx * 2 + channel_idx) }
     }

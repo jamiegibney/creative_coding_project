@@ -14,19 +14,21 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // has to be extracted here because it is borrowed in the line below
     let audio_is_idle = audio.is_idle();
-    let AudioModel { context, voice_handler, .. } = audio;
+    let AudioModel {
+        context,
+        voice_handler,
+        ..
+    } = audio;
     let buffer_len = buffer.len_frames();
 
     // best not to block at all here - if the NoteHandler lock can't be
     // obtained, then the note events won't be processed for this buffer.
     let mut note_handler_guard = context.note_handler.try_lock().ok();
-    let mut next_event =
-        note_handler_guard.as_mut().and_then(|g| g.next_event());
+    let mut next_event = note_handler_guard.as_mut().and_then(|g| g.next_event());
 
     // if there is no note event, no active voice, and there was no audio
     // processed in the last frame, most of the signal processing can be skipped.
-    if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle
-    {
+    if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle {
         drop(note_handler_guard);
         print_dsp_load(audio, dsp_start);
         callback_timer(audio);
@@ -46,10 +48,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                 Some(event) if (event.timing() as usize) <= block_start => {
                     match event {
                         NoteEvent::NoteOn { note, .. } => {
-                            voice_handler.start_voice(
-                                note,
-                                Some(audio.amp_envelope.clone()),
-                            );
+                            voice_handler.start_voice(note, Some(audio.amp_envelope.clone()));
                         }
                         NoteEvent::NoteOff { note, .. } => {
                             voice_handler.start_release_for_voice(None, note);
@@ -59,12 +58,8 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                     // then obtain the next event and loop again
                     // SAFETY: this is ok, because this pattern would not
                     // match if the note_handler_guard was not obtained.
-                    next_event = unsafe {
-                        note_handler_guard
-                            .as_mut()
-                            .unwrap_unchecked()
-                            .next_event()
-                    };
+                    next_event =
+                        unsafe { note_handler_guard.as_mut().unwrap_unchecked().next_event() };
                 }
                 // if the event exists within this block, set the next block
                 // to start at the event and continue processing the block
@@ -140,8 +135,7 @@ fn print_dsp_load(audio: &mut AudioModel, start_time: std::time::Instant) {
         let total_buf_time = sample_length() * BUFFER_SIZE as f64;
         audio.average_load[audio.avr_pos] = start_time.elapsed().as_secs_f64();
 
-        let avr = audio.average_load.iter().sum::<f64>()
-            / DSP_LOAD_AVERAGING_SAMPLES as f64;
+        let avr = audio.average_load.iter().sum::<f64>() / DSP_LOAD_AVERAGING_SAMPLES as f64;
         println!("DSP load: {:.2}%", avr / total_buf_time * 100.0);
 
         audio.avr_pos = (audio.avr_pos + 1) % DSP_LOAD_AVERAGING_SAMPLES;
@@ -235,9 +229,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         output[1] = output[1].clamp(-1.0, 1.0);
 
         // used to decide whether to skip DSP processing in the next block or not
-        if (output[0].abs() > SIGNAL_EPSILON
-            || output[1].abs() > SIGNAL_EPSILON)
-            && !is_processing
+        if (output[0].abs() > SIGNAL_EPSILON || output[1].abs() > SIGNAL_EPSILON) && !is_processing
         {
             is_processing = true;
         }

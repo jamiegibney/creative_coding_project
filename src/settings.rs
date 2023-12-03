@@ -6,8 +6,6 @@
 // for playing around and  experimentation. It also allows me to play around with race
 // conditions if I want, which seems like good practice...
 
-
-
 /// The global sample rate, set to 44.1 kHz as default.
 ///
 /// # Safety
@@ -44,8 +42,7 @@ pub static mut OVERSAMPLED_SAMPLE_RATE: f64 = unsafe { SAMPLE_RATE };
 pub unsafe fn update_oversampled_sample_rate(oversampling_factor: usize) {
     assert!(oversampling_factor <= 2usize.pow(MAX_OVERSAMPLING_FACTOR as u32));
     unsafe {
-        OVERSAMPLED_SAMPLE_RATE =
-            SAMPLE_RATE * 2.0f64.powi(oversampling_factor as i32);
+        OVERSAMPLED_SAMPLE_RATE = SAMPLE_RATE * 2.0f64.powi(oversampling_factor as i32);
     }
 }
 
@@ -74,7 +71,10 @@ pub struct V2 {
 }
 
 /// The size of the application's window in display units.
-pub const WINDOW_SIZE: V2 = V2 { x: 1400.0, y: 800.0 };
+pub const WINDOW_SIZE: V2 = V2 {
+    x: 1400.0,
+    y: 800.0,
+};
 
 // TODO this is constant for now, but should be variable later.
 /// The default DSP buffer size.

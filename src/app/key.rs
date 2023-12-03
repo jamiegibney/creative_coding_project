@@ -6,10 +6,6 @@ use crate::musical::*;
 /// Function for handling keypresses.
 pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
     match key {
-        // stop audio playback
-        // Key::Space => {
-        //     model.voice_event_sender.send(VoiceEvent::KillAll).unwrap();
-        // }
         Key::Space => model
             .voice_event_sender
             .send(VoiceEvent::ReleaseAll)
@@ -24,14 +20,12 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 drop(ctr);
             }
             GenerativeAlgo::SmoothLife => {
-                let mut sml =
-                    model.smooth_life.as_mut().unwrap().write().unwrap();
+                let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
 
                 sml.reset();
                 drop(sml);
             }
         },
-
         _ => (),
     };
 
@@ -58,8 +52,10 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
 
         // push note event to the note handler
         let mut note_handler = model.note_handler.lock().unwrap();
-        note_handler
-            .push_event(NoteEvent::NoteOn { note, timing: samples_elapsed });
+        note_handler.push_event(NoteEvent::NoteOn {
+            note,
+            timing: samples_elapsed,
+        });
     }
 }
 
@@ -85,8 +81,10 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
 
         // push note event to the note handler
         let mut note_handler = model.note_handler.lock().unwrap();
-        note_handler
-            .push_event(NoteEvent::NoteOff { note, timing: samples_elapsed });
+        note_handler.push_event(NoteEvent::NoteOff {
+            note,
+            timing: samples_elapsed,
+        });
     }
 }
 
@@ -94,8 +92,7 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
 fn octave_from_key(octave: Octave, key: Key) -> Octave {
     if matches!(key, Key::K | Key::O | Key::L | Key::P) {
         octave.transpose(1)
-    }
-    else {
+    } else {
         octave
     }
 }

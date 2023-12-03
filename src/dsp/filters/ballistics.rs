@@ -67,10 +67,7 @@ impl BallisticsFilter {
     /// Both types yield positive values, but `RMS` may give more weight to larger
     /// input values. It is, however, more expensive due to the squaring and square
     /// root calculation needed for each sample.
-    pub fn set_level_type(
-        &mut self,
-        level_calculation_type: BallisticsLevelType,
-    ) {
+    pub fn set_level_type(&mut self, level_calculation_type: BallisticsLevelType) {
         self.level_type = level_calculation_type;
     }
 
@@ -90,8 +87,7 @@ impl BallisticsFilter {
     fn calculate_cte(time_ms: f64) -> f64 {
         if time_ms < 0.001 {
             0.0
-        }
-        else {
+        } else {
             ((-TAU * 1000.0 / unsafe { SAMPLE_RATE }) / time_ms).exp()
         }
     }
@@ -119,14 +115,12 @@ impl Effect for BallisticsFilter {
         // obtain the correct CTE values
         let cte_l = if in_l > self.y_old[CH_L] {
             self.cte_attack
-        }
-        else {
+        } else {
             self.cte_release
         };
         let cte_r = if in_r > self.y_old[CH_R] {
             self.cte_attack
-        }
-        else {
+        } else {
             self.cte_release
         };
 

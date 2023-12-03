@@ -29,16 +29,14 @@ mod tests {
     #[test]
     fn unsupported_type_had_no_effect() {
         let sample_rate = 44100.0;
-        let original: Vec<f64> =
-            (0..1000).map(|_| rand::random_range(-1.0, 1.0)).collect();
+        let original: Vec<f64> = (0..1000).map(|_| rand::random_range(-1.0, 1.0)).collect();
 
         let mut filter = FirstOrderFilter::new(sample_rate);
         filter.set_freq(440.0);
         // unsupported filter type
         filter.set_type(FilterType::Bandpass);
 
-        let filtered: Vec<f64> =
-            original.iter().map(|x| filter.process(*x)).collect();
+        let filtered: Vec<f64> = original.iter().map(|x| filter.process(*x)).collect();
 
         assert_eq!(original, filtered);
     }
@@ -46,22 +44,19 @@ mod tests {
     #[test]
     fn high_low_pass_are_different() {
         let sample_rate = 44100.0;
-        let samples: Vec<f64> =
-            (0..1000).map(|_| rand::random_range(-1.0, 1.0)).collect();
+        let samples: Vec<f64> = (0..1000).map(|_| rand::random_range(-1.0, 1.0)).collect();
 
         let mut filter = FirstOrderFilter::new(sample_rate);
         filter.set_freq(440.0);
         filter.set_type(FilterType::Lowpass);
 
-        let low_passed: Vec<f64> =
-            samples.iter().map(|x| filter.process(*x)).collect();
+        let low_passed: Vec<f64> = samples.iter().map(|x| filter.process(*x)).collect();
 
         filter = FirstOrderFilter::new(sample_rate);
         filter.set_freq(440.0);
         filter.set_type(FilterType::Highpass);
 
-        let high_passed: Vec<f64> =
-            samples.iter().map(|x| filter.process(*x)).collect();
+        let high_passed: Vec<f64> = samples.iter().map(|x| filter.process(*x)).collect();
 
         assert!(low_passed != high_passed);
     }

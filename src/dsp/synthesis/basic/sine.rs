@@ -14,7 +14,11 @@ impl SineOsc {
         debug_assert!(0.0 < freq_hz && freq_hz <= sample_rate / 2.0);
         let phase_increment = freq_hz / sample_rate * TAU;
 
-        Self { phase_l: 0.0, phase_r: 0.1, phase_increment }
+        Self {
+            phase_l: 0.0,
+            phase_r: 0.1,
+            phase_increment,
+        }
     }
 
     fn increment_phase(&mut self) {

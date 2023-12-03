@@ -3,7 +3,6 @@ use realfft::num_complex::{Complex64, ComplexFloat};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-
 const J: Complex64 = Complex64::new(0.0, 1.0);
 
 pub trait Coefficients {
@@ -13,20 +12,10 @@ pub trait Coefficients {
     fn filter_order(&self) -> usize;
     fn magnitude_at_freq(&self, freq: f64, sample_rate: f64) -> f64;
     fn magnitude_for_freqs(&self, freqs: &[f64], sample_rate: f64) -> Vec<f64>;
-    fn magnitude_for_freqs_in_place(
-        &self,
-        freqs: &[f64],
-        magnitudes: &mut [f64],
-        sample_rate: f64,
-    );
+    fn magnitude_for_freqs_in_place(&self, freqs: &[f64], magnitudes: &mut [f64], sample_rate: f64);
     fn phase_at_freq(&self, freq: f64, sample_rate: f64) -> f64;
     fn phase_for_freqs(&self, freqs: &[f64], sample_rate: f64) -> Vec<f64>;
-    fn phase_for_freqs_in_place(
-        &self,
-        freqs: &[f64],
-        phases: &mut [f64],
-        sample_rate: f64,
-    );
+    fn phase_for_freqs_in_place(&self, freqs: &[f64], phases: &mut [f64], sample_rate: f64);
     fn normalise(&mut self) {}
     fn get_coefs(&self) -> &[f64];
     fn get_coefs_mut(&mut self) -> &mut [f64];
@@ -42,11 +31,15 @@ impl Coefficients for FIRCoefficients {
     }
 
     fn with_coefs(coefs: &[f64]) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Self { coefs: Vec::from(coefs) }))
+        Rc::new(RefCell::new(Self {
+            coefs: Vec::from(coefs),
+        }))
     }
 
     fn with_capacity(capacity: usize) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Self { coefs: Vec::with_capacity(capacity) }))
+        Rc::new(RefCell::new(Self {
+            coefs: Vec::with_capacity(capacity),
+        }))
     }
 
     fn filter_order(&self) -> usize {
@@ -126,12 +119,7 @@ impl Coefficients for FIRCoefficients {
         v
     }
 
-    fn phase_for_freqs_in_place(
-        &self,
-        freqs: &[f64],
-        phases: &mut [f64],
-        sample_rate: f64,
-    ) {
+    fn phase_for_freqs_in_place(&self, freqs: &[f64], phases: &mut [f64], sample_rate: f64) {
         assert!(phases.len() >= freqs.len());
 
         let order = self.filter_order();
@@ -177,11 +165,15 @@ impl Coefficients for IIRCoefficients {
     }
 
     fn with_coefs(coefs: &[f64]) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Self { coefs: Vec::from(coefs) }))
+        Rc::new(RefCell::new(Self {
+            coefs: Vec::from(coefs),
+        }))
     }
 
     fn with_capacity(capacity: usize) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Self { coefs: Vec::with_capacity(capacity) }))
+        Rc::new(RefCell::new(Self {
+            coefs: Vec::with_capacity(capacity),
+        }))
     }
 
     fn filter_order(&self) -> usize {
@@ -257,12 +249,7 @@ impl Coefficients for IIRCoefficients {
         unimplemented!()
     }
 
-    fn phase_for_freqs_in_place(
-        &self,
-        _freqs: &[f64],
-        _phases: &mut [f64],
-        _sample_rate: f64,
-    ) {
+    fn phase_for_freqs_in_place(&self, _freqs: &[f64], _phases: &mut [f64], _sample_rate: f64) {
         unimplemented!()
     }
 

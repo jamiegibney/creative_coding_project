@@ -272,8 +272,7 @@ impl AdsrEnvelope {
         self.ramp
             .set_start_value(if self.attack_time_ms <= f64::EPSILON {
                 self.attack_level
-            }
-            else {
+            } else {
                 0.0
             });
         self.ramp.set_target_value(self.attack_level);

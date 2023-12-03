@@ -1,7 +1,9 @@
 use super::*;
-use std::sync::{Arc, mpsc::Receiver};
 use crate::app::audio::VoiceEvent;
+use std::sync::{mpsc::Receiver, Arc};
 
+// TODO this is a bit of a weird intermediate struct used for building
+// and holding data, which could could be extracted elsewhere...
 #[derive(Debug)]
 pub struct AudioContext {
     pub note_handler: NoteHandlerRef,

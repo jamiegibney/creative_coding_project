@@ -34,9 +34,7 @@ impl NoteEvent {
     /// Returns the sample timing of the event.
     pub fn timing(&self) -> u32 {
         match self {
-            Self::NoteOn { timing, .. } | Self::NoteOff { timing, .. } => {
-                *timing
-            }
+            Self::NoteOn { timing, .. } | Self::NoteOff { timing, .. } => *timing,
         }
     }
 }
@@ -49,7 +47,9 @@ pub struct NoteHandler {
 impl NoteHandler {
     /// Returns a new, empty `NoteHandler`.
     pub fn new() -> Self {
-        Self { events: Deque::new() }
+        Self {
+            events: Deque::new(),
+        }
     }
 
     /// Adds a note event to the internal queue.
