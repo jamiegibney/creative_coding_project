@@ -9,6 +9,8 @@ pub trait Effect: dyn_clone::DynClone + Send + std::fmt::Debug {
     fn process_mono(&mut self, input: f64) -> f64 {
         input
     }
+
+    fn get_sample_rate(&self) -> f64;
 }
 
 dyn_clone::clone_trait_object!(Effect);

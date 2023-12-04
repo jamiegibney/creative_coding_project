@@ -46,6 +46,31 @@ impl RingBuffer {
         }
     }
 
+    /// Sets the smoothing method and time for the `RingBuffer`. This affects
+    /// how the buffer responds to changes in delay time.
+    ///
+    /// Constructing method.
+    pub fn with_smoothing(
+        mut self,
+        smoothing_type: SmoothingType,
+        smoothing_time_secs: f64,
+    ) -> Self {
+        self.set_smoothing(smoothing_type, smoothing_time_secs);
+        self
+    }
+
+    /// Sets the interpolation method for the `RingBuffer`. This affects how
+    /// the buffer handles delay times which lie between samples.
+    ///
+    /// Constructing method.
+    pub fn with_interpolation(
+        mut self,
+        interpolation_type: InterpType,
+    ) -> Self {
+        self.set_interpolation(interpolation_type);
+        self
+    }
+
     /// Pushes `element` to the `RingBuffer`.
     pub fn push(&mut self, element: f64) {
         self.data[self.write_pos] = element;
@@ -57,38 +82,29 @@ impl RingBuffer {
         use InterpType as IT;
         let (read_pos, interp) = self.get_read_pos_and_interp();
         // r1 is the same as read_pos
-        let (r0, r1, r2, r3) = if matches!(self.interpolation_type, IT::NoInterp) {
-            (0, read_pos, 0, 0)
-        } else {
-            self.get_cubic_read_positions(read_pos)
-        };
+        let (r0, r1, r2, r3) =
+            if matches!(self.interpolation_type, IT::NoInterp) {
+                (0, read_pos, 0, 0)
+            }
+            else {
+                self.get_cubic_read_positions(read_pos)
+            };
 
         match self.interpolation_type {
             IT::NoInterp => self.data[r1],
             IT::Linear => lerp(self.data[r1], self.data[r2], interp),
             IT::Cosine => interp::cosine(self.data[r1], self.data[r2], interp),
             IT::DefaultCubic => interp::cubic(
-                self.data[r0],
-                self.data[r1],
-                self.data[r2],
-                self.data[r3],
+                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
                 interp,
             ),
             IT::CatmullCubic => interp::cubic_catmull(
-                self.data[r0],
-                self.data[r1],
-                self.data[r2],
-                self.data[r3],
+                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
                 interp,
             ),
             IT::HermiteCubic(tension, bias) => interp::cubic_hermite(
-                self.data[r0],
-                self.data[r1],
-                self.data[r2],
-                self.data[r3],
-                interp,
-                tension,
-                bias,
+                self.data[r0], self.data[r1], self.data[r2], self.data[r3],
+                interp, tension, bias,
             ),
         }
     }
@@ -97,19 +113,13 @@ impl RingBuffer {
     ///
     /// # Panics
     ///
-    /// Panics in if `delay_secs` is greater than the maximum delay time
-    /// of the `RingBuffer` in seconds to avoid buffer overruns. Use
-    /// `set_delay_time_unchecked()` to bypass this.
+    /// Panics in debug mode if `delay_secs` is greater than the maximum delay
+    /// time of the `RingBuffer` in seconds to avoid buffer overruns.
+    ///
+    /// In release mode, this may cause buffer overruns.
     pub fn set_delay_time(&mut self, delay_secs: f64) {
-        assert!(delay_secs <= self.max_delay_secs());
-        self.delay_secs.set_target_value(delay_secs);
-        self.delay_secs
-            .set_smoothing_period(self.smoothing_time_secs);
-    }
+        debug_assert!(delay_secs <= self.max_delay_secs());
 
-    /// Sets the delay time of the `RingBuffer` in seconds without checking
-    /// for buffer overruns.
-    pub fn set_delay_time_unchecked(&mut self, delay_secs: f64) {
         self.delay_secs.set_target_value(delay_secs);
         self.delay_secs
             .set_smoothing_period(self.smoothing_time_secs);
@@ -117,7 +127,11 @@ impl RingBuffer {
 
     /// Sets the smoothing method and time for the `RingBuffer`. This affects
     /// how the buffer responds to changes in delay time.
-    pub fn set_smoothing(&mut self, smoothing_type: SmoothingType, smoothing_time_secs: f64) {
+    pub fn set_smoothing(
+        &mut self,
+        smoothing_type: SmoothingType,
+        smoothing_time_secs: f64,
+    ) {
         self.delay_secs.set_smoothing_type(smoothing_type);
 
         self.smoothing_type = smoothing_type;
@@ -145,6 +159,21 @@ impl RingBuffer {
         self.smoothing_time_secs = DEFAULT_SMOOTHING_TIME;
     }
 
+    /// Sets the internal sample rate.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `sample_rate` is negative.
+    pub fn set_sample_rate(&mut self, sample_rate: f64) {
+        assert!(sample_rate.is_sign_positive());
+        self.sample_rate = sample_rate;
+    }
+
+    /// Returns the internal sample rate of the `RingBuffer`.
+    pub fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
+    }
+
     /// Clears the contents of the buffer, i.e. sets its contents to `0.0`.
     pub fn clear(&mut self) {
         self.data.iter_mut().for_each(|x| *x = 0.0);
@@ -165,7 +194,7 @@ impl RingBuffer {
     }
 
     /// Returns the maximum delay time possible for the current sample rate.
-    fn max_delay_secs(&self) -> f64 {
+    pub fn max_delay_secs(&self) -> f64 {
         let size = self.size() as f64;
         size / self.sample_rate
     }
@@ -181,7 +210,8 @@ impl RingBuffer {
         let read_pos = if samples_exact > self.write_pos {
             let overrun = self.size() + self.write_pos;
             overrun - samples_exact
-        } else {
+        }
+        else {
             self.write_pos - samples_exact
         };
 
@@ -191,19 +221,14 @@ impl RingBuffer {
     /// Returns the read positions +1, at, -1, and -2 relative to the read
     /// position, used for interpolation.
     // TODO: try to account for delay time less than 2 samples?
-    fn get_cubic_read_positions(&self, read_pos: usize) -> (usize, usize, usize, usize) {
+    fn get_cubic_read_positions(
+        &self,
+        read_pos: usize,
+    ) -> (usize, usize, usize, usize) {
         let size = self.size();
         let r0 = (read_pos + 1) % size;
-        let r2 = if read_pos == 0 {
-            size - 1
-        } else {
-            read_pos - 1
-        };
-        let r3 = if read_pos <= 1 {
-            size - 2 + read_pos
-        } else {
-            read_pos - 2
-        };
+        let r2 = if read_pos == 0 { size - 1 } else { read_pos - 1 };
+        let r3 = if read_pos <= 1 { size - 2 + read_pos } else { read_pos - 2 };
 
         (r0, read_pos, r2, r3)
     }
