@@ -1,13 +1,13 @@
 use super::*;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 struct SVFCoefs {
     g: f64,
     h: f64,
     r2: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StateVariableFilter {
     coefs: SVFCoefs,
 

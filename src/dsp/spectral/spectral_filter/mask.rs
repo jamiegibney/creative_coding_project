@@ -36,9 +36,7 @@ impl SpectralMask {
         let mut points = Vec::with_capacity(max_size);
         points.resize(max_size / 2, 0.0);
 
-        Self {
-            points,
-        }
+        Self { points }
     }
 
     /// Sets the "working size" of the mask.

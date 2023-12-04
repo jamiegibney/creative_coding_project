@@ -4,7 +4,7 @@ use crate::dsp::Effect;
 use crate::prelude::*;
 
 /// Source: https://www.musicdsp.org/en/latest/Effects/169-compressor.html
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OnePoleLowpass {
     a0: f64,
     b1: f64,

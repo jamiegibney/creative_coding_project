@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 struct LRFCoefs {
     g: f64,
     h: f64,
@@ -19,7 +19,7 @@ struct LRFCoefs {
 ///
 /// Based on the Topology-Preserving Transform (TPT) filter structure, found in the JUCE
 /// framework.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LinkwitzRileyFilter {
     /// Filter coefficients.
     coefs: LRFCoefs,

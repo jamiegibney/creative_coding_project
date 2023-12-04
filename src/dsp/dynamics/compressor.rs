@@ -3,7 +3,7 @@ use super::*;
 const DEFAULT_ATTACK_TIME_MS: f64 = 100.0;
 const DEFAULT_RELEASE_TIME_MS: f64 = 100.0;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Compressor {
     attack_time_ms: f64,
     release_time_ms: f64,

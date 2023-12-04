@@ -25,7 +25,7 @@ impl Default for Coefs {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct FirstOrderFilter {
     coefs: Coefs,
     z1: f64,

@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 /// A wrapper around a highpass [`FirstOrderFilter`](crate::dsp::FirstOrderFilter)
 /// tailored for filtering out 0.0 Hz (DC) signals.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct DCFilter {
     filters: Vec<BiquadFilter>,
 }

@@ -104,9 +104,7 @@ impl AudioModelBuilder {
 
         AudioPackage {
             spectrum_outputs: self.spectrum_outputs(),
-            callback_timer_ref: Arc::clone(
-                &self.model.data.callback_time_elapsed,
-            ),
+            callback_timer_ref: Arc::clone(&self.model.data.callback_time_elapsed),
             sample_rate_ref: Arc::clone(&self.model.data.sample_rate),
             // message_channels: todo!(),
             model: self.model,

@@ -3,7 +3,7 @@ use crate::dsp::Effect;
 use crate::prelude::*;
 use BallisticsLevelType as LT;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BallisticsLevelType {
     Peak,
     Rms,
@@ -13,7 +13,7 @@ pub enum BallisticsLevelType {
 /// following.
 ///
 /// Based on the JUCE implementation.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BallisticsFilter {
     /// A buffer for storing the last set of output samples.
     y_old: Vec<f64>,

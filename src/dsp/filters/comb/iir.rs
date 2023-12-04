@@ -15,8 +15,7 @@ impl Filter for IirCombFilter {
     /// Processes a single sample of the comb filter, returning the new sample.
     fn process(&mut self, mut sample: f64) -> f64 {
         sample *= self.filter.a0;
-        let mut output =
-            self.filter.buffer.read().mul_add(self.filter.bd, sample);
+        let mut output = self.filter.buffer.read().mul_add(self.filter.bd, sample);
 
         for filter in &mut self.internal_filters {
             output = filter.process(output);
@@ -61,7 +60,11 @@ impl IirCombFilter {
         self.filter.set_gain_db(gain_db);
 
         let level = db_to_level(gain_db);
-        let polarity = if self.filter.positive_polarity { 1.0 } else { -1.0 };
+        let polarity = if self.filter.positive_polarity {
+            1.0
+        } else {
+            -1.0
+        };
         self.filter.bd = level * polarity;
         self.filter.a0 = 1.0 - self.filter.bd.abs();
     }

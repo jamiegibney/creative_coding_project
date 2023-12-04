@@ -4,7 +4,6 @@ use super::*;
 
 #[derive(Default)]
 pub struct AudioProcessors {
-    // TODO these must be better allocated on the heap?
     // FILTERS
     pub filter_lp: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_hp: Box<[BiquadFilter; NUM_CHANNELS]>,
