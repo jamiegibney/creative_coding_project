@@ -14,7 +14,6 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // has to be extracted here because it is borrowed in the line below
     let audio_is_idle = audio.is_idle();
-    let AudioModel { context, .. } = audio;
     let buffer_len = buffer.len_frames();
 
     // best not to block at all here - if the NoteHandler lock can't be
@@ -22,7 +21,12 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // let mut note_handler_guard = context.note_handler.try_lock().ok();
     // let mut next_event =
     //     note_handler_guard.as_mut().and_then(|g| g.next_event());
-    let mut next_event = audio.next_note_event();
+    let mut next_event = audio
+        .message_channels
+        .borrow()
+        .note_event
+        .as_ref()
+        .and_then(|ch| ch.try_recv().ok());
 
     let voice_handler = &mut audio.voice_handler;
 
@@ -30,7 +34,6 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // processed in the last frame, most of the signal processing can be skipped.
     if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle
     {
-        // drop(note_handler_guard);
         callback_timer(audio);
         return;
     }

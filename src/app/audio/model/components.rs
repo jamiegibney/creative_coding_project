@@ -1,4 +1,5 @@
 use std::time::Instant;
+use crossbeam_channel::{Sender as CCSender, Receiver as CCReceiver};
 
 use super::*;
 
@@ -106,14 +107,16 @@ pub struct AudioSpectrograms {
 /// with the audio thread.
 #[derive(Default)]
 pub struct AudioMessageReceivers {
-    pub note_event: Option<Receiver<NoteEvent>>,
+    // TODO change these to crossbeam channels
+    pub note_event: Option<CCReceiver<NoteEvent>>,
 
-    pub filter_freq: Option<Receiver<f64>>,
-    pub drive_amount: Option<Receiver<f64>>,
+    pub filter_freq: Option<CCReceiver<f64>>,
+    pub drive_amount: Option<CCReceiver<f64>>,
 }
 
 pub struct AudioMessageSenders {
-    pub note_event: Sender<NoteEvent>,
-    pub filter_freq: Sender<f64>,
-    pub drive_amount: Sender<f64>,
+    // TODO change these to crossbeam channels
+    pub note_event: CCSender<NoteEvent>,
+    pub filter_freq: CCSender<f64>,
+    pub drive_amount: CCSender<f64>,
 }
