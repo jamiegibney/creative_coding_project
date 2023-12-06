@@ -1,4 +1,5 @@
 use super::*;
+use std::cell::RefCell;
 use std::sync::atomic::Ordering::Relaxed;
 
 pub mod builder;
@@ -12,7 +13,7 @@ pub use components::*;
 const DSP_IDLE_HOLD_TIME_SECS: f64 = 0.8;
 
 /// The program's audio state.
-pub struct AudioModel2 {
+pub struct AudioModel {
     /// Fields related to audio generation (envelopes, oscillators, ...).
     pub generation: AudioGeneration,
     /// Signal processors — both musical FX and DSP-related.
@@ -30,13 +31,25 @@ pub struct AudioModel2 {
     /// Audio-related contextual data.
     pub context: AudioContext,
 
+    /// Message receiving channels.
+    pub message_channels: RefCell<AudioMessageReceivers>,
+
     /// The audio thread pool, intended for processing the spectrograms
     /// asynchronously.
     thread_pool: ThreadPool,
 }
 
-impl AudioModel2 {
-    pub fn compute_pre_spectrum(&mut self) {
+impl AudioModel {
+    pub fn compute_pre_spectrum(&mut self, buffer: &Buffer<f64>) {
+        self.spectrograms
+            .pre_fx_spectrogram_buffer
+            .try_lock()
+            .map_or((), |mut guard| {
+                for i in 0..buffer.len() {
+                    guard[i] = buffer[i];
+                }
+            });
+
         let spectrum = Arc::clone(&self.spectrograms.pre_fx_spectrogram);
         let buffer = Arc::clone(&self.spectrograms.pre_fx_spectrogram_buffer);
 
@@ -53,7 +66,16 @@ impl AudioModel2 {
         });
     }
 
-    pub fn compute_post_spectrum(&mut self) {
+    pub fn compute_post_spectrum(&mut self, buffer: &Buffer<f64>) {
+        self.spectrograms
+            .post_fx_spectrogram_buffer
+            .try_lock()
+            .map_or((), |mut guard| {
+                for i in 0..buffer.len() {
+                    guard[i] = buffer[i];
+                }
+            });
+
         let spectrum = Arc::clone(&self.spectrograms.post_fx_spectrogram);
         let buffer = Arc::clone(&self.spectrograms.post_fx_spectrogram_buffer);
 
@@ -97,5 +119,24 @@ impl AudioModel2 {
         drop(guard);
 
         samples_exact.round() as u32 % BUFFER_SIZE as u32
+    }
+
+    /// Returns the internal sample rate of the audio model.
+    pub fn get_sample_rate(&self) -> f64 {
+        self.data.sample_rate.load(Relaxed)
+    }
+
+    /// Returns the internal upsampled rate of the audio model.
+    pub fn get_upsampled_rate(&self) -> f64 {
+        self.data.upsampled_rate.load(Relaxed)
+    }
+
+    /// Returns the next available note event, if it exists.
+    pub fn next_note_event(&self) -> Option<NoteEvent> {
+        self.message_channels
+            .borrow()
+            .note_event
+            .as_ref()
+            .and_then(|ch| ch.try_recv().ok())
     }
 }

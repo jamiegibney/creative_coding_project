@@ -25,11 +25,14 @@ pub struct BallisticsFilter {
 
     /// The level calculation type.
     level_type: LT,
+
+    /// The internal sample rate.
+    sample_rate: f64,
 }
 
 impl BallisticsFilter {
     /// Creates a new `BallisticsFilter` which can store `num_channels` samples.
-    pub fn new(num_channels: usize) -> Self {
+    pub fn new(num_channels: usize, sample_rate: f64) -> Self {
         Self {
             y_old: vec![0.0; num_channels],
 
@@ -37,6 +40,7 @@ impl BallisticsFilter {
             cte_release: 0.0,
 
             level_type: LT::Peak,
+            sample_rate,
         }
     }
 
@@ -50,7 +54,7 @@ impl BallisticsFilter {
     /// Values less than `0.001` ms (`1.0` µs) are automatically snapped to `0.0`.
     pub fn set_attack_time_ms(&mut self, time_ms: f64) {
         assert!(time_ms.is_sign_positive());
-        self.cte_attack = Self::calculate_cte(time_ms);
+        self.cte_attack = self.calculate_cte(time_ms);
     }
 
     /// Sets the release time of the filter in milliseconds.
@@ -58,7 +62,7 @@ impl BallisticsFilter {
     /// Values less than `0.001` ms (`1.0` µs) are automatically snapped to `0.0`.
     pub fn set_release_time_ms(&mut self, time_ms: f64) {
         assert!(time_ms.is_sign_positive());
-        self.cte_release = Self::calculate_cte(time_ms);
+        self.cte_release = self.calculate_cte(time_ms);
     }
 
     /// Sets the level calculation type for the filter to use (either `Peak` or `RMS`
@@ -67,7 +71,10 @@ impl BallisticsFilter {
     /// Both types yield positive values, but `RMS` may give more weight to larger
     /// input values. It is, however, more expensive due to the squaring and square
     /// root calculation needed for each sample.
-    pub fn set_level_type(&mut self, level_calculation_type: BallisticsLevelType) {
+    pub fn set_level_type(
+        &mut self,
+        level_calculation_type: BallisticsLevelType,
+    ) {
         self.level_type = level_calculation_type;
     }
 
@@ -84,11 +91,12 @@ impl BallisticsFilter {
     /// Calculates the constant time envelope ("CTE") value for the given period.
     ///
     /// Values less than `0.001` ms (`1.0` µs) are automatically snapped to `0.0`.
-    fn calculate_cte(time_ms: f64) -> f64 {
+    fn calculate_cte(&self, time_ms: f64) -> f64 {
         if time_ms < 0.001 {
             0.0
-        } else {
-            ((-TAU * 1000.0 / unsafe { SAMPLE_RATE }) / time_ms).exp()
+        }
+        else {
+            ((-TAU * 1000.0 / self.sample_rate) / time_ms).exp()
         }
     }
 }
@@ -115,12 +123,14 @@ impl Effect for BallisticsFilter {
         // obtain the correct CTE values
         let cte_l = if in_l > self.y_old[CH_L] {
             self.cte_attack
-        } else {
+        }
+        else {
             self.cte_release
         };
         let cte_r = if in_r > self.y_old[CH_R] {
             self.cte_attack
-        } else {
+        }
+        else {
             self.cte_release
         };
 
@@ -138,10 +148,8 @@ impl Effect for BallisticsFilter {
             LT::Rms => (out_l.sqrt(), out_r.sqrt()),
         }
     }
-}
 
-impl Default for BallisticsFilter {
-    fn default() -> Self {
-        Self::new(2)
+    fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
     }
 }

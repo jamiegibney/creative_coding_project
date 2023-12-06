@@ -11,11 +11,7 @@ struct Coefs {
 
 impl Coefs {
     pub fn identity() -> Self {
-        Self {
-            a0: 1.0,
-            a1: 0.0,
-            b1: 0.0,
-        }
+        Self { a0: 1.0, a1: 0.0, b1: 0.0 }
     }
 }
 
@@ -38,6 +34,10 @@ pub struct FirstOrderFilter {
 impl crate::dsp::Effect for FirstOrderFilter {
     fn process_mono(&mut self, input: f64) -> f64 {
         self.process(input)
+    }
+
+    fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
     }
 }
 
@@ -66,10 +66,7 @@ impl Filter for FirstOrderFilter {
 
 impl FirstOrderFilter {
     pub fn new(sample_rate: f64) -> Self {
-        Self {
-            sample_rate,
-            ..Self::default()
-        }
+        Self { sample_rate, ..Self::default() }
     }
 
     pub fn reset_sample_rate(&mut self, new_sample_rate: f64) {

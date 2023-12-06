@@ -32,15 +32,19 @@ pub struct LinkwitzRileyFilter {
 
     /// Filter type.
     filter_type: FilterType,
+
+    /// The internal sample rate.
+    sample_rate: f64,
 }
 
 impl LinkwitzRileyFilter {
-    pub fn new(_num_channels: usize) -> Self {
+    pub fn new(sample_rate: f64) -> Self {
         Self {
             coefs: LRFCoefs::default(),
             delayed: vec![0.0; 8],
             cutoff: 440.0,
             filter_type: FilterType::Lowpass,
+            sample_rate,
         }
     }
 
@@ -67,7 +71,11 @@ impl LinkwitzRileyFilter {
         self.delayed.iter_mut().for_each(|x| *x = value);
     }
 
-    pub fn process_high_low(&mut self, in_l: f64, in_r: f64) -> ((f64, f64), (f64, f64)) {
+    pub fn process_high_low(
+        &mut self,
+        in_l: f64,
+        in_r: f64,
+    ) -> ((f64, f64), (f64, f64)) {
         let LRFCoefs { g, h, r2 } = self.coefs;
         let input = [in_l, in_r];
         let mut high = [0.0, 0.0];
@@ -78,8 +86,10 @@ impl LinkwitzRileyFilter {
         let mut low_2 = [0.0, 0.0];
 
         for ch in 0..2 {
-            high[ch] =
-                (input[ch] - (r2 + g) * (&self.delayed[..2])[ch] - (&self.delayed[2..4])[ch]) * h;
+            high[ch] = (input[ch]
+                - (r2 + g) * (&self.delayed[..2])[ch]
+                - (&self.delayed[2..4])[ch])
+                * h;
 
             band[ch] = g * high[ch] + (&self.delayed[..2])[ch];
             self.delayed[ch] = g * high[ch] + band[ch];
@@ -87,8 +97,10 @@ impl LinkwitzRileyFilter {
             low[ch] = g * band[ch] + (&self.delayed[2..4])[ch];
             self.delayed[2 + ch] = g * band[ch] + low[ch];
 
-            high_2[ch] =
-                (low[ch] - (r2 + g) * (&self.delayed[4..6])[ch] - (&self.delayed[6..8])[ch]) * h;
+            high_2[ch] = (low[ch]
+                - (r2 + g) * (&self.delayed[4..6])[ch]
+                - (&self.delayed[6..8])[ch])
+                * h;
 
             band_2[ch] = g * high_2[ch] + (&self.delayed[4..6])[ch];
             self.delayed[4 + ch] = g * high_2[ch] + band_2[ch];
@@ -109,7 +121,7 @@ impl LinkwitzRileyFilter {
     fn update(&mut self) {
         let LRFCoefs { g, h, r2 } = &mut self.coefs;
 
-        *g = (PI * self.cutoff / unsafe { SAMPLE_RATE }).tan();
+        *g = (PI * self.cutoff / self.sample_rate).tan();
         *r2 = SQRT_2;
         *h = (1.0 + *r2 * *g + *g * *g).recip();
     }
@@ -124,8 +136,10 @@ impl Effect for LinkwitzRileyFilter {
         let mut low = [0.0, 0.0];
 
         for ch in 0..2 {
-            high[ch] =
-                (input[ch] - (r2 + g) * (&self.delayed[..2])[ch] - (&self.delayed[2..4])[ch]) * h;
+            high[ch] = (input[ch]
+                - (r2 + g) * (&self.delayed[..2])[ch]
+                - (&self.delayed[2..4])[ch])
+                * h;
 
             band[ch] = g * high[ch] + (&self.delayed[..2])[ch];
             self.delayed[ch] = g * high[ch] + band[ch];
@@ -148,7 +162,8 @@ impl Effect for LinkwitzRileyFilter {
         for ch in 0..2 {
             high_2[ch] = (if matches!(self.filter_type, FilterType::Lowpass) {
                 low[ch]
-            } else {
+            }
+            else {
                 high[ch]
             }) - (r2 + g) * (&self.delayed[4..6])[ch]
                 - (&self.delayed[6..8])[ch] * h;
@@ -166,5 +181,9 @@ impl Effect for LinkwitzRileyFilter {
             // this should be impossible to match, but leave the input alone just in case
             _ => (in_l, in_r),
         }
+    }
+
+    fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
     }
 }

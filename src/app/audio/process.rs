@@ -14,23 +14,23 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // has to be extracted here because it is borrowed in the line below
     let audio_is_idle = audio.is_idle();
-    let AudioModel {
-        context,
-        voice_handler,
-        ..
-    } = audio;
+    let AudioModel { context, .. } = audio;
     let buffer_len = buffer.len_frames();
 
     // best not to block at all here - if the NoteHandler lock can't be
     // obtained, then the note events won't be processed for this buffer.
-    let mut note_handler_guard = context.note_handler.try_lock().ok();
-    let mut next_event = note_handler_guard.as_mut().and_then(|g| g.next_event());
+    // let mut note_handler_guard = context.note_handler.try_lock().ok();
+    // let mut next_event =
+    //     note_handler_guard.as_mut().and_then(|g| g.next_event());
+    let mut next_event = audio.next_note_event();
+
+    let voice_handler = &mut audio.voice_handler;
 
     // if there is no note event, no active voice, and there was no audio
     // processed in the last frame, most of the signal processing can be skipped.
-    if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle {
-        drop(note_handler_guard);
-        print_dsp_load(audio, dsp_start);
+    if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle
+    {
+        // drop(note_handler_guard);
         callback_timer(audio);
         return;
     }
@@ -48,7 +48,10 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                 Some(event) if (event.timing() as usize) <= block_start => {
                     match event {
                         NoteEvent::NoteOn { note, .. } => {
-                            voice_handler.start_voice(note, Some(audio.amp_envelope.clone()));
+                            voice_handler.start_voice(
+                                note,
+                                Some(audio.generation.amp_envelope.clone()),
+                            );
                         }
                         NoteEvent::NoteOff { note, .. } => {
                             voice_handler.start_release_for_voice(None, note);
@@ -56,10 +59,12 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                     }
 
                     // then obtain the next event and loop again
-                    // SAFETY: this is ok, because this pattern would not
-                    // match if the note_handler_guard was not obtained.
-                    next_event =
-                        unsafe { note_handler_guard.as_mut().unwrap_unchecked().next_event() };
+                    next_event = audio
+                        .message_channels
+                        .borrow()
+                        .note_event
+                        .as_ref()
+                        .and_then(|ch| ch.try_recv().ok());
                 }
                 // if the event exists within this block, set the next block
                 // to start at the event and continue processing the block
@@ -74,7 +79,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         let block_len = block_end - block_start;
 
         let mut gain = [0.0; MAX_BLOCK_SIZE];
-        audio.voice_gain.next_block(&mut gain, block_len);
+        audio.data.voice_gain.next_block(&mut gain, block_len);
 
         voice_handler.process_block(buffer, block_start, block_end, gain);
 
@@ -84,63 +89,51 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         block_end = (block_end + MAX_BLOCK_SIZE).min(buffer_len);
     }
 
-    drop(note_handler_guard);
+    // drop(note_handler_guard);
 
-    compute_pre_fx_spectrum(audio, buffer);
+    audio.compute_pre_spectrum(buffer);
 
     // audio effects/processors
     process_fx(audio, buffer);
 
-    compute_post_fx_spectrum(audio, buffer);
+    audio.compute_post_spectrum(buffer);
 
     // print_dsp_load(audio, dsp_start);
     callback_timer(audio);
 }
 
-/// Captures the audio buffer pre-FX, then sends it to a separate thread to
-/// compute a spectrum.
-///
-/// Paired with the below `compute_post_spectrum()` function, processing the
-/// audio spectra on separate threads **enormously** reduces the DSP load.
-/// Some quick benchmarking showed a load reduction of around *one order of
-/// magnitude* on the audio thread. Vroom.
-fn compute_pre_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
-    // copy the buffer pre-fx to the audio model
-    audio.pre_buffer_cache.try_lock().map_or((), |mut guard| {
-        for i in 0..buffer.len() {
-            guard[i] = buffer[i];
-        }
-    });
-
-    // then compute the pre-fx spectrum on a separate thread
-    audio.compute_pre_spectrum();
-}
-
-/// Captures the audio buffer post-FX, then sends it to a separate thread to
-/// compute a spectrum.
-fn compute_post_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
-    // copy the buffer post-fx to the audio model
-    audio.post_buffer_cache.try_lock().map_or((), |mut guard| {
-        for i in 0..buffer.len() {
-            guard[i] = buffer[i];
-        }
-    });
-
-    // then compute the post-fx spectrum on a separate thread
-    audio.compute_post_spectrum();
-}
-
-fn print_dsp_load(audio: &mut AudioModel, start_time: std::time::Instant) {
-    if PRINT_DSP_LOAD {
-        let total_buf_time = sample_length() * BUFFER_SIZE as f64;
-        audio.average_load[audio.avr_pos] = start_time.elapsed().as_secs_f64();
-
-        let avr = audio.average_load.iter().sum::<f64>() / DSP_LOAD_AVERAGING_SAMPLES as f64;
-        println!("DSP load: {:.2}%", avr / total_buf_time * 100.0);
-
-        audio.avr_pos = (audio.avr_pos + 1) % DSP_LOAD_AVERAGING_SAMPLES;
-    }
-}
+// /// Captures the audio buffer pre-FX, then sends it to a separate thread to
+// /// compute a spectrum.
+// ///
+// /// Paired with the below `compute_post_spectrum()` function, processing the
+// /// audio spectra on separate threads **enormously** reduces the DSP load.
+// /// Some quick benchmarking showed a load reduction of around *one order of
+// /// magnitude* on the audio thread. Vroom.
+// fn compute_pre_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+//     // copy the buffer pre-fx to the audio model
+//     audio.pre_buffer_cache.try_lock().map_or((), |mut guard| {
+//         for i in 0..buffer.len() {
+//             guard[i] = buffer[i];
+//         }
+//     });
+//
+//     // then compute the pre-fx spectrum on a separate thread
+//     audio.compute_pre_spectrum();
+// }
+//
+// /// Captures the audio buffer post-FX, then sends it to a separate thread to
+// /// compute a spectrum.
+// fn compute_post_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+//     // copy the buffer post-fx to the audio model
+//     audio.post_buffer_cache.try_lock().map_or((), |mut guard| {
+//         for i in 0..buffer.len() {
+//             guard[i] = buffer[i];
+//         }
+//     });
+//
+//     // then compute the post-fx spectrum on a separate thread
+//     audio.compute_post_spectrum();
+// }
 
 fn callback_timer(audio: &AudioModel) {
     // the chance of not being able to acquire the lock is very small here,
@@ -148,7 +141,7 @@ fn callback_timer(audio: &AudioModel) {
     // all. so if the lock can't be obtained, then the callback_time_elapsed
     // will temporarily not be reset. this won't cause issues in the context
     // of this program.
-    if let Ok(mut guard) = audio.callback_time_elapsed.try_lock() {
+    if let Ok(mut guard) = audio.data.callback_time_elapsed.try_lock() {
         if guard.elapsed().as_secs_f64() >= 0.0001 {
             *guard = std::time::Instant::now();
         }
@@ -161,25 +154,34 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // if let Ok(guard) = audio.spectral_mask.try_lock() {
     //     audio.spectral_filter.set_mask(&guard);
     // }
-    if audio.spectral_mask.update() {
-        audio.spectral_filter.set_mask(audio.spectral_mask.read());
+    if let Some(mask) = &mut audio.buffers.spectral_mask {
+        if mask.update() {
+            audio.processors.spectral_filter.set_mask(mask.read());
+        }
     }
+    // if audio.buffers.spectral_mask.update() {
+    //     audio.processors.spectral_filter.set_mask(audio.spectral_mask.read());
+    // }
 
     // process the spectral masking
-    audio.spectral_filter.process_block(buffer);
+    audio.processors.spectral_filter.process_block(buffer);
 
-    audio.master_gain.next_block_exact(&mut audio.gain_data);
+    audio
+        .data
+        .master_gain
+        .next_block_exact(&mut audio.buffers.master_gain_buffer);
 
     for (i, fr) in buffer.frames_mut().enumerate() {
         for ch in 0..NUM_CHANNELS {
             let mut sample = fr[ch];
-            sample = audio.pre_dc_filter[ch].process_mono(sample);
+            sample = audio.processors.pre_fx_dc_filter[ch].process_mono(sample);
 
             // sample = audio.filter_comb[ch].process(sample);
             // sample = audio.waveshaper[ch].process(sample);
 
-            sample = audio.post_dc_filter[ch].process_mono(sample);
-            sample *= audio.gain_data[i];
+            sample =
+                audio.processors.post_fx_dc_filter[ch].process_mono(sample);
+            sample *= audio.buffers.master_gain_buffer[i];
             fr[ch] = sample;
         }
     }
@@ -229,7 +231,9 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         output[1] = output[1].clamp(-1.0, 1.0);
 
         // used to decide whether to skip DSP processing in the next block or not
-        if (output[0].abs() > SIGNAL_EPSILON || output[1].abs() > SIGNAL_EPSILON) && !is_processing
+        if (output[0].abs() > SIGNAL_EPSILON
+            || output[1].abs() > SIGNAL_EPSILON)
+            && !is_processing
         {
             is_processing = true;
         }
@@ -237,7 +241,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         audio.set_idle_timer(is_processing);
     }
 
-    audio.is_processing = is_processing;
+    audio.data.is_processing = is_processing;
 }
 
 /* fn process_old(audio: &mut AudioModel, output: &mut Buffer) {

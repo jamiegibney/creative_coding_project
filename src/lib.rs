@@ -19,7 +19,7 @@ pub mod prelude;
 pub mod settings;
 
 // Musical systems and structures
-pub mod musical;
+// pub mod musical;
 
 // GUI stuff
 pub mod gui;

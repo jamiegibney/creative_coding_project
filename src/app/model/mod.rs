@@ -7,7 +7,6 @@ use super::*;
 use crate::dsp::SpectralMask;
 use crate::generative::*;
 use crate::gui::spectrum::*;
-use crate::musical::*;
 
 use std::{
     cell::RefCell,
@@ -17,7 +16,9 @@ use std::{
 };
 
 mod constructors;
+mod audio_constructor;
 use constructors::*;
+use audio_constructor::*;
 
 type CallbackTimerRef = Arc<Mutex<Instant>>;
 
@@ -29,7 +30,7 @@ pub struct Model {
     /// The CPAL audio stream.
     pub audio_stream: nannou_audio::Stream<AudioModel>,
     /// Channels to send messages directly to the audio thread.
-    pub audio_senders: AudioSenders,
+    pub audio_senders: AudioMessageSenders,
 
     /// A thread-safe reference to the mask used for spectral filtering.
     // pub spectral_mask: Arc<Mutex<SpectralMask>>,

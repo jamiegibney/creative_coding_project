@@ -87,6 +87,10 @@ impl Effect for Delay {
         self.buffer.push(input);
         self.buffer.read()
     }
+
+    fn get_sample_rate(&self) -> f64 {
+        self.buffer.get_sample_rate()
+    }
 }
 
 // new

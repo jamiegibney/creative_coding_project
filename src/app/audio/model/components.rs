@@ -45,8 +45,8 @@ pub struct AudioData {
     pub is_processing: bool,
     pub idle_timer_samples: u64,
 
-    pub(self) average_load: Vec<f64>,
-    pub(self) average_pos: usize,
+    pub average_load: Vec<f64>,
+    pub average_pos: usize,
 
     pub callback_time_elapsed: Arc<Mutex<Instant>>,
 }
@@ -100,4 +100,20 @@ pub struct AudioSpectrograms {
 
     pub post_fx_spectrogram: Arc<Mutex<Option<SpectrumInput>>>,
     pub post_fx_spectrogram_buffer: Arc<Mutex<Vec<f64>>>,
+}
+
+/// The fields of this struct are used to communicate directly
+/// with the audio thread.
+#[derive(Default)]
+pub struct AudioMessageReceivers {
+    pub note_event: Option<Receiver<NoteEvent>>,
+
+    pub filter_freq: Option<Receiver<f64>>,
+    pub drive_amount: Option<Receiver<f64>>,
+}
+
+pub struct AudioMessageSenders {
+    pub note_event: Sender<NoteEvent>,
+    pub filter_freq: Sender<f64>,
+    pub drive_amount: Sender<f64>,
 }

@@ -478,6 +478,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "atomic_float",
+ "crossbeam",
  "dyn-clone",
  "earcutr",
  "nannou",

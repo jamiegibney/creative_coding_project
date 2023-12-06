@@ -1,7 +1,5 @@
 use super::*;
 use crate::app::audio::VoiceEvent;
-use crate::musical::*;
-// use crate::prelude::*;
 
 /// Function for handling keypresses.
 pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
@@ -20,7 +18,8 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 drop(ctr);
             }
             GenerativeAlgo::SmoothLife => {
-                let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
+                let mut sml =
+                    model.smooth_life.as_mut().unwrap().write().unwrap();
 
                 sml.reset();
                 drop(sml);
@@ -51,11 +50,11 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         let samples_elapsed = model.current_sample_idx();
 
         // push note event to the note handler
-        let mut note_handler = model.note_handler.lock().unwrap();
-        note_handler.push_event(NoteEvent::NoteOn {
-            note,
-            timing: samples_elapsed,
-        });
+        model
+            .audio_senders
+            .note_event
+            .send(NoteEvent::NoteOn { note, timing: samples_elapsed })
+            .unwrap();
     }
 }
 
@@ -80,11 +79,11 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
         let samples_elapsed = model.current_sample_idx();
 
         // push note event to the note handler
-        let mut note_handler = model.note_handler.lock().unwrap();
-        note_handler.push_event(NoteEvent::NoteOff {
-            note,
-            timing: samples_elapsed,
-        });
+        model
+            .audio_senders
+            .note_event
+            .send(NoteEvent::NoteOff { note, timing: samples_elapsed })
+            .unwrap();
     }
 }
 
@@ -92,7 +91,8 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
 fn octave_from_key(octave: Octave, key: Key) -> Octave {
     if matches!(key, Key::K | Key::O | Key::L | Key::P) {
         octave.transpose(1)
-    } else {
+    }
+    else {
         octave
     }
 }

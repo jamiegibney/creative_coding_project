@@ -1,24 +1,25 @@
 use super::*;
+use std::cell::RefCell;
 
 // TODO add the audio message channels (need to figure out what is needed)
 pub struct AudioModelBuilder {
     /// The audio model.
-    model: AudioModel2,
+    model: AudioModel,
     /// A byte which tracks which fields of the `AudioModel` have been set.
     prepared_state: u8,
 }
 
 pub struct AudioPackage {
-    pub model: AudioModel2,
+    pub model: AudioModel,
     pub spectrum_outputs: (SpectrumOutput, SpectrumOutput),
     pub callback_timer_ref: Arc<Mutex<std::time::Instant>>,
     pub sample_rate_ref: Arc<AtomicF64>,
-    // pub message_channels: AudioSenders,
+    pub message_channels: AudioMessageSenders,
 }
 
 impl AudioModelBuilder {
     /// The bits required for the `AudioModel` to be "prepared".
-    const PREPARED_CHECKSUM: u8 = 0b0001_1111;
+    const PREPARED_CHECKSUM: u8 = 0b0000_1111;
 
     /// Initialises a new, default audio model.
     ///
@@ -36,17 +37,18 @@ impl AudioModelBuilder {
     /// or if the internal thread pool fails to spawn threads.
     pub fn new(mut context: AudioContext) -> Self {
         Self {
-            model: AudioModel2 {
+            model: AudioModel {
                 generation: AudioGeneration::default(),
                 processors: AudioProcessors::default(),
                 data: AudioData::default(),
                 buffers: AudioBuffers::default(),
                 spectrograms: AudioSpectrograms::default(),
                 voice_handler: VoiceHandler::build(
-                    context.note_handler_ref(),
+                    // context.note_handler_ref(),
                     context.voice_event_receiver.take().unwrap(),
                 ),
                 context,
+                message_channels: RefCell::new(AudioMessageReceivers::default()),
                 thread_pool: ThreadPool::build(4).unwrap(),
             },
             prepared_state: 0b0000_0000,
@@ -81,13 +83,6 @@ impl AudioModelBuilder {
         self
     }
 
-    /// Moves `spectrograms` into the `AudioModel`.
-    pub fn spectrograms(mut self, spectrograms: AudioSpectrograms) -> Self {
-        self.model.spectrograms = spectrograms;
-        self.prepared_state |= 0b0001_0000;
-        self
-    }
-
     /// Builds the audio model.
     ///
     /// # Panics
@@ -104,9 +99,11 @@ impl AudioModelBuilder {
 
         AudioPackage {
             spectrum_outputs: self.spectrum_outputs(),
-            callback_timer_ref: Arc::clone(&self.model.data.callback_time_elapsed),
+            callback_timer_ref: Arc::clone(
+                &self.model.data.callback_time_elapsed,
+            ),
             sample_rate_ref: Arc::clone(&self.model.data.sample_rate),
-            // message_channels: todo!(),
+            message_channels: self.message_channels(),
             model: self.model,
         }
     }
@@ -118,6 +115,12 @@ impl AudioModelBuilder {
         let empty = vec![0.0; BUFFER_SIZE * NUM_CHANNELS];
         pre_in.compute(&empty);
         post_in.compute(&empty);
+
+        self.model.spectrograms.pre_fx_spectrogram_buffer =
+            Arc::new(Mutex::new(empty.clone()));
+
+        self.model.spectrograms.post_fx_spectrogram_buffer =
+            Arc::new(Mutex::new(empty));
 
         let mut guard = loop {
             let res = self.model.spectrograms.pre_fx_spectrogram.try_lock();
@@ -140,19 +143,17 @@ impl AudioModelBuilder {
         (pre_out, post_out)
     }
 
-    // fn message_channels(&mut self) -> AudioSenders {
-    //     let (envelope_trigger_sender, _receiver) = channel();
-    //
-    //     let (filter_freq_sender, receiver) = channel();
-    //     self.model.filter_freq_receiver = Some(receiver);
-    //
-    //     let (drive_amount_sender, receiver) = channel();
-    //     self.drive_amount_receiver = Some(receiver);
-    //
-    //     AudioSenders {
-    //         envelope_trigger: envelope_trigger_sender,
-    //         filter_freq: filter_freq_sender,
-    //         drive_amount: drive_amount_sender,
-    //     }
-    // }
+    fn message_channels(&mut self) -> AudioMessageSenders {
+        let mut msg_ch = self.model.message_channels.borrow_mut();
+        let (drive_amount, receiver) = channel();
+        msg_ch.drive_amount = Some(receiver);
+
+        let (filter_freq, receiver) = channel();
+        msg_ch.filter_freq = Some(receiver);
+
+        let (note_event, receiver) = channel();
+        msg_ch.note_event = Some(receiver);
+
+        AudioMessageSenders { note_event, filter_freq, drive_amount }
+    }
 }

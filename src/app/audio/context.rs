@@ -6,7 +6,8 @@ use std::sync::{mpsc::Receiver, Arc};
 // and holding data, which could could be extracted elsewhere...
 #[derive(Debug)]
 pub struct AudioContext {
-    pub note_handler: NoteHandlerRef,
+    // pub note_handler: NoteHandlerRef,
+    pub note_channel_receiver: Receiver<NoteEvent>,
     pub sample_rate: f64,
     pub spectral_mask_output: Option<triple_buffer::Output<SpectralMask>>,
     pub voice_event_sender: Sender<VoiceEvent>,
@@ -14,8 +15,8 @@ pub struct AudioContext {
 }
 
 impl AudioContext {
-    /// Returns a thread-safe reference to the `NoteHandler`.
-    pub fn note_handler_ref(&self) -> NoteHandlerRef {
-        Arc::clone(&self.note_handler)
-    }
+    // Returns a thread-safe reference to the `NoteHandler`.
+    // pub fn note_handler_ref(&self) -> NoteHandlerRef {
+    //     Arc::clone(&self.note_handler)
+    // }
 }

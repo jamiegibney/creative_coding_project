@@ -10,6 +10,39 @@ const DEFAULT_RELEASE_TIME_MS: f64 = 50.0;
 
 const DEFAULT_CURVE_AMOUNT: f64 = 0.7;
 
+#[derive(Clone, Copy, Debug)]
+pub struct AdsrParameters {
+    attack_time_ms: f64,
+    attack_level: f64,
+    attack_curve: f64,
+
+    decay_time_ms: f64,
+    decay_curve: f64,
+
+    sustain_level: f64,
+
+    release_time_ms: f64,
+    release_curve: f64,
+}
+
+impl Default for AdsrParameters {
+    fn default() -> Self {
+        Self {
+            attack_time_ms: DEFAULT_ATTACK_TIME_MS,
+            attack_level: 1.0,
+            attack_curve: DEFAULT_CURVE_AMOUNT,
+
+            decay_time_ms: DEFAULT_DECAY_TIME_MS,
+            decay_curve: DEFAULT_CURVE_AMOUNT,
+
+            sustain_level: DEFAULT_SUSTAIN_LEVEL,
+
+            release_time_ms: DEFAULT_RELEASE_TIME_MS,
+            release_curve: DEFAULT_CURVE_AMOUNT,
+        }
+    }
+}
+
 /// An enum representing the possible stages of an ADSR envelope.
 #[derive(Debug, Clone, Copy, Default)]
 pub enum AdsrStage {
@@ -24,17 +57,18 @@ pub enum AdsrStage {
 /// An envelope generator with attack, decay, sustain, and release (ADSR) stages.
 #[derive(Debug, Clone)]
 pub struct AdsrEnvelope {
-    attack_time_ms: f64,
-    attack_level: f64,
-    attack_curve: f64,
-
-    decay_time_ms: f64,
-    decay_curve: f64,
-
-    sustain_level: f64,
-
-    release_time_ms: f64,
-    release_curve: f64,
+    // attack_time_ms: f64,
+    // attack_level: f64,
+    // attack_curve: f64,
+    //
+    // decay_time_ms: f64,
+    // decay_curve: f64,
+    //
+    // sustain_level: f64,
+    //
+    // release_time_ms: f64,
+    // release_curve: f64,
+    parameters: AdsrParameters,
 
     ramp: Smoother<f64>,
     stage: AdsrStage,
@@ -53,17 +87,18 @@ impl AdsrEnvelope {
     #[must_use]
     pub fn new(sample_rate: f64) -> Self {
         Self {
-            attack_time_ms: DEFAULT_ATTACK_TIME_MS,
-            attack_level: 1.0,
-            attack_curve: DEFAULT_CURVE_AMOUNT,
-
-            decay_time_ms: DEFAULT_DECAY_TIME_MS,
-            decay_curve: DEFAULT_CURVE_AMOUNT,
-
-            sustain_level: DEFAULT_SUSTAIN_LEVEL,
-
-            release_time_ms: DEFAULT_RELEASE_TIME_MS,
-            release_curve: DEFAULT_CURVE_AMOUNT,
+            // attack_time_ms: DEFAULT_ATTACK_TIME_MS,
+            // attack_level: 1.0,
+            // attack_curve: DEFAULT_CURVE_AMOUNT,
+            //
+            // decay_time_ms: DEFAULT_DECAY_TIME_MS,
+            // decay_curve: DEFAULT_CURVE_AMOUNT,
+            //
+            // sustain_level: DEFAULT_SUSTAIN_LEVEL,
+            //
+            // release_time_ms: DEFAULT_RELEASE_TIME_MS,
+            // release_curve: DEFAULT_CURVE_AMOUNT,
+            parameters: AdsrParameters::default(),
 
             ramp: Smoother::new(0.0, 1.0, sample_rate),
             stage: AdsrStage::Idle,
@@ -115,10 +150,10 @@ impl AdsrEnvelope {
         sustain_level: f64,
         release_time_ms: f64,
     ) {
-        self.attack_time_ms = attack_time_ms;
-        self.decay_time_ms = decay_time_ms;
-        self.sustain_level = sustain_level;
-        self.release_time_ms = release_time_ms;
+        self.parameters.attack_time_ms = attack_time_ms;
+        self.parameters.decay_time_ms = decay_time_ms;
+        self.parameters.sustain_level = sustain_level;
+        self.parameters.release_time_ms = release_time_ms;
         self.debug_parameter_assertions();
     }
 
@@ -128,7 +163,7 @@ impl AdsrEnvelope {
     ///
     /// Panics in debug mode if the provided attack time is negative.
     pub fn set_attack_time_ms(&mut self, attack_time_ms: f64) {
-        self.attack_time_ms = attack_time_ms;
+        self.parameters.attack_time_ms = attack_time_ms;
         self.debug_parameter_assertions();
     }
 
@@ -139,7 +174,7 @@ impl AdsrEnvelope {
     /// Panics in debug mode if the provided level is outside the range of
     /// `0.0` to `1.0`.
     pub fn set_attack_level(&mut self, attack_level: f64) {
-        self.attack_level = attack_level;
+        self.parameters.attack_level = attack_level;
         self.debug_parameter_assertions();
     }
 
@@ -150,7 +185,7 @@ impl AdsrEnvelope {
     /// Panics in debug mode if the provided value is outside the range of
     /// `-1.0` to `1.0`.
     pub fn set_attack_curve(&mut self, curve_amount: f64) {
-        self.attack_curve = curve_amount;
+        self.parameters.attack_curve = curve_amount;
         self.debug_parameter_assertions();
     }
 
@@ -160,7 +195,7 @@ impl AdsrEnvelope {
     ///
     /// Panics in debug mode if the provided decay time is negative.
     pub fn set_decay_time_ms(&mut self, decay_time_ms: f64) {
-        self.decay_time_ms = decay_time_ms;
+        self.parameters.decay_time_ms = decay_time_ms;
         self.debug_parameter_assertions();
     }
 
@@ -171,7 +206,7 @@ impl AdsrEnvelope {
     /// Panics in debug mode if the provided value is outside the range of
     /// `-1.0` to `1.0`.
     pub fn set_decay_curve(&mut self, curve_amount: f64) {
-        self.decay_curve = curve_amount;
+        self.parameters.decay_curve = curve_amount;
         self.debug_parameter_assertions();
     }
 
@@ -182,7 +217,7 @@ impl AdsrEnvelope {
     /// Panics in debug mode if the provided sustain level is outside of the range of
     /// `0.0` to `1.0`.
     pub fn set_sustain_level(&mut self, sustain_level: f64) {
-        self.sustain_level = sustain_level;
+        self.parameters.sustain_level = sustain_level;
         self.debug_parameter_assertions();
     }
 
@@ -192,7 +227,7 @@ impl AdsrEnvelope {
     ///
     /// Panics in debug mode if the provided release time is negative.
     pub fn set_release_time_ms(&mut self, release_time_ms: f64) {
-        self.release_time_ms = release_time_ms;
+        self.parameters.release_time_ms = release_time_ms;
         self.debug_parameter_assertions();
     }
 
@@ -203,7 +238,7 @@ impl AdsrEnvelope {
     /// Panics in debug mode if the provided value is outside the range of
     /// `-1.0` to `1.0`.
     pub fn set_release_curve(&mut self, curve_amount: f64) {
-        self.release_curve = curve_amount;
+        self.parameters.release_curve = curve_amount;
         self.debug_parameter_assertions();
     }
 
@@ -216,6 +251,16 @@ impl AdsrEnvelope {
     #[must_use]
     pub fn get_stage(&self) -> AdsrStage {
         self.stage
+    }
+
+    /// Returns a reference to the envelope's parameters.
+    pub fn parameters(&self) -> &AdsrParameters {
+        &self.parameters
+    }
+
+    /// Returns a mutable reference to the envelope's parameters.
+    pub fn parameters_mut(&mut self) -> &mut AdsrParameters {
+        &mut self.parameters
     }
 
     /// Returns the current value of the envelope.
@@ -268,33 +313,37 @@ impl AdsrEnvelope {
     fn set_attack_stage(&mut self) {
         // target attack level, attack time ramping
         self.ramp
-            .set_smoothing_type(SmoothingType::CurveNormal(self.attack_curve));
+            .set_smoothing_type(SmoothingType::CurveNormal(self.parameters.attack_curve));
         self.ramp
-            .set_start_value(if self.attack_time_ms <= f64::EPSILON {
-                self.attack_level
-            } else {
+            .set_start_value(if self.parameters.attack_time_ms <= f64::EPSILON {
+                self.parameters.attack_level
+            }
+            else {
                 0.0
             });
-        self.ramp.set_target_value(self.attack_level);
-        self.ramp.set_smoothing_period(self.attack_time_ms);
+        self.ramp.set_target_value(self.parameters.attack_level);
+        self.ramp
+            .set_smoothing_period(self.parameters.attack_time_ms);
         self.stage = AS::Attack;
     }
 
     /// Internally sets the envelope to its decay state.
     fn set_decay_stage(&mut self) {
         // target sustain level, decay time ramping
+        self.ramp.set_smoothing_type(SmoothingType::CurveNormal(
+            self.parameters.decay_curve,
+        ));
+        self.ramp.set_target_value(self.parameters.sustain_level);
+        self.ramp.set_start_value(self.parameters.attack_level);
         self.ramp
-            .set_smoothing_type(SmoothingType::CurveNormal(self.decay_curve));
-        self.ramp.set_target_value(self.sustain_level);
-        self.ramp.set_start_value(self.attack_level);
-        self.ramp.set_smoothing_period(self.decay_time_ms);
+            .set_smoothing_period(self.parameters.decay_time_ms);
         self.stage = AS::Decay;
     }
 
     /// Internally sets the envelope to its sustain state.
     fn set_sustain_stage(&mut self) {
         // target sustain level, no ramping
-        self.ramp.set_target_value(self.sustain_level);
+        self.ramp.set_target_value(self.parameters.sustain_level);
         self.ramp.finish();
         self.stage = AS::Sustain;
     }
@@ -302,16 +351,18 @@ impl AdsrEnvelope {
     /// Internally sets the envelope to its release state.
     fn set_release_stage(&mut self) {
         // target 0.0, release time ramping
-        self.ramp
-            .set_smoothing_type(SmoothingType::CurveNormal(self.release_curve));
+        self.ramp.set_smoothing_type(SmoothingType::CurveNormal(
+            self.parameters.release_curve,
+        ));
         self.ramp.set_target_value(0.0);
-        self.ramp.set_smoothing_period(self.release_time_ms);
+        self.ramp
+            .set_smoothing_period(self.parameters.release_time_ms);
         self.stage = AS::Release;
     }
 
     /// Debug assertions to ensure the provided parameters are within the appropriate ranges.
     fn debug_parameter_assertions(&self) {
-        let Self {
+        let AdsrParameters {
             attack_time_ms: att,
             attack_level: att_lvl,
             attack_curve: att_crv,
@@ -321,7 +372,7 @@ impl AdsrEnvelope {
             release_time_ms: rel,
             release_curve: rel_crv,
             ..
-        } = self;
+        } = &self.parameters;
 
         debug_assert!(
             att.is_sign_positive()

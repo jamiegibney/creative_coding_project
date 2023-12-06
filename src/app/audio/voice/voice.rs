@@ -48,7 +48,7 @@ impl Voice {
 #[derive(Debug)]
 pub struct VoiceHandler {
     /// A reference to the note handler to obtain note events.
-    pub note_handler_ref: Arc<Mutex<NoteHandler>>,
+    // pub note_handler_ref: Arc<Mutex<NoteHandler>>,
     /// The array of voices.
     pub voices: [Option<Voice>; NUM_VOICES as usize],
     voice_event_receiver: mpsc::Receiver<VoiceEvent>,
@@ -62,11 +62,11 @@ impl VoiceHandler {
     /// The `NoteHandler` reference is used to obtain new note events
     /// automatically.
     pub fn build(
-        note_handler_ref: Arc<Mutex<NoteHandler>>,
+        // note_handler_ref: Arc<Mutex<NoteHandler>>,
         voice_event_receiver: mpsc::Receiver<VoiceEvent>,
     ) -> Self {
         Self {
-            note_handler_ref,
+            // note_handler_ref,
             voices: std::array::from_fn(|_| None),
             voice_event_receiver,
             id_counter: 0,

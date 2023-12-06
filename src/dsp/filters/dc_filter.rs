@@ -16,9 +16,8 @@ impl DCFilter {
     pub fn new(sample_rate: f64, num_filters: usize) -> Self {
         assert_ne!(num_filters, 0);
         assert!(sample_rate.is_sign_positive());
-        Self {
-            filters: vec![Self::create_filter(sample_rate); num_filters],
-        }
+
+        Self { filters: vec![Self::create_filter(sample_rate); num_filters] }
     }
 
     /// # Panics
@@ -26,6 +25,7 @@ impl DCFilter {
     /// Panics if `sample rate` is negative.
     pub fn set_sample_rate(&mut self, sample_rate: f64) {
         assert!(sample_rate.is_sign_positive());
+
         self.filters
             .iter_mut()
             .for_each(|fil| fil.reset_sample_rate(sample_rate));
@@ -36,6 +36,7 @@ impl DCFilter {
     /// Panics if `num_filters == 0`.
     pub fn set_num_filters(&mut self, num_filters: usize) {
         assert_ne!(num_filters, 0);
+
         // safety: there will always be at least one filter in the vector
         let sr = self.filters[0].get_sample_rate();
 
@@ -59,5 +60,12 @@ impl Effect for DCFilter {
         }
 
         input
+    }
+
+    fn get_sample_rate(&self) -> f64 {
+        self.filters
+            .first()
+            .expect("expected to have a filter present")
+            .get_sample_rate()
     }
 }

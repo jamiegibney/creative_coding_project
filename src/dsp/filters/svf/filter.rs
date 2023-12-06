@@ -18,10 +18,12 @@ pub struct StateVariableFilter {
     q: f64,
 
     filter_type: FilterType,
+
+    sample_rate: f64,
 }
 
 impl StateVariableFilter {
-    pub fn new(num_channels: usize) -> Self {
+    pub fn new(num_channels: usize, sample_rate: f64) -> Self {
         Self {
             coefs: SVFCoefs::default(),
             z1: vec![0.0; num_channels],
@@ -29,6 +31,7 @@ impl StateVariableFilter {
             cutoff_freq: 440.0,
             q: BUTTERWORTH_Q,
             filter_type: FilterType::Lowpass,
+            sample_rate,
         }
     }
 
@@ -44,7 +47,9 @@ impl StateVariableFilter {
     }
 
     pub fn set_cutoff_freq(&mut self, freq: f64) {
-        assert!(freq.is_sign_positive() && freq <= unsafe { SAMPLE_RATE } / 2.0);
+        assert!(
+            freq.is_sign_positive() && freq <= self.sample_rate / 2.0
+        );
         self.cutoff_freq = freq;
         self.update();
     }
@@ -103,5 +108,9 @@ impl Effect for StateVariableFilter {
             FilterType::Bandpass => (band[0], band[1]),
             _ => (in_l, in_r),
         }
+    }
+
+    fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
     }
 }

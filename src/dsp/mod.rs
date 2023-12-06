@@ -8,13 +8,12 @@ pub mod filters;
 pub mod oversampling;
 pub mod ring_buffer;
 pub mod spectral;
+pub mod stereo_wrapper;
 pub mod synthesis;
 pub mod utility;
-pub mod stereo_wrapper;
 
 use crate::prelude::*;
-pub use adsr::AdsrEnvelope;
-pub use stereo_wrapper::StereoWrapper;
+pub use adsr::{AdsrEnvelope, AdsrParameters};
 pub use distortion::Waveshaper;
 pub use dry_wet::DryWet;
 pub use effect_trait::Effect;
@@ -35,5 +34,6 @@ pub use spectral::{
     spectral_filter::{mask::SpectralMask, SpectralFilter},
     StftHelper,
 };
+pub use stereo_wrapper::StereoWrapper;
 pub use synthesis::Generator;
 pub use utility::*;

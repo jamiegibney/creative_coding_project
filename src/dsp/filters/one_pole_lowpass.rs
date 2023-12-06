@@ -10,13 +10,15 @@ pub struct OnePoleLowpass {
     b1: f64,
 
     old: f64,
+
+    sample_rate: f64,
 }
 
 impl OnePoleLowpass {
     /// Returns a new `OnePoleLowpass` filter with identity coefficients (i.e., the input
     /// is unaltered).
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(sample_rate: f64) -> Self {
+        OnePoleLowpass { a0: 1.0, b1: 0.0, old: 0.0, sample_rate }
     }
 
     /// Sets the cutoff frequency of the filter in Hz.
@@ -26,7 +28,7 @@ impl OnePoleLowpass {
     /// [`set_cutoff_time()`](Self::set_cutoff_time)
     /// [`set_cutoff_time_samples()`](Self::set_cutoff_time_samples)
     pub fn set_cutoff_freq(&mut self, freq_hz: f64) {
-        let sr = unsafe { SAMPLE_RATE };
+        let sr = self.sample_rate;
         assert!(freq_hz.is_sign_positive() && freq_hz <= sr / 2.0);
 
         let c = 2.0 - (TAU * freq_hz / sr).cos();
@@ -65,7 +67,7 @@ impl OnePoleLowpass {
     /// [`set_cutoff_time_samples()`](Self::set_cutoff_time_samples)
     /// [`set_cutoff_freq()`](Self::set_cutoff_freq)
     pub fn set_cutoff_time(&mut self, time_ms: f64, speed: f64) {
-        let samples = unsafe { SAMPLE_RATE } * time_ms * 0.001;
+        let samples = self.sample_rate * time_ms * 0.001;
         self.set_cutoff_time_samples(samples, speed);
     }
 
@@ -79,14 +81,8 @@ impl Effect for OnePoleLowpass {
         self.old = self.a0 * input - self.b1 * self.old;
         self.old
     }
-}
 
-impl Default for OnePoleLowpass {
-    fn default() -> Self {
-        Self {
-            a0: 1.0,
-            b1: 0.0,
-            old: 0.0,
-        }
+    fn get_sample_rate(&self) -> f64 {
+        self.sample_rate
     }
 }

@@ -1,4 +1,6 @@
+use super::build_audio_model;
 use super::*;
+use std::sync::atomic::Ordering::Relaxed;
 use std::sync::mpsc;
 
 /// Builds the app window.
@@ -16,7 +18,7 @@ pub fn build_window(app: &App, width: u32, height: u32) -> Id {
 pub struct AudioSystem {
     pub(super) stream: Stream<AudioModel>,
     pub(super) sample_rate_ref: Arc<AtomicF64>,
-    pub(super) senders: AudioSenders,
+    pub(super) senders: AudioMessageSenders,
     pub(super) callback_timer_ref: CallbackTimerRef,
     pub(super) note_handler: NoteHandlerRef,
     pub(super) pre_spectrum: SpectrumOutput,
@@ -30,40 +32,40 @@ pub fn build_audio_system(spectral_block_size: usize) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
     let (spectral_mask, spectral_mask_output) =
-        triple_buffer::TripleBuffer::new(&SpectralMask::new(spectral_block_size).with_size(512))
-            .split();
+        triple_buffer::TripleBuffer::new(
+            &SpectralMask::new(spectral_block_size).with_size(512),
+        )
+        .split();
 
     let (voice_event_sender, voice_event_receiver) = mpsc::channel();
+    let (note_channel_sender, note_channel_receiver) = mpsc::channel();
 
     // build the audio context
     let audio_context = AudioContext {
-        note_handler: Arc::clone(&note_handler),
+        // note_handler: Arc::clone(&note_handler),
+        note_channel_receiver,
         sample_rate: unsafe { SAMPLE_RATE },
         spectral_mask_output: Some(spectral_mask_output),
         voice_event_sender: voice_event_sender.clone(),
         voice_event_receiver: Some(voice_event_receiver),
     };
 
-    // create the audio model
-    let mut audio_model = AudioModel::new(audio_context);
-    audio_model.initialize();
-
-    // obtain audio message channels
-    let senders = audio_model.message_channels();
-
-    let (pre_spectrum, post_spectrum) = audio_model.spectrum_outputs();
-
-    let callback_timer_ref = audio_model.callback_timer_ref();
-
-    let sample_rate_ref = audio_model.sample_rate_ref();
+    let AudioPackage {
+        model: audio_model,
+        spectrum_outputs: (pre_spectrum, post_spectrum),
+        callback_timer_ref,
+        sample_rate_ref,
+        message_channels: senders,
+    } = build_audio_model(audio_context);
 
     // setup audio stream
     let audio_host = nannou_audio::Host::new();
+
     let stream = audio_host
         .new_output_stream(audio_model)
         .render(audio::process)
         .channels(NUM_CHANNELS)
-        .sample_rate(unsafe { SAMPLE_RATE } as u32)
+        .sample_rate(sample_rate_ref.load(Relaxed) as u32)
         .frames_per_buffer(BUFFER_SIZE)
         .build()
         .unwrap();
@@ -106,9 +108,12 @@ pub fn build_gui_elements(
         pt2(contour_size_fl, contour_size_fl),
     );
 
-    let spectrum_rect = Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
-    let pre_spectrum_analyzer = RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
-    let post_spectrum_analyzer = RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
+    let spectrum_rect =
+        Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
+    let pre_spectrum_analyzer =
+        RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
+    let post_spectrum_analyzer =
+        RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
 
     GuiElements {
         contours: Contours::new(app.main_window().device(), contour_rect)
