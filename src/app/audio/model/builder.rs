@@ -1,5 +1,5 @@
 use super::*;
-use crossbeam_channel::unbounded;
+use crossbeam_channel::{bounded, unbounded};
 use std::cell::RefCell;
 
 // TODO add the audio message channels (need to figure out what is needed)
@@ -152,7 +152,7 @@ impl AudioModelBuilder {
         let (filter_freq, receiver) = unbounded();
         msg_ch.filter_freq = Some(receiver);
 
-        let (note_event, receiver) = unbounded();
+        let (note_event, receiver) = bounded(MAX_NOTE_EVENTS_PER_BUFFER);
         msg_ch.note_event = Some(receiver);
 
         AudioMessageSenders { note_event, filter_freq, drive_amount }

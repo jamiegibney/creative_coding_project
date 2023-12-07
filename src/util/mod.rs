@@ -3,12 +3,14 @@
 use crate::settings::{SAMPLE_RATE, TUNING_FREQ_HZ};
 use nannou::prelude::{DVec2, Vec2};
 use std::f64::consts::PI;
+use std::sync::atomic::Ordering::Relaxed;
 
 pub mod interp;
 pub mod smoothing;
 pub mod thread_pool;
 pub mod window;
 pub mod xfer;
+pub mod atomic_load;
 
 pub use interp::InterpolationType as InterpType;
 
@@ -16,6 +18,7 @@ pub use interp::{ilerp, lerp};
 pub use smoothing::*;
 pub use thread_pool::ThreadPool;
 pub use xfer::SmoothingType;
+pub use atomic_load::AtomicLoad;
 
 /// Calculates the modulo-1 value of a floating-point value.
 pub fn mod1(x: f64) -> f64 {

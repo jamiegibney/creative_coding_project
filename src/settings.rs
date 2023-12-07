@@ -1,10 +1,4 @@
-// NOTE: there are some mutable static variables in this file, which are generally
-// dangerous and not recommended for safety, particularly in a multi-threaded
-// applications where data races are possible. The rationale for using these is that
-// they are read far, far more often than they are overwritten (if they are overwritten
-// at all), and it is very convenient to have global access to this data, particularly
-// for playing around and  experimentation. It also allows me to play around with race
-// conditions if I want, which seems like good practice...
+//! Global constants and static variables.
 
 /// The global sample rate, set to 44.1 kHz as default.
 ///
@@ -14,6 +8,9 @@
 /// in a way that is thread-safe and somewhat predictable; small adjustments
 /// are recommended, if you need to change this at all.
 pub static mut SAMPLE_RATE: f64 = 44100.0;
+// in hindsight, this was not a great idea. works fine for a few things, but as soon as
+// oversampling entered the chat, this caused a bit of hassle and I needed to store 
+// the sample rate internally in some processors anyway. not a good idea for the future!
 
 /// The global oversampling rate, set to `SAMPLE_RATE` by default.
 ///
@@ -42,7 +39,8 @@ pub static mut OVERSAMPLED_SAMPLE_RATE: f64 = unsafe { SAMPLE_RATE };
 pub unsafe fn update_oversampled_sample_rate(oversampling_factor: usize) {
     assert!(oversampling_factor <= 2usize.pow(MAX_OVERSAMPLING_FACTOR as u32));
     unsafe {
-        OVERSAMPLED_SAMPLE_RATE = SAMPLE_RATE * 2.0f64.powi(oversampling_factor as i32);
+        OVERSAMPLED_SAMPLE_RATE =
+            SAMPLE_RATE * 2.0f64.powi(oversampling_factor as i32);
     }
 }
 
@@ -71,10 +69,7 @@ pub struct V2 {
 }
 
 /// The size of the application's window in display units.
-pub const WINDOW_SIZE: V2 = V2 {
-    x: 1400.0,
-    y: 800.0,
-};
+pub const WINDOW_SIZE: V2 = V2 { x: 1400.0, y: 800.0 };
 
 // TODO this is constant for now, but should be variable later.
 /// The default DSP buffer size.
@@ -94,3 +89,10 @@ pub const PRINT_DSP_LOAD: bool = false;
 pub const MAX_OVERSAMPLING_FACTOR: usize = 4; // 16x oversampling
 /// The default oversampling factor (i.e. this is `2² == 4x` oversampling).
 pub const DEFAULT_OVERSAMPLING_FACTOR: usize = 2; // 4x oversampling
+
+/// It doesn't make much sense to be able to queue lots of note events per audio 
+/// callback, so this cap is used to restrict how many should exist for each buffer.
+pub const MAX_NOTE_EVENTS_PER_BUFFER: usize = 12;
+
+/// The default BPM for the device.
+pub const DEFAULT_BPM: f64 = 120.0;
