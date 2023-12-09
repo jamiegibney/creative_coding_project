@@ -18,7 +18,7 @@ pub struct Voice {
     /// The voice's unique ID.
     pub id: u64,
     /// The MIDI note of the voice.
-    pub note: u8,
+    pub note: f64,
 
     /// The voice's ADSR envelope.
     pub envelope: AdsrEnvelope,
@@ -33,7 +33,7 @@ pub struct Voice {
 }
 
 impl Voice {
-    pub fn new(id: u64, note: u8, generator: Generator, envelope: Option<AdsrEnvelope>) -> Self {
+    pub fn new(id: u64, note: f64, generator: Generator, envelope: Option<AdsrEnvelope>) -> Self {
         Self {
             id,
             note,
@@ -112,15 +112,15 @@ impl VoiceHandler {
 
     /// Starts a new voice.
     #[allow(clippy::missing_panics_doc)] // this function should not panic
-    pub fn start_voice(&mut self, note: u8, envelope: Option<AdsrEnvelope>) -> &mut Voice {
+    pub fn start_voice(&mut self, note: f64, envelope: Option<AdsrEnvelope>) -> &mut Voice {
         let sr = unsafe { SAMPLE_RATE };
         let mut new_voice = Voice {
             id: self.next_voice_id(),
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
-            generator: Generator::Saw(Phasor::new(note_to_freq(note as f64), sr)),
-            // generator: Generator::Noise,
+            // generator: Generator::Saw(Phasor::new(note_to_freq(note), sr)),
+            generator: Generator::Noise,
         };
 
         new_voice.envelope.set_trigger(true);
@@ -145,7 +145,7 @@ impl VoiceHandler {
     }
 
     /// Starts a voice's release stage.
-    pub fn start_release_for_voice(&mut self, voice_id: Option<u64>, note: u8) {
+    pub fn start_release_for_voice(&mut self, voice_id: Option<u64>, note: f64) {
         for voice in &mut self.voices {
             match voice {
                 Some(Voice {

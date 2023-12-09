@@ -1,10 +1,9 @@
 use super::Effect;
 use crate::prelude::*;
-use std::f64::consts::TAU;
 use std::ops::{Deref, DerefMut};
 
 /// A simple dry-wet wrapper around an Effect.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct DryWet<E: Effect> {
     dry: Smoother<f64>,
     wet: Smoother<f64>,
@@ -54,8 +53,8 @@ impl<E: Effect> DryWet<E> {
     pub fn set_mix_equal_power(&mut self, mut mix: f64) {
         mix = mix.clamp(0.0, 1.0);
 
-        self.set_dry((TAU * mix).cos());
-        self.set_wet((TAU * (1.0 - mix)).sin());
+        self.set_dry((FRAC_PI_2 * mix).cos());
+        self.set_wet((FRAC_PI_2 * mix).sin());
     }
 
     /// Unwraps the contained effect.
@@ -64,7 +63,7 @@ impl<E: Effect> DryWet<E> {
     }
 
     fn dry_wet_next(&mut self) -> (f64, f64) {
-        (db_to_level(self.dry.next()), db_to_level(self.wet.next()))
+        (self.dry.next(), self.wet.next())
     }
 }
 

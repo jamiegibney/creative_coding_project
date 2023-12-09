@@ -1,50 +1,41 @@
 use super::Effect;
-use std::ops::{Deref, DerefMut};
 
+/// A simple wrapper around two mono `Effect` objects.
 #[derive(Clone, Debug)]
-pub struct StereoWrapper<E: Effect> {
-    pair: (E, E),
+pub struct StereoWrapper<E> {
+    pub l: E,
+    pub r: E,
 }
 
 impl<E: Effect + Clone> StereoWrapper<E> {
     pub fn from_single(effect: E) -> Self {
-        Self { pair: (effect.clone(), effect) }
+        Self { l: effect.clone(), r: effect }
     }
 
     pub fn from_pair(effect_l: E, effect_r: E) -> Self {
-        Self { pair: (effect_l, effect_r) }
+        Self { l: effect_l, r: effect_r }
     }
-}
 
-impl<E: Effect> Deref for StereoWrapper<E> {
-    type Target = (E, E);
-
-    fn deref(&self) -> &Self::Target {
-        &self.pair
-    }
-}
-
-impl<E: Effect> DerefMut for StereoWrapper<E> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.pair
+    pub fn unwrap(self) -> (E, E) {
+        (self.l, self.r)
     }
 }
 
 impl<E: Effect + Clone> Effect for StereoWrapper<E> {
     fn process_stereo(&mut self, in_l: f64, in_r: f64) -> (f64, f64) {
-        let out_l = self.pair.0.process_mono(in_l);
-        let out_r = self.pair.1.process_mono(in_r);
+        let out_l = self.l.process_mono(in_l);
+        let out_r = self.r.process_mono(in_r);
 
         (out_l, out_r)
     }
 
     fn process_mono(&mut self, input: f64) -> f64 {
         unimplemented!(
-            "StereoWrapper does not currently support processing to mono"
+            "StereoWrapper does not currently support collapsing to mono"
         )
     }
 
     fn get_sample_rate(&self) -> f64 {
-        self.pair.0.get_sample_rate()
+        self.l.get_sample_rate()
     }
 }

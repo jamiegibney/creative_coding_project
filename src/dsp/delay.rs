@@ -11,6 +11,7 @@ const DEFAULT_DELAY_SMOOTHING: SmoothingType = SmoothingType::Cosine;
 #[derive(Clone, Debug)]
 pub struct Delay {
     buffer: RingBuffer,
+    feedback_amount: f64,
 }
 
 impl Delay {
@@ -22,6 +23,7 @@ impl Delay {
             buffer: RingBuffer::new(size_samples, sample_rate)
                 .with_interpolation(InterpType::DefaultCubic)
                 .with_smoothing(DEFAULT_DELAY_SMOOTHING, 0.1),
+            feedback_amount: 0.0,
         }
     }
 
@@ -60,6 +62,10 @@ impl Delay {
         self.set_delay_time(delay_samples / sr);
     }
 
+    pub fn set_feedback_amount(&mut self, feedback: f64) {
+        self.feedback_amount = feedback.clamp(0.0, 1.0);
+    }
+
     /// Returns the maximum delay time of the `Delay` in seconds — accounting
     /// for the sample rate.
     pub fn max_delay_time_secs(&self) -> f64 {
@@ -84,8 +90,10 @@ impl Delay {
 
 impl Effect for Delay {
     fn process_mono(&mut self, input: f64) -> f64 {
-        self.buffer.push(input);
-        self.buffer.read()
+        let output = self.buffer.read();
+        self.buffer.push(input + output * self.feedback_amount);
+
+        output
     }
 
     fn get_sample_rate(&self) -> f64 {
@@ -93,18 +101,8 @@ impl Effect for Delay {
     }
 }
 
-// new
-// push
-// read
-// set_delay_time
-// set_delay_time_unchecked
-// set_smoothing
-// set_interpolation
-// reset
-// clear
-// resize
-// size
-// max_delay_secs
-// get_read_pos_and_interp
-// get_cubic_read_positions
-// increment_write_pos
+impl Default for Delay {
+    fn default() -> Self {
+        Self { buffer: Default::default(), feedback_amount: Default::default() }
+    }
+}

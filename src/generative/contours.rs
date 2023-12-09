@@ -58,7 +58,10 @@ impl Contours {
                 .mip_level_count(4)
                 .sample_count(1)
                 .format(wgpu::TextureFormat::Rgba8Unorm)
-                .usage(wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING)
+                .usage(
+                    wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
+                )
                 .build(device),
             image_buffer: ImageBuffer::from_fn(width, height, |_, _| {
                 Rgba([255, 255, 255, u8::MAX])
@@ -139,7 +142,8 @@ impl Contours {
     pub fn with_num_threads(mut self, num_threads: usize) -> Option<Self> {
         if self.set_num_threads(num_threads) {
             Some(self)
-        } else {
+        }
+        else {
             None
         }
     }
@@ -166,7 +170,12 @@ impl Contours {
                 let mut v = Vec::with_capacity(num_threads);
                 (0..num_threads).for_each(|_| {
                     v.push(Arc::new(Mutex::new(vec![
-                        Rgba([255, 255, 255, u8::MAX,]);
+                        Rgba([
+                            255,
+                            255,
+                            255,
+                            u8::MAX,
+                        ]);
                         px_per_thread
                     ])));
                 });
@@ -174,7 +183,8 @@ impl Contours {
             };
 
             true
-        } else {
+        }
+        else {
             false
         }
     }
@@ -244,12 +254,14 @@ impl Contours {
                             let y_norm = actual_y as f64 / height as f64;
 
                             let noise = noise.get([x_norm, y_norm, z]);
-                            let mapped = ((noise + 1.0) / 2.0) * num_contours as f64;
+                            let mapped =
+                                ((noise + 1.0) / 2.0) * num_contours as f64;
                             let px = mod1(mapped);
 
                             buf[y * width + x] = if range.contains(&px) {
                                 Rgba([0, 0, 0, u8::MAX])
-                            } else {
+                            }
+                            else {
                                 Rgba([255, 255, 255, u8::MAX])
                             }
                         }
@@ -267,7 +279,9 @@ impl Contours {
             .pixels_mut()
             .enumerate()
             .for_each(|(i, pxl)| {
-                if let Ok(guard) = self.thread_buffers[i / pxl_per_thread].lock() {
+                if let Ok(guard) =
+                    self.thread_buffers[i / pxl_per_thread].lock()
+                {
                     if pxl_per_thread != 0 {
                         *pxl = guard[i % pxl_per_thread];
                     }
@@ -279,7 +293,8 @@ impl Contours {
     fn contour(&self, value: f64) -> f64 {
         if self.range.contains(&value) {
             0.0
-        } else {
+        }
+        else {
             1.0
         }
     }
@@ -313,7 +328,8 @@ impl DrawMask for Contours {
 
         if self.thread_pool.is_some() {
             self.compute_async();
-        } else {
+        }
+        else {
             self.compute();
         }
     }
@@ -325,7 +341,9 @@ impl DrawMask for Contours {
             self.image_buffer.as_flat_samples().as_slice(),
         );
 
-        draw.texture(&self.texture);
+        draw.texture(&self.texture)
+            .xy(self.rect.xy())
+            .wh(self.rect.wh());
     }
 
     /// Directly mutates a `SpectralMask`, placing the contour information at

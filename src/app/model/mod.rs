@@ -4,7 +4,7 @@ use nannou_audio::Stream;
 use super::view::view;
 use super::*;
 use super::{audio::*, sequencer::Sequencer};
-use crate::dsp::SpectralMask;
+use crate::dsp::{ResonatorBankParams, SpectralMask};
 use crate::generative::*;
 use crate::gui::spectrum::*;
 
@@ -35,6 +35,8 @@ pub struct Model {
     /// A thread-safe reference to the mask used for spectral filtering.
     // pub spectral_mask: Arc<Mutex<SpectralMask>>,
     pub spectral_mask: Arc<Mutex<triple_buffer::Input<SpectralMask>>>,
+
+    pub reso_bank_params: ResonatorBankParams,
 
     pub voice_event_sender: mpsc::Sender<VoiceEvent>,
 
@@ -116,7 +118,7 @@ impl Model {
             dsp_load,
         } = build_gui_elements(app, pre_spectrum, post_spectrum);
 
-        let current_gen_algo = GenerativeAlgo::Contours;
+        let current_gen_algo = GenerativeAlgo::SmoothLife;
 
         let sequencer = Sequencer::new(
             sample_rate_ref.ld(),
@@ -133,6 +135,15 @@ impl Model {
 
             note_handler: Arc::clone(&note_handler),
 
+            reso_bank_params: ResonatorBankParams {
+                root_note: 52.0,
+                scale: Scale::MajPentatonic,
+                quantise_to_scale: true,
+                freq_spread: 0.7,
+                freq_shift: 0.0,
+                inharm: 0.3,
+            },
+
             pressed_keys: build_pressed_keys_map(),
 
             audio_callback_timer,
@@ -144,18 +155,21 @@ impl Model {
 
             spectral_mask: Arc::new(Mutex::new(spectral_mask)),
 
-            contours: match current_gen_algo {
-                GenerativeAlgo::Contours => {
-                    Some(Arc::new(RwLock::new(contours)))
-                }
-                GenerativeAlgo::SmoothLife => None,
-            },
-            smooth_life: match current_gen_algo {
-                GenerativeAlgo::Contours => None,
-                GenerativeAlgo::SmoothLife => {
-                    Some(Arc::new(RwLock::new(smooth_life)))
-                }
-            },
+            contours: Some(Arc::new(RwLock::new(contours))),
+            smooth_life: Some(Arc::new(RwLock::new(smooth_life))),
+
+            // contours: match current_gen_algo {
+            //     GenerativeAlgo::Contours => {
+            //         Some(Arc::new(RwLock::new(contours)))
+            //     }
+            //     GenerativeAlgo::SmoothLife => None,
+            // },
+            // smooth_life: match current_gen_algo {
+            //     GenerativeAlgo::Contours => None,
+            //     GenerativeAlgo::SmoothLife => {
+            //         Some(Arc::new(RwLock::new(smooth_life)))
+            //     }
+            // },
             mask_scan_line_pos: 0.0,
             mask_scan_line_increment: 0.1,
 

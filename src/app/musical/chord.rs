@@ -33,82 +33,82 @@ impl ChordGen {
         Self::default()
     }
 
-    /// Generates the notes of a major chord with `base_note` as the root.
-    pub fn gen_major(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MAJOR)
+    /// Generates the notes of a major chord with `root_note` as the root.
+    pub fn gen_major(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MAJOR)
     }
 
-    /// Generates the notes of a minor chord with `base_note` as the root.
-    pub fn gen_minor(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MINOR)
+    /// Generates the notes of a minor chord with `root_note` as the root.
+    pub fn gen_minor(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MINOR)
     }
 
-    /// Generates the notes of a sus2 chord with `base_note` as the root.
-    pub fn gen_sus2(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::SUS2)
+    /// Generates the notes of a sus2 chord with `root_note` as the root.
+    pub fn gen_sus2(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::SUS2)
     }
 
-    /// Generates the notes of a sus4 chord with `base_note` as the root.
-    pub fn gen_sus4(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::SUS4)
+    /// Generates the notes of a sus4 chord with `root_note` as the root.
+    pub fn gen_sus4(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::SUS4)
     }
 
-    /// Generates the notes of a major 7th chord with `base_note` as the root.
-    pub fn gen_major7(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MAJOR7)
+    /// Generates the notes of a major 7th chord with `root_note` as the root.
+    pub fn gen_major7(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MAJOR7)
     }
 
-    /// Generates the notes of a minor 7th chord with `base_note` as the root.
-    pub fn gen_minor7(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MINOR7)
+    /// Generates the notes of a minor 7th chord with `root_note` as the root.
+    pub fn gen_minor7(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MINOR7)
     }
 
-    /// Generates the notes of a major 9th chord with `base_note` as the root.
-    pub fn gen_major9(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MAJOR9)
+    /// Generates the notes of a major 9th chord with `root_note` as the root.
+    pub fn gen_major9(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MAJOR9)
     }
 
-    /// Generates the notes of a minor 9th chord with `base_note` as the root.
-    pub fn gen_minor9(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MINOR9)
+    /// Generates the notes of a minor 9th chord with `root_note` as the root.
+    pub fn gen_minor9(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MINOR9)
     }
 
-    /// Generates the notes of a major add 2 chord with `base_note` as the root.
-    pub fn gen_major_add2(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MAJOR_ADD2)
+    /// Generates the notes of a major add 2 chord with `root_note` as the root.
+    pub fn gen_major_add2(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MAJOR_ADD2)
     }
 
-    /// Generates the notes of a minor add 2 chord with `base_note` as the root.
-    pub fn gen_minor_add2(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MINOR_ADD2)
+    /// Generates the notes of a minor add 2 chord with `root_note` as the root.
+    pub fn gen_minor_add2(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MINOR_ADD2)
     }
 
-    /// Generates the notes of a major add 4 chord with `base_note` as the root.
-    pub fn gen_major_add4(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MAJOR_ADD4)
+    /// Generates the notes of a major add 4 chord with `root_note` as the root.
+    pub fn gen_major_add4(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MAJOR_ADD4)
     }
 
-    /// Generates the notes of a minor add 4 chord with `base_note` as the root.
-    pub fn gen_minor_add4(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MINOR_ADD4)
+    /// Generates the notes of a minor add 4 chord with `root_note` as the root.
+    pub fn gen_minor_add4(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MINOR_ADD4)
     }
 
-    /// Generates the notes of a major add 9 chord with `base_note` as the root.
-    pub fn gen_major_add9(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MAJOR_ADD9)
+    /// Generates the notes of a major add 9 chord with `root_note` as the root.
+    pub fn gen_major_add9(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MAJOR_ADD9)
     }
 
-    /// Generates the notes of a minor add 9 chord with `base_note` as the root.
-    pub fn gen_minor_add9(&mut self, base_note: f64) -> &[f64] {
-        self.gen(base_note, &Self::MINOR_ADD9)
+    /// Generates the notes of a minor add 9 chord with `root_note` as the root.
+    pub fn gen_minor_add9(&mut self, root_note: f64) -> &[f64] {
+        self.gen(root_note, &Self::MINOR_ADD9)
     }
 
     /// Generates the notes of a custom chord arrangement.
     ///
     /// Only considers [`NUM_VOICES`] elements of the `chord` slice.
-    pub fn gen_custom(&mut self, base_note: f64, chord: &[f64]) -> &[f64] {
+    pub fn gen_custom(&mut self, root_note: f64, chord: &[f64]) -> &[f64] {
         self.gen(
-            base_note,
+            root_note,
             if chord.len() > MAX { &chord[..MAX] } else { chord },
         )
     }
@@ -158,9 +158,9 @@ impl ChordGen {
     }
 
     /// The method for generating values in the internal voice buffer.
-    fn gen(&mut self, base_note: f64, chord: &[f64]) -> &[f64] {
+    fn gen(&mut self, root_note: f64, chord: &[f64]) -> &[f64] {
         for (i, interval) in chord.iter().enumerate() {
-            self.voices[i] = base_note + interval;
+            self.voices[i] = root_note + interval;
         }
 
         // Safety: chord.len() will never be beyond the allocated

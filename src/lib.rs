@@ -1,7 +1,8 @@
 #![allow(
     clippy::module_name_repetitions,
     clippy::wildcard_imports,
-    clippy::return_self_not_must_use
+    clippy::return_self_not_must_use,
+    unused
 )]
 // GUI and program related
 pub mod app;

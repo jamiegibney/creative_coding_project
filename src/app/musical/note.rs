@@ -4,7 +4,7 @@ use nannou::prelude::*;
 use Note::*;
 use Octave::*;
 
-pub fn midi_note_value_from(octave: Octave, note: Note) -> u8 {
+pub fn midi_note_value_from(octave: Octave, note: Note) -> f64 {
     octave.starting_midi_note() + note.note_value()
 }
 
@@ -36,18 +36,18 @@ pub enum Octave {
 impl Octave {
     /// Returns the value of the starting note of this octave.
     #[must_use]
-    pub fn starting_midi_note(&self) -> u8 {
+    pub fn starting_midi_note(&self) -> f64 {
         match self {
-            Cneg1 => 0,
-            C0 => 12,
-            C1 => 24,
-            C2 => 36,
-            C3 => 48,
-            C4 => 60,
-            C5 => 72,
-            C6 => 84,
-            C7 => 96,
-            C8 => 108,
+            Cneg1 => 0.0,
+            C0 => 12.0,
+            C1 => 24.0,
+            C2 => 36.0,
+            C3 => 48.0,
+            C4 => 60.0,
+            C5 => 72.0,
+            C6 => 84.0,
+            C7 => 96.0,
+            C8 => 108.0,
         }
     }
 
@@ -176,24 +176,24 @@ impl Note {
     /// Returns the value of the note for any octave.
     ///
     /// `C` is represented as 0, and `B` as 11.
-    pub fn note_value(&self) -> u8 {
+    pub fn note_value(&self) -> f64 {
         match self {
-            C => 0,
-            Cs => 1,
-            D => 2,
-            Ds => 3,
-            E => 4,
-            F => 5,
-            Fs => 6,
-            G => 7,
-            Gs => 8,
-            A => 9,
-            As => 10,
-            B => 11,
+            C => 0.0,
+            Cs => 1.0,
+            D => 2.0,
+            Ds => 3.0,
+            E => 4.0,
+            F => 5.0,
+            Fs => 6.0,
+            G => 7.0,
+            Gs => 8.0,
+            A => 9.0,
+            As => 10.0,
+            B => 11.0,
         }
     }
 
-    pub fn key_value(key: &Key) -> Option<u8> {
+    pub fn key_value(key: &Key) -> Option<f64> {
         if let Some(note) = Self::from_key(key) {
             return Some(note.note_value());
         }

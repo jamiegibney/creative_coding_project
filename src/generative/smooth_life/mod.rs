@@ -18,6 +18,7 @@ pub struct SmoothLife {
     rect: Rect,
     texture: wgpu::Texture,
     image_buffer: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    use_bilinear: bool,
 }
 
 impl SmoothLife {
@@ -25,10 +26,10 @@ impl SmoothLife {
         let w = rect.w().floor() as u32;
         let h = rect.h().floor() as u32;
 
-        let mut generator = SmoothLifeGeneratorAsync::new(64);
+        let mut generator = SmoothLifeGeneratorAsync::new(32);
         generator.set_speed(2.0);
         generator.set_state(SLState::fluid());
-        generator.set_outer_radius(25.0);
+        generator.set_outer_radius(14.0);
 
         Self {
             generator,
@@ -38,9 +39,15 @@ impl SmoothLife {
                 .mip_level_count(4)
                 .sample_count(1)
                 .format(wgpu::TextureFormat::Rgba8Unorm)
-                .usage(wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING)
+                .usage(
+                    wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
+                )
                 .build(device),
-            image_buffer: ImageBuffer::from_fn(w, h, |_, _| Rgba([0, 0, 0, u8::MAX])),
+            image_buffer: ImageBuffer::from_fn(w, h, |_, _| {
+                Rgba([0, 0, 0, u8::MAX])
+            }),
+            use_bilinear: false,
         }
     }
 
@@ -50,6 +57,14 @@ impl SmoothLife {
 
     pub fn set_outer_radius(&mut self, ra: f64) {
         self.generator.set_outer_radius(ra);
+    }
+
+    pub fn use_bilinear(&mut self, use_bilinear: bool) {
+        self.use_bilinear = use_bilinear;
+    }
+
+    pub fn is_using_bilinear(&self) -> bool {
+        self.use_bilinear
     }
 
     pub fn rect(&self) -> Rect {
@@ -70,8 +85,12 @@ impl SmoothLife {
                 let xn = x as f64 / w;
                 let yn = y as f64 / h;
 
-                let br = (self.generator.get_value(xn, yn) * 255.0) as u8;
-                // let br = (self.generator.get_value_nn(xn, yn) * 255.0) as u8;
+                let br = if self.use_bilinear {
+                    (self.generator.get_value(xn, yn) * 255.0) as u8
+                }
+                else {
+                    (self.generator.get_value_nn(xn, yn) * 255.0) as u8
+                };
 
                 pxl.0 = [br, br, br, u8::MAX];
             });
@@ -91,7 +110,9 @@ impl DrawMask for SmoothLife {
             self.image_buffer.as_flat_samples().as_slice(),
         );
 
-        draw.texture(&self.texture);
+        draw.texture(&self.texture)
+            .xy(self.rect.xy())
+            .wh(self.rect.wh());
     }
 
     fn column_to_mask(&self, mask: &mut crate::dsp::SpectralMask, x: f64) {

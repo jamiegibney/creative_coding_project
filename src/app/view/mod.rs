@@ -6,7 +6,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let draw = &app.draw();
     let window = app.main_window();
     if frame.nth() < 2 {}
-    draw.background().color(WHITE);
+    draw.background().color(BLACK);
 
     let V2 {
         x: _width,
@@ -17,16 +17,17 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     //
     // }
 
-    let pre_spectrum_mesh_color = Rgba::new(0.0, 0.0, 0.0, 0.3);
+    // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
+    let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
     // let post_spectrum_line_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
-    let post_spectrum_mesh_color = Rgba::new(0.0, 1.0, 0.0, 0.784);
+    let post_spectrum_mesh_color = Rgba::new(0.0, 1.0, 0.0, 0.3);
 
     let mut pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
     let spectrum_rect = pre_spectrum.rect();
     draw.rect()
         .wh(spectrum_rect.wh())
         .xy(spectrum_rect.xy())
-        .color(WHITE);
+        .color(BLACK);
 
     pre_spectrum.draw(draw, Some(pre_spectrum_mesh_color), None);
 

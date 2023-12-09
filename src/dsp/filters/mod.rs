@@ -12,7 +12,9 @@ pub mod filter_design;
 pub mod first_order;
 pub mod lrf;
 pub mod one_pole_lowpass;
+pub mod resonator_bank;
 pub mod svf;
+pub mod two_pole_resonator;
 
 /// A trait which allows for filters to be dynamically dispatched.
 pub trait Filter: Send + DynClone {

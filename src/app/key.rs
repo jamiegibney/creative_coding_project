@@ -10,6 +10,20 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             .unwrap(),
         Key::Z => model.octave.decrease(),
         Key::X => model.octave.increase(),
+        Key::C => model
+            .audio_senders
+            .resonator_bank_params
+            .send(crate::dsp::ResonatorBankParams {
+                root_note: scale(random_f64(), 40.0, 70.0).round(),
+                ..model.reso_bank_params
+            })
+            .unwrap(),
+        Key::B => model
+            .audio_senders
+            .resonator_bank_reset_pitch
+            .send(())
+            .unwrap(),
+        Key::M => model.audio_senders.spectral_mask_post_fx.send(()).unwrap(),
         Key::R => match model.current_gen_algo {
             GenerativeAlgo::Contours => {
                 let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
@@ -25,6 +39,18 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 drop(sml);
             }
         },
+        Key::Q => {
+            model.current_gen_algo = match model.current_gen_algo {
+                GenerativeAlgo::Contours => GenerativeAlgo::SmoothLife,
+                GenerativeAlgo::SmoothLife => GenerativeAlgo::Contours,
+            }
+        }
+        Key::N => {
+            let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
+            let new_opt = !sml.is_using_bilinear();
+            sml.use_bilinear(new_opt);
+        }
+
         _ => (),
     };
 
@@ -33,6 +59,9 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             return;
         }
         *v = true;
+    }
+    else {
+        return;
     }
 
     // get midi note value from keyboard input

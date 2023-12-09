@@ -104,12 +104,14 @@ pub fn build_gui_elements(
     let contour_size = 256;
     let contour_size_fl = (contour_size / 2) as f32;
     let contour_rect = Rect::from_corners(
-        pt2(-contour_size_fl, -contour_size_fl),
-        pt2(contour_size_fl, contour_size_fl),
+        pt2(-contour_size_fl - 230.0, -contour_size_fl),
+        pt2(contour_size_fl - 230.0, contour_size_fl),
     );
 
+    // let spectrum_rect =
+    //     Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
     let spectrum_rect =
-        Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
+        Rect::from_corners(pt2(-80.0, -128.0), pt2(360.0, 128.0));
     let pre_spectrum_analyzer =
         RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
     let post_spectrum_analyzer =
@@ -119,7 +121,7 @@ pub fn build_gui_elements(
         contours: Contours::new(app.main_window().device(), contour_rect)
             .with_num_threads(8)
             .expect("failed to allocate 8 threads to contour generator")
-            .with_z_increment(0.1)
+            .with_z_increment(0.2)
             .with_num_contours(20)
             .with_contour_range(0.1..=0.9),
         smooth_life: SmoothLife::new(app.main_window().device(), contour_rect),

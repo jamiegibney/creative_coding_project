@@ -139,4 +139,50 @@ impl AudioModel {
             .as_ref()
             .and_then(|ch| ch.try_recv().ok())
     }
+
+    pub fn try_receive(&mut self) {
+        let receivers = self.message_channels.borrow_mut();
+
+        if let Some(pitch_trigger) = &receivers.resonator_bank_reset_pitch {
+            if pitch_trigger.try_recv().is_ok() {
+                self.processors.resonator_bank.randomise_resonator_pitches();
+            }
+        }
+
+        if let Some(pan_trigger) = &receivers.resonator_bank_reset_pan {
+            if pan_trigger.try_recv().is_ok() {
+                // TODO: make this message hold the max pan amount instead of unit
+                self.processors.resonator_bank.randomise_pan(0.3);
+            }
+        }
+
+        if let Some(bank_params) = &receivers.resonator_bank_params {
+            if let Ok(params) = bank_params.try_recv() {
+                self.processors.resonator_bank.set_params(params);
+            }
+        }
+
+        if let Some(mask_order) = &receivers.spectral_mask_post_fx {
+            if mask_order.try_recv().is_ok() {
+                self.processors.spectral_filter.clear();
+                self.data.spectral_mask_post_fx =
+                    !self.data.spectral_mask_post_fx;
+            }
+        }
+    }
+
+    pub fn increment_sample_count(&mut self, buffer_size: u32) {
+        let time = 6.0;
+        let tmr = (time * self.data.sample_rate.ld()) as u32;
+
+        self.data.sample_timer += buffer_size;
+        if self.data.sample_timer > tmr {
+            self.processors.resonator_bank.randomise_resonator_pitches();
+            self.data.sample_timer -= tmr;
+        }
+    }
+
+    pub fn reset_resonantor_bank(&mut self) {
+        self.processors.resonator_bank.randomise_resonator_pitches();
+    }
 }

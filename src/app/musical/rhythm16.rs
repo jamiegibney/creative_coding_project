@@ -14,7 +14,6 @@ impl BitwiseRhythm16 for u16 {
 }
 
 impl BitwiseRhythm16 for u64 {
-    #[rustfmt::skip]
     fn is_beat(&self, mut idx: usize) -> bool {
         // we first check to see how many bars the word covers...
         let mut shift = 16;
@@ -35,7 +34,6 @@ impl BitwiseRhythm16 for u64 {
     }
 }
 
-// unused for now
 impl BitwiseRhythm16 for [u16; 3] {
     fn is_beat(&self, mut idx: usize) -> bool {
         // first, get the index within the bounds of the array

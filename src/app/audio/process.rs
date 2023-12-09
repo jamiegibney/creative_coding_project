@@ -1,3 +1,8 @@
+use crate::{
+    dsp::filters::comb::distortion::waveshaper::smooth_soft_clip,
+    prelude::xfer::{s_curve_linear_centre, s_curve_round},
+};
+
 use super::*;
 
 const SIGNAL_EPSILON: f64 = MINUS_INFINITY_GAIN / 5.0;
@@ -153,6 +158,10 @@ fn callback_timer(audio: &AudioModel) {
 
 /// Processes all audio FX.
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
+    // try to receive any messages from other threads
+    audio.try_receive();
+    // audio.increment_sample_count(buffer.len() as u32);
+
     // update spectral mask
     // if let Ok(guard) = audio.spectral_mask.try_lock() {
     //     audio.spectral_filter.set_mask(&guard);
@@ -167,26 +176,49 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // }
 
     // process the spectral masking
-    audio.processors.spectral_filter.process_block(buffer);
+    if !audio.data.spectral_mask_post_fx {
+        audio.processors.spectral_filter.process_block(buffer);
+    }
 
+    // TODO: how does this account for different buffer sizes?
     audio
         .data
         .master_gain
-        .next_block_exact(&mut audio.buffers.master_gain_buffer);
+        // is this not better?
+        .next_block(&mut audio.buffers.master_gain_buffer, buffer.len());
+    // .next_block_exact(&mut audio.buffers.master_gain_buffer);
 
+    #[allow(clippy::needless_range_loop)]
     for (i, fr) in buffer.frames_mut().enumerate() {
         for ch in 0..NUM_CHANNELS {
+            fr[ch] = audio.processors.pre_fx_dc_filter[ch].process_mono(fr[ch]);
+        }
+
+        let (mut l, mut r) =
+            audio.processors.resonator_bank.process_stereo(fr[0], fr[1]);
+
+        (l, r) = audio.processors.ping_pong_delay.process_stereo(l, r);
+
+        fr[0] = l;
+        fr[1] = r;
+
+        for ch in 0..NUM_CHANNELS {
             let mut sample = fr[ch];
-            sample = audio.processors.pre_fx_dc_filter[ch].process_mono(sample);
-
-            // sample = audio.filter_comb[ch].process(sample);
-            // sample = audio.waveshaper[ch].process(sample);
-
+            sample = audio.processors.filter_hs[ch].process(sample);
+            sample = audio.processors.filter_peak[ch].process(sample);
+            // sample = audio.processors.filter_lp[ch].process(sample);
+            sample = smooth_soft_clip(sample, 1.0);
+            sample = audio.processors.filter_hp[ch].process(sample);
             sample =
                 audio.processors.post_fx_dc_filter[ch].process_mono(sample);
-            sample *= audio.buffers.master_gain_buffer[i];
+
             fr[ch] = sample;
         }
+    }
+
+    // process the spectral masking
+    if audio.data.spectral_mask_post_fx {
+        audio.processors.spectral_filter.process_block(buffer);
     }
 
     // // copy the audio buffer into the oversampling buffer so the channel layout
@@ -228,10 +260,12 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // final loop
     let mut is_processing = false;
-    for output in buffer.frames_mut() {
-        // hard-clip output
-        output[0] = output[0].clamp(-1.0, 1.0);
-        output[1] = output[1].clamp(-1.0, 1.0);
+    for (i, output) in buffer.frames_mut().enumerate() {
+        let gain = audio.buffers.master_gain_buffer[i];
+        let ceiling = db_to_level(-6.0);
+        // hard-clip output;
+        output[0] = output[0].clamp(-ceiling, ceiling) * gain;
+        output[1] = output[1].clamp(-ceiling, ceiling) * gain;
 
         // used to decide whether to skip DSP processing in the next block or not
         if (output[0].abs() > SIGNAL_EPSILON

@@ -117,11 +117,12 @@ impl AudioModelBuilder {
         pre_in.compute(&empty);
         post_in.compute(&empty);
 
+        let buffer = vec![0.0; MAX_BUFFER_SIZE * NUM_CHANNELS];
         self.model.spectrograms.pre_fx_spectrogram_buffer =
-            Arc::new(Mutex::new(empty.clone()));
+            Arc::new(Mutex::new(buffer.clone()));
 
         self.model.spectrograms.post_fx_spectrogram_buffer =
-            Arc::new(Mutex::new(empty));
+            Arc::new(Mutex::new(buffer));
 
         let mut guard = loop {
             let res = self.model.spectrograms.pre_fx_spectrogram.try_lock();
@@ -155,6 +156,26 @@ impl AudioModelBuilder {
         let (note_event, receiver) = bounded(MAX_NOTE_EVENTS_PER_BUFFER);
         msg_ch.note_event = Some(receiver);
 
-        AudioMessageSenders { note_event, filter_freq, drive_amount }
+        let (resonator_bank_params, receiver) = unbounded();
+        msg_ch.resonator_bank_params = Some(receiver);
+
+        let (resonator_bank_reset_pitch, receiver) = unbounded();
+        msg_ch.resonator_bank_reset_pitch = Some(receiver);
+
+        let (resonator_bank_reset_pan, receiver) = unbounded();
+        msg_ch.resonator_bank_reset_pan = Some(receiver);
+
+        let (spectral_mask_post_fx, receiver) = unbounded();
+        msg_ch.spectral_mask_post_fx = Some(receiver);
+
+        AudioMessageSenders {
+            note_event,
+            filter_freq,
+            drive_amount,
+            resonator_bank_params,
+            resonator_bank_reset_pitch,
+            resonator_bank_reset_pan,
+            spectral_mask_post_fx,
+        }
     }
 }

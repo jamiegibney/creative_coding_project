@@ -1,5 +1,7 @@
+use crossbeam_channel::{Receiver as CCReceiver, Sender as CCSender};
 use std::time::Instant;
-use crossbeam_channel::{Sender as CCSender, Receiver as CCReceiver};
+
+use crate::dsp::filters::comb::delay::Delay;
 
 use super::*;
 
@@ -9,14 +11,19 @@ pub struct AudioProcessors {
     pub filter_lp: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_hp: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_peak: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_hs: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_peak_post: Box<[BiquadFilter; NUM_CHANNELS]>,
 
     pub filter_comb: Box<[IirCombFilter; NUM_CHANNELS]>,
+    pub delay: Box<[DryWet<Delay>]>,
+    pub ping_pong_delay: Box<DryWet<PingPongDelay>>,
 
     pub pre_fx_dc_filter: Box<[DCFilter; NUM_CHANNELS]>,
     pub post_fx_dc_filter: Box<[DCFilter; NUM_CHANNELS]>,
 
     pub spectral_filter: SpectralFilter,
+    pub resonator_bank: DryWet<ResonatorBank>,
+    pub resonator: Box<[TwoPoleResonator; NUM_CHANNELS]>,
 
     // FX
     pub waveshaper: Box<[Waveshaper; NUM_CHANNELS]>,
@@ -46,8 +53,12 @@ pub struct AudioData {
     pub is_processing: bool,
     pub idle_timer_samples: u64,
 
+    pub spectral_mask_post_fx: bool,
+
     pub average_load: Vec<f64>,
     pub average_pos: usize,
+
+    pub sample_timer: u32,
 
     pub callback_time_elapsed: Arc<Mutex<Instant>>,
 }
@@ -68,8 +79,12 @@ impl Default for AudioData {
             is_processing: Default::default(),
             idle_timer_samples: Default::default(),
 
+            spectral_mask_post_fx: false,
+
             average_load: Vec::default(),
             average_pos: Default::default(),
+
+            sample_timer: 0,
 
             callback_time_elapsed: Arc::new(Mutex::new(Instant::now())),
         }
@@ -112,6 +127,10 @@ pub struct AudioMessageReceivers {
 
     pub filter_freq: Option<CCReceiver<f64>>,
     pub drive_amount: Option<CCReceiver<f64>>,
+    pub resonator_bank_params: Option<CCReceiver<ResonatorBankParams>>,
+    pub resonator_bank_reset_pitch: Option<CCReceiver<()>>,
+    pub resonator_bank_reset_pan: Option<CCReceiver<()>>,
+    pub spectral_mask_post_fx: Option<CCReceiver<()>>,
 }
 
 pub struct AudioMessageSenders {
@@ -119,4 +138,8 @@ pub struct AudioMessageSenders {
     pub note_event: CCSender<NoteEvent>,
     pub filter_freq: CCSender<f64>,
     pub drive_amount: CCSender<f64>,
+    pub resonator_bank_params: CCSender<ResonatorBankParams>,
+    pub resonator_bank_reset_pitch: CCSender<()>,
+    pub resonator_bank_reset_pan: CCSender<()>,
+    pub spectral_mask_post_fx: CCSender<()>,
 }

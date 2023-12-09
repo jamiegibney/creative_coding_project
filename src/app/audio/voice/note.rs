@@ -2,17 +2,17 @@ use crate::prelude::*;
 use std::collections::VecDeque as Deque;
 
 /// An enum to represent individual note states and their data.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 pub enum NoteEvent {
     NoteOn {
         /// The MIDI note value of the note.
-        note: u8,
+        note: f64,
         /// The sample offset from the start of the block to the start of the note.
         timing: u32,
     },
     NoteOff {
         /// The MIDI note value of the note.
-        note: u8,
+        note: f64,
         /// The sample offset from the start of the block to the start of the note.
         timing: u32,
     },
@@ -20,7 +20,7 @@ pub enum NoteEvent {
 
 impl NoteEvent {
     /// Returns the MIDI note value of the event.
-    pub fn note_value(&self) -> u8 {
+    pub fn note_value(&self) -> f64 {
         match self {
             Self::NoteOn { note, .. } | Self::NoteOff { note, .. } => *note,
         }
@@ -28,13 +28,15 @@ impl NoteEvent {
 
     /// Returns the frequency value of the event.
     pub fn freq_value(&self) -> f64 {
-        note_to_freq(self.note_value() as f64)
+        note_to_freq(self.note_value())
     }
 
     /// Returns the sample timing of the event.
     pub fn timing(&self) -> u32 {
         match self {
-            Self::NoteOn { timing, .. } | Self::NoteOff { timing, .. } => *timing,
+            Self::NoteOn { timing, .. } | Self::NoteOff { timing, .. } => {
+                *timing
+            }
         }
     }
 }
@@ -47,9 +49,7 @@ pub struct NoteHandler {
 impl NoteHandler {
     /// Returns a new, empty `NoteHandler`.
     pub fn new() -> Self {
-        Self {
-            events: Deque::new(),
-        }
+        Self { events: Deque::new() }
     }
 
     /// Adds a note event to the internal queue.

@@ -2,6 +2,8 @@ use super::*;
 use crate::prelude::*;
 use crossbeam_channel::Sender;
 
+use super::sequence::*;
+
 /// For simplicity, the `Sequencer` assumes a 4/4 time signature.
 pub struct Sequencer {
     /// The sample rate, held for easier timing calculations.
@@ -21,7 +23,7 @@ pub struct Sequencer {
 
     /// The note event channel sender.
     ///
-    /// Note: this is bounded to `MAX_NOTE_EVENTS_PER_BUFFER` elements at a time.
+    /// Note: this is bounded to [`MAX_NOTE_EVENTS_PER_BUFFER`] elements at a time.
     note_event_channel: Sender<NoteEvent>,
 }
 
