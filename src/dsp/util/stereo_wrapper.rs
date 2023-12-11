@@ -9,17 +9,11 @@ pub struct StereoWrapper<E> {
 
 impl<E: Effect + Clone> StereoWrapper<E> {
     pub fn from_single(effect: E) -> Self {
-        Self {
-            l: effect.clone(),
-            r: effect,
-        }
+        Self { l: effect.clone(), r: effect }
     }
 
     pub fn from_pair(effect_l: E, effect_r: E) -> Self {
-        Self {
-            l: effect_l,
-            r: effect_r,
-        }
+        Self { l: effect_l, r: effect_r }
     }
 
     pub fn unwrap(self) -> (E, E) {
@@ -35,8 +29,12 @@ impl<E: Effect + Clone> Effect for StereoWrapper<E> {
         (out_l, out_r)
     }
 
-    fn process_mono(&mut self, input: f64, _: usize) -> f64 {
-        unimplemented!("StereoWrapper does not currently support collapsing to mono")
+    fn process_mono(&mut self, input: f64, ch_idx: usize) -> f64 {
+        match ch_idx {
+            0 => self.l.process_mono(input, ch_idx),
+            1 => self.r.process_mono(input, ch_idx),
+            _ => input,
+        }
     }
 
     fn get_sample_rate(&self) -> f64 {

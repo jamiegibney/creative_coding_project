@@ -191,17 +191,20 @@ impl ResonatorBank {
 }
 
 impl Effect for ResonatorBank {
-    fn process_mono(&mut self, mut input: f64, ch_idx: usize) -> f64 {
+    fn process_mono(&mut self, input: f64, ch_idx: usize) -> f64 {
         self.update_filters();
+
+        let mut output = 0.0;
         for res in &mut self.resonators {
-            input = res.process_mono(input, ch_idx);
+            output += res.process_mono(input, ch_idx);
         }
 
-        input
+        output
     }
 
     fn process_stereo(&mut self, mut left: f64, mut right: f64) -> (f64, f64) {
         self.update_filters();
+
         let (mut out_l, mut out_r) = (0.0, 0.0);
         for res in &mut self.resonators {
             let (l, r) = res.process_stereo(left, right);

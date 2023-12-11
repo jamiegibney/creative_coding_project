@@ -122,7 +122,17 @@ impl<E: Effect> AudioUtility<E> {
 
 impl<E: Effect + Clone> Effect for AudioUtility<E> {
     fn process_mono(&mut self, input: f64, ch_idx: usize) -> f64 {
-        self.inner.process_mono(input, ch_idx) * self.gain
+        let output = self.inner.process_mono(input, ch_idx);
+
+        let (gain_l, gain_r) = self.process_gain(output, output);
+
+        let (pan_l, pan_r) = self.process_panning(gain_l, gain_r);
+
+        match ch_idx {
+            0 => pan_l,
+            1 => pan_r,
+            _ => input,
+        }
     }
 
     fn process_stereo(&mut self, in_l: f64, in_r: f64) -> (f64, f64) {
