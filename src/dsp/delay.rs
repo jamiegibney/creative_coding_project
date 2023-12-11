@@ -2,7 +2,7 @@
 use super::{Effect, RingBuffer};
 use crate::prelude::*;
 
-const DEFAULT_DELAY_SMOOTHING: SmoothingType = SmoothingType::Cosine;
+pub const DEFAULT_DELAY_SMOOTHING: SmoothingType = SmoothingType::Cosine;
 
 /// An audio delay tap.
 ///
@@ -98,11 +98,5 @@ impl Effect for Delay {
 
     fn get_sample_rate(&self) -> f64 {
         self.buffer.get_sample_rate()
-    }
-}
-
-impl Default for Delay {
-    fn default() -> Self {
-        Self { buffer: Default::default(), feedback_amount: Default::default() }
     }
 }

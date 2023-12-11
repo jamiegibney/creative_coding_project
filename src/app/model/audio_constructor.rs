@@ -74,7 +74,7 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
     }
 
     let mut resonator_bank = ResonatorBank::new(upsampled_rate, 256);
-    resonator_bank.set_num_resonators(64);
+    resonator_bank.set_num_resonators(16);
     resonator_bank.set_scale(Scale::MajPentatonic);
     resonator_bank.set_root_note(39.0);
     resonator_bank.set_inharm(0.3);
@@ -97,8 +97,8 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
     delay.set_mix_equal_power(0.1);
 
     let mut pp_delay =
-        PingPongDelay::new(2.0, upsampled_rate).with_delay_time(0.45);
-    pp_delay.set_feedback_amount(0.65);
+        PingPongDelay::new(1.0, upsampled_rate).with_delay_time(0.35);
+    pp_delay.set_feedback_amount(0.75);
 
     let mut ping_pong_delay = DryWet::new(pp_delay);
     ping_pong_delay.set_mix_equal_power(0.5);
@@ -163,7 +163,7 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
 
 fn audio_generation(sample_rate: f64) -> AudioGeneration {
     let mut amp_envelope = AdsrEnvelope::new(sample_rate);
-    amp_envelope.set_parameters(300.1, 300.0, 0.0, 20.0);
+    amp_envelope.set_parameters(5.0, 300.0, 1.0, 20.0);
 
     AudioGeneration { amp_envelope, generator: Generator::Noise }
 }

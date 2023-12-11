@@ -207,8 +207,8 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
             sample = audio.processors.filter_hs[ch].process(sample);
             sample = audio.processors.filter_peak[ch].process(sample);
             // sample = audio.processors.filter_lp[ch].process(sample);
-            sample = smooth_soft_clip(sample, 1.0);
             sample = audio.processors.filter_hp[ch].process(sample);
+            sample = smooth_soft_clip(sample, 1.0);
             sample =
                 audio.processors.post_fx_dc_filter[ch].process_mono(sample);
 
