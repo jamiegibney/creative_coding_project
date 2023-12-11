@@ -141,7 +141,7 @@ impl<T: Smoothable> Smoother<T> {
         self.ramp.is_active()
     }
 
-    /// Computes the interpolated value based on the current SmoothingType.
+    /// Computes the interpolated value based on the current `SmoothingType`.
     fn interpolated_value(&mut self) -> T {
         let (a, b, t) = (
             self.start_value.to_f64(),
