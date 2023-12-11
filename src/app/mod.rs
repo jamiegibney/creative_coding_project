@@ -4,10 +4,10 @@ use nannou::LoopMode::RefreshSync;
 use nannou_audio;
 
 pub mod audio;
-pub mod musical;
 mod key;
 mod model;
 mod mouse;
+pub mod musical;
 mod update;
 mod view;
 

@@ -9,7 +9,7 @@
 /// are recommended, if you need to change this at all.
 pub static mut SAMPLE_RATE: f64 = 44100.0;
 // in hindsight, this was not a great idea. works fine for a few things, but as soon as
-// oversampling entered the chat, this caused a bit of hassle and I needed to store 
+// oversampling entered the chat, this caused a bit of hassle and I needed to store
 // the sample rate internally in some processors anyway. not a good idea for the future!
 
 /// The global oversampling rate, set to `SAMPLE_RATE` by default.
@@ -39,8 +39,7 @@ pub static mut OVERSAMPLED_SAMPLE_RATE: f64 = unsafe { SAMPLE_RATE };
 pub unsafe fn update_oversampled_sample_rate(oversampling_factor: usize) {
     assert!(oversampling_factor <= 2usize.pow(MAX_OVERSAMPLING_FACTOR as u32));
     unsafe {
-        OVERSAMPLED_SAMPLE_RATE =
-            SAMPLE_RATE * 2.0f64.powi(oversampling_factor as i32);
+        OVERSAMPLED_SAMPLE_RATE = SAMPLE_RATE * 2.0f64.powi(oversampling_factor as i32);
     }
 }
 
@@ -91,7 +90,7 @@ pub const MAX_OVERSAMPLING_FACTOR: usize = 4; // 16x oversampling
 /// The default oversampling factor (i.e. this is `2² == 4x` oversampling).
 pub const DEFAULT_OVERSAMPLING_FACTOR: usize = 2; // 4x oversampling
 
-/// It doesn't make much sense to be able to queue lots of note events per audio 
+/// It doesn't make much sense to be able to queue lots of note events per audio
 /// callback, so this cap is used to restrict how many should exist for each buffer.
 pub const MAX_NOTE_EVENTS_PER_BUFFER: usize = 12;
 

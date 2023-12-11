@@ -2,6 +2,7 @@ use super::*;
 use std::cell::RefCell;
 use std::sync::atomic::Ordering::Relaxed;
 
+pub mod audio_constructor;
 pub mod builder;
 pub mod components;
 pub use builder::*;
@@ -92,13 +93,10 @@ impl AudioModel {
 
     pub fn set_idle_timer(&mut self, is_processing: bool) {
         self.data.idle_timer_samples = if is_processing {
-            (self.data.sample_rate.load(Relaxed) * DSP_IDLE_HOLD_TIME_SECS)
-                as u64
-        }
-        else if self.data.idle_timer_samples > 0 {
+            (self.data.sample_rate.load(Relaxed) * DSP_IDLE_HOLD_TIME_SECS) as u64
+        } else if self.data.idle_timer_samples > 0 {
             self.data.idle_timer_samples - 1
-        }
-        else {
+        } else {
             0
         };
     }
@@ -113,8 +111,7 @@ impl AudioModel {
     pub fn current_sample_idx(&self) -> u32 {
         let guard = self.data.callback_time_elapsed.lock().unwrap();
 
-        let samples_exact =
-            guard.elapsed().as_secs_f64() * self.data.sample_rate.load(Relaxed);
+        let samples_exact = guard.elapsed().as_secs_f64() * self.data.sample_rate.load(Relaxed);
 
         drop(guard);
 
@@ -165,15 +162,14 @@ impl AudioModel {
         if let Some(mask_order) = &receivers.spectral_mask_post_fx {
             if mask_order.try_recv().is_ok() {
                 self.processors.spectral_filter.clear();
-                self.data.spectral_mask_post_fx =
-                    !self.data.spectral_mask_post_fx;
+                self.data.spectral_mask_post_fx = !self.data.spectral_mask_post_fx;
             }
         }
     }
 
     pub fn increment_sample_count(&mut self, buffer_size: u32) {
         let time = 6.0;
-        let tmr = (time * self.data.sample_rate.ld()) as u32;
+        let tmr = (time * self.data.sample_rate.lr()) as u32;
 
         self.data.sample_timer += buffer_size;
         if self.data.sample_timer > tmr {

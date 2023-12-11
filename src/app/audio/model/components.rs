@@ -1,7 +1,7 @@
 use crossbeam_channel::{Receiver as CCReceiver, Sender as CCSender};
 use std::time::Instant;
 
-use crate::dsp::filters::comb::delay::Delay;
+use crate::dsp::filtering::comb::delay::Delay;
 
 use super::*;
 
@@ -91,22 +91,13 @@ impl Default for AudioData {
     }
 }
 
+#[derive(Default)]
 pub struct AudioBuffers {
     pub master_gain_buffer: Vec<f64>,
 
     pub oversampling_buffer: OversamplingBuffer,
 
     pub spectral_mask: Option<triple_buffer::Output<SpectralMask>>,
-}
-
-impl Default for AudioBuffers {
-    fn default() -> Self {
-        Self {
-            master_gain_buffer: Vec::default(),
-            oversampling_buffer: OversamplingBuffer::default(),
-            spectral_mask: None,
-        }
-    }
 }
 
 #[derive(Default)]

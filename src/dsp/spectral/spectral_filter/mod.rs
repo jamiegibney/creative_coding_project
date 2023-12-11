@@ -1,9 +1,7 @@
 use super::{stft::stft_trait::StftInputMut, *};
 use crate::util::window::*;
 use nannou_audio::Buffer;
-use realfft::{
-    num_complex::Complex, ComplexToReal, RealFftPlanner, RealToComplex,
-};
+use realfft::{num_complex::Complex, ComplexToReal, RealFftPlanner, RealToComplex};
 use std::sync::Arc;
 
 pub mod mask;
@@ -45,26 +43,17 @@ impl SpectralFilter {
 
             compensated_window_function: sine(max_block_size)
                 .into_iter()
-                .map(|x| {
-                    x * ((max_block_size * Self::OVERLAP_FACTOR) as f64).recip()
-                })
+                .map(|x| x * ((max_block_size * Self::OVERLAP_FACTOR) as f64).recip())
                 .collect(),
 
             window_function: sine(max_block_size),
 
-            complex_buffers: vec![
-                vec![
-                    Complex::default();
-                    max_block_size / 2 + 1
-                ];
-                num_channels
-            ],
+            complex_buffers: vec![vec![Complex::default(); max_block_size / 2 + 1]; num_channels],
 
             fft: RealFftPlanner::new().plan_fft_forward(max_block_size),
             ifft: RealFftPlanner::new().plan_fft_inverse(max_block_size),
 
-            mask: SpectralMask::new(max_block_size)
-                .with_size(max_block_size / 2),
+            mask: SpectralMask::new(max_block_size).with_size(max_block_size / 2),
         }
     }
 
@@ -115,10 +104,8 @@ impl SpectralFilter {
     where
         B: StftInputMut,
     {
-        self.stft.process_overlap_add(
-            buffer,
-            Self::OVERLAP_FACTOR,
-            |ch_idx, audio_block| {
+        self.stft
+            .process_overlap_add(buffer, Self::OVERLAP_FACTOR, |ch_idx, audio_block| {
                 // window the input
                 multiply_buffers(audio_block, &self.window_function);
 
@@ -143,11 +130,8 @@ impl SpectralFilter {
                     .unwrap();
 
                 // window the output
-                multiply_buffers(
-                    audio_block, &self.compensated_window_function,
-                );
-            },
-        );
+                multiply_buffers(audio_block, &self.compensated_window_function);
+            });
     }
 
     pub fn max_block_size(&self) -> usize {
@@ -175,8 +159,7 @@ impl Default for SpectralFilter {
             fft: RealFftPlanner::new().plan_fft_forward(DEFAULT_BLOCK_SIZE),
             ifft: RealFftPlanner::new().plan_fft_inverse(DEFAULT_BLOCK_SIZE),
 
-            mask: SpectralMask::new(DEFAULT_BLOCK_SIZE)
-                .with_size(DEFAULT_BLOCK_SIZE / 2),
+            mask: SpectralMask::new(DEFAULT_BLOCK_SIZE).with_size(DEFAULT_BLOCK_SIZE / 2),
 
             compensated_window_function: Vec::default(),
             window_function: Vec::default(),

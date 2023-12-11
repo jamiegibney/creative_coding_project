@@ -34,10 +34,7 @@ pub struct Sequencer {
 // -
 
 impl Sequencer {
-    pub fn new(
-        sample_rate: f64,
-        note_event_channel: Sender<NoteEvent>,
-    ) -> Self {
+    pub fn new(sample_rate: f64, note_event_channel: Sender<NoteEvent>) -> Self {
         let mut s = Self {
             sample_rate,
             note_events: vec![None; MAX_NOTE_EVENTS_PER_BUFFER],

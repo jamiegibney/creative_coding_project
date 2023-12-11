@@ -109,7 +109,11 @@ impl ChordGen {
     pub fn gen_custom(&mut self, root_note: f64, chord: &[f64]) -> &[f64] {
         self.gen(
             root_note,
-            if chord.len() > MAX { &chord[..MAX] } else { chord },
+            if chord.len() > MAX {
+                &chord[..MAX]
+            } else {
+                chord
+            },
         )
     }
 
@@ -177,6 +181,8 @@ impl ChordGen {
 
 impl Default for ChordGen {
     fn default() -> Self {
-        Self { voices: vec![0.0; MAX] }
+        Self {
+            voices: vec![0.0; MAX],
+        }
     }
 }

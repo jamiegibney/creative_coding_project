@@ -5,7 +5,7 @@ use super::*;
 pub fn view(app: &App, model: &Model, frame: Frame) {
     let draw = &app.draw();
     let window = app.main_window();
-    if frame.nth() < 2 {}
+    // if frame.nth() < 2 {}
     draw.background().color(BLACK);
 
     let V2 {

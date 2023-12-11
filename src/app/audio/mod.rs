@@ -1,3 +1,5 @@
+#![allow(ambiguous_glob_reexports)]
+
 use super::*;
 use crate::dsp::*;
 use crate::gui::spectrum::*;
@@ -14,8 +16,8 @@ pub mod process;
 pub mod voice;
 
 pub use context::AudioContext;
-pub use process::process;
 pub use model::*;
+pub use process::process;
 pub use voice::*;
 
 pub const DSP_LOAD_AVERAGING_SAMPLES: usize = 32;

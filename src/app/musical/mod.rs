@@ -1,9 +1,9 @@
+pub mod chord;
 pub mod note;
-pub mod sequencer;
+pub mod rhythm16;
 pub mod scale;
 pub mod sequence;
-pub mod rhythm16;
-pub mod chord;
+pub mod sequencer;
 
 pub use note::*;
 pub use scale::Scale;

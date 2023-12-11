@@ -15,9 +15,8 @@ use std::{
     time::Instant,
 };
 
-mod audio_constructor;
 mod constructors;
-use audio_constructor::*;
+use super::audio::audio_constructor;
 use constructors::*;
 
 type CallbackTimerRef = Arc<Mutex<Instant>>;
@@ -121,7 +120,7 @@ impl Model {
         let current_gen_algo = GenerativeAlgo::SmoothLife;
 
         let sequencer = Sequencer::new(
-            sample_rate_ref.ld(),
+            sample_rate_ref.lr(),
             audio_senders.note_event.clone(),
         );
 
