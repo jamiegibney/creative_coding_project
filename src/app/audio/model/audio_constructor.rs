@@ -4,8 +4,8 @@ use atomic_float::AtomicF64;
 use std::sync::atomic::AtomicUsize;
 use triple_buffer::Output;
 
-pub const DEFAULT_SPECTRAL_SIZE: usize = 1 << 10;
-pub const DEFAULT_GAIN: f64 = 0.8;
+pub const DEFAULT_SPECTRAL_BLOCK_SIZE: usize = 1 << 10;
+pub const DEFAULT_GAIN: f64 = 1.5;
 
 pub fn build_audio_model(mut context: AudioContext) -> AudioPackage {
     let spectral_mask = context.spectral_mask_output.take();
@@ -57,7 +57,7 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
     }
 
     let mut spectral_filter = SpectralFilter::new(NUM_CHANNELS, 1 << 14);
-    spectral_filter.set_block_size(DEFAULT_SPECTRAL_SIZE);
+    spectral_filter.set_block_size(DEFAULT_SPECTRAL_BLOCK_SIZE);
 
     let mut filter_lp = st_bq();
     for i in 0..2 {
@@ -96,7 +96,8 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
     let mut delay = DryWet::new(delay);
     delay.set_mix_equal_power(0.1);
 
-    let mut pp_delay = PingPongDelay::new(1.0, upsampled_rate).with_delay_time(0.35);
+    let mut pp_delay =
+        PingPongDelay::new(1.0, upsampled_rate).with_delay_time(0.35);
     pp_delay.set_feedback_amount(0.75);
 
     let mut ping_pong_delay = DryWet::new(pp_delay);
@@ -136,8 +137,12 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
         filter_peak_post: st_bq(),
         filter_comb: Box::new([comb.clone(), comb]),
 
-        pre_fx_dc_filter: Box::new(std::array::from_fn(|_| DCFilter::new(upsampled_rate, 2))),
-        post_fx_dc_filter: Box::new(std::array::from_fn(|_| DCFilter::new(upsampled_rate, 2))),
+        pre_fx_dc_filter: Box::new(std::array::from_fn(|_| {
+            DCFilter::new(upsampled_rate, 2)
+        })),
+        post_fx_dc_filter: Box::new(std::array::from_fn(|_| {
+            DCFilter::new(upsampled_rate, 2)
+        })),
 
         delay: Box::new([delay.clone(), delay]),
         ping_pong_delay: Box::new(ping_pong_delay),
@@ -148,7 +153,9 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
         spectral_filter,
         waveshaper: Box::new(waveshaper),
         oversamplers: vec![
-            Oversampler::new(MAX_BUFFER_SIZE, MAX_OVERSAMPLING_FACTOR, 3);
+            Oversampler::new(
+                MAX_BUFFER_SIZE, MAX_OVERSAMPLING_FACTOR, 3
+            );
             NUM_CHANNELS
         ],
     }
@@ -158,10 +165,7 @@ fn audio_generation(sample_rate: f64) -> AudioGeneration {
     let mut amp_envelope = AdsrEnvelope::new(sample_rate);
     amp_envelope.set_parameters(5.0, 300.0, 1.0, 20.0);
 
-    AudioGeneration {
-        amp_envelope,
-        generator: Generator::Noise,
-    }
+    AudioGeneration { amp_envelope, generator: Generator::Noise }
 }
 
 fn audio_data(sample_rate: f64, upsampled_rate: f64) -> AudioData {
@@ -171,7 +175,9 @@ fn audio_data(sample_rate: f64, upsampled_rate: f64) -> AudioData {
         sample_rate: Arc::new(AtomicF64::new(sample_rate)),
         upsampled_rate: Arc::new(AtomicF64::new(upsampled_rate)),
         latency_samples: 0,
-        oversampling_factor: Arc::new(AtomicUsize::new(DEFAULT_OVERSAMPLING_FACTOR)),
+        oversampling_factor: Arc::new(AtomicUsize::new(
+            DEFAULT_OVERSAMPLING_FACTOR,
+        )),
         is_processing: false,
         idle_timer_samples: 0,
         average_load: vec![0.0; DSP_LOAD_AVERAGING_SAMPLES],
@@ -184,8 +190,14 @@ fn audio_data(sample_rate: f64, upsampled_rate: f64) -> AudioData {
 
 fn audio_buffers(spectral_mask: Option<Output<SpectralMask>>) -> AudioBuffers {
     AudioBuffers {
-        master_gain_buffer: vec![DEFAULT_GAIN; BUFFER_SIZE * (1 << DEFAULT_OVERSAMPLING_FACTOR)],
-        oversampling_buffer: OversamplingBuffer::new(NUM_CHANNELS, MAX_BUFFER_SIZE),
+        master_gain_buffer: vec![
+            DEFAULT_GAIN;
+            BUFFER_SIZE
+                * (1 << DEFAULT_OVERSAMPLING_FACTOR)
+        ],
+        oversampling_buffer: OversamplingBuffer::new(
+            NUM_CHANNELS, MAX_BUFFER_SIZE,
+        ),
         spectral_mask,
     }
 }

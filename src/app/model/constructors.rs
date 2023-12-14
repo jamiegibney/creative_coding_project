@@ -116,9 +116,10 @@ pub fn build_gui_elements(
         contours: Contours::new(app.main_window().device(), contour_rect)
             .with_num_threads(8)
             .expect("failed to allocate 8 threads to contour generator")
+            .with_feathering(false)
             .with_z_increment(0.2)
-            .with_num_contours(20)
-            .with_contour_range(0.1..=0.9),
+            .with_num_contours(8)
+            .with_contour_range(0.3..=0.7),
         smooth_life: SmoothLife::new(app.main_window().device(), contour_rect),
 
         pre_spectrum_analyzer,

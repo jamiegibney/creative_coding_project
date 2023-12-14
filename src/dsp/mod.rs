@@ -4,6 +4,7 @@ pub mod delay;
 pub mod distortion;
 pub mod dynamics;
 pub mod filtering;
+pub mod modulation;
 pub mod oversampling;
 pub mod spectral;
 pub mod synthesis;
