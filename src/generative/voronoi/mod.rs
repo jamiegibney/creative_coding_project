@@ -16,6 +16,6 @@ impl Voronoi {
     }
 
     pub fn update(&mut self) {
-        // self.worley.get
+        //
     }
 }
