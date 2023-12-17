@@ -3,31 +3,37 @@
 use super::*;
 
 /// Calculates the modulo-1 value of a floating-point value.
+#[inline]
 pub fn mod1(x: f64) -> f64 {
     x - x.floor()
 }
 
 /// Calculates the frequency value of the provided MIDI note value.
+#[inline]
 pub fn note_to_freq(note_value: f64) -> f64 {
     ((note_value - 69.0) / 12.0).exp2() * unsafe { TUNING_FREQ_HZ }
 }
 
 /// Calculates the MIDI note value of the provided frequency value.
+#[inline]
 pub fn freq_to_note(freq: f64) -> f64 {
     12.0f64.mul_add((freq / unsafe { TUNING_FREQ_HZ }).log2(), 69.0)
 }
 
 /// Calculates amplitude in decibels from a linear power level.
+#[inline]
 pub fn level_to_db(level: f64) -> f64 {
     20.0 * level.log10()
 }
 
 /// Calculates the linear power level from amplitude as decibels.
+#[inline]
 pub fn db_to_level(db_value: f64) -> f64 {
     10.0f64.powf(db_value / 20.0)
 }
 
 /// Maps a value from the provided input range to the provided output range.
+#[inline]
 pub fn map(value: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> f64 {
     scale(normalise(value, in_min, in_max), out_min, out_max)
 }
@@ -35,6 +41,7 @@ pub fn map(value: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> 
 /// Scales a value to a provided range, assuming it is normalised.
 ///
 /// Like `map()`, but with no input range.
+#[inline]
 pub fn scale(value: f64, min: f64, max: f64) -> f64 {
     value.mul_add(max - min, min)
 }
@@ -42,6 +49,7 @@ pub fn scale(value: f64, min: f64, max: f64) -> f64 {
 /// Normalises a value from a provided range.
 ///
 /// Like `map()`, but with the output range set to `0.0 - 1.0`.
+#[inline]
 pub fn normalise(value: f64, min: f64, max: f64) -> f64 {
     (value - min) / (max - min)
 }

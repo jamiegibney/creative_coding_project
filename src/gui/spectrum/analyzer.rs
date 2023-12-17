@@ -1,9 +1,10 @@
 use super::{process::RESULT_BUFFER_SIZE, *};
 use crate::{dsp::*, gui::rdp::decimate_points_in_place, prelude::*};
 use nannou::prelude::*;
+use rayon::prelude::*;
 use std::ptr::{addr_of, copy_nonoverlapping};
 
-const NUM_SPECTRUM_AVERAGES: usize = 24;
+const NUM_SPECTRUM_AVERAGES: usize = 10;
 
 const MIN_FREQ: f64 = 25.0;
 const MAX_FREQ: f64 = 22_050.0;
@@ -171,6 +172,7 @@ impl SpectrumAnalyzer {
             *pt = [x, mag];
         }
 
+        /*
         // bit of a hack here - the filter processes 10 samples but the values aren't
         // used because it helps to "prime" the filter, smoothing out the curve at
         // the very lowest frequencies. this needs to be done because the filter is
@@ -183,6 +185,7 @@ impl SpectrumAnalyzer {
         self.interpolated.iter_mut().skip(10).for_each(|x| {
             // x[1] = self.filter.process_mono(x[1], 0);
         });
+        */
 
         // decimate points here
         decimate_points_in_place(&self.interpolated, &mut self.indices, 0.01);
@@ -202,17 +205,15 @@ impl SpectrumAnalyzer {
 
     // TODO this could probably be more efficient?
     fn average_spectrum_data(&mut self) {
-        // add the new set of magnitudes to the averaging buffers
+        // copy the new set of magnitudes to the averaging buffers
         let mags = self.spectrum.read();
-        self.spectrum_averaging[self.averaging_write_pos]
-            .iter_mut()
-            .enumerate()
-            .for_each(|(i, x)| *x = mags[i]);
+        self.spectrum_averaging[self.averaging_write_pos].copy_from_slice(mags);
 
         // increment the write pos for next time
         self.increment_averaging_pos();
 
         let frames = NUM_SPECTRUM_AVERAGES;
+        let norm = 1.0 / frames as f64;
 
         // iterate through each sample...
         for smp in 0..RESULT_BUFFER_SIZE {
@@ -221,7 +222,7 @@ impl SpectrumAnalyzer {
                 (0..frames)
                     .map(|fr| {
                         // normalise each value
-                        self.spectrum_averaging[fr][smp] / frames as f64
+                        self.spectrum_averaging[fr][smp] * norm
                     })
                     .sum(),
             );
