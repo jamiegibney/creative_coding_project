@@ -333,6 +333,7 @@ impl Contours {
         }
     }
 
+    #[allow(clippy::similar_names)]
     fn contour_brightness(
         num_contours: u32,
         range: &RangeInclusive<f64>,
@@ -343,31 +344,29 @@ impl Contours {
         let px = mod1(mapped);
         let alpha = u8::MAX;
 
-        let r_min = *range.start();
-        let r_max = *range.end();
-        let r_mid = lerp(r_min, r_max, 0.5);
+        let min = *range.start();
+        let max = *range.end();
+        let mid = lerp(min, max, 0.5);
 
         if feathered {
-            if (r_min..=r_mid).contains(&px) {
-                xfer::s_curve(normalise(px, r_min, r_mid), 0.1)
+            if (min..=mid).contains(&px) {
+                xfer::s_curve(normalise(px, min, mid), 0.1)
             }
-            else if (r_mid..=r_max).contains(&px) {
-                (xfer::s_curve(1.0 - normalise(px, r_mid, r_max), 0.1))
+            else if (mid..=max).contains(&px) {
+                (xfer::s_curve(1.0 - normalise(px, mid, max), 0.1))
             }
             else {
                 0.0
             }
         }
+        else if (min..=mid).contains(&px) {
+            xfer::s_curve_round(normalise(px, min, mid), 0.97)
+        }
+        else if (mid..=max).contains(&px) {
+            (1.0 - xfer::s_curve_round(normalise(px, mid, max), -0.97))
+        }
         else {
-            if (r_min..=r_mid).contains(&px) {
-                xfer::s_curve_round(normalise(px, r_min, r_mid), 0.97)
-            }
-            else if (r_mid..=r_max).contains(&px) {
-                (1.0 - xfer::s_curve_round(normalise(px, r_mid, r_max), -0.97))
-            }
-            else {
-                0.0
-            }
+            0.0
         }
     }
 }
@@ -389,24 +388,6 @@ impl DrawMask for Contours {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
-        let win = app.main_window();
-        let device = win.device();
-        let mut buf = device.create_buffer(&BufferDescriptor {
-            label: Some("hello"),
-            size: 128,
-            usage: BufferUsages::COPY_SRC | BufferUsages::COPY_DST,
-            mapped_at_creation: true,
-        });
-
-        let future = async move {
-            let mut slice = buf.slice(..);
-            if let Ok(_) = slice.map_async(wgpu::MapMode::Write).await {
-                let bytes = &mut slice.get_mapped_range_mut()[..];
-            }
-        };
-
-        device.poll(wgpu::Maintain::Poll);
-
         self.texture.upload_data(
             app.main_window().device(),
             &mut frame.command_encoder(),

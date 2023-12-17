@@ -31,7 +31,13 @@ pub struct Ramp {
 impl Ramp {
     /// Returns a new `Ramp` with the provided duration time in milliseconds.
     pub fn new(duration_ms: f64, sample_rate: f64) -> Self {
-        let mut s = Self { duration_ms, sample_rate, ..Default::default() };
+        let mut s = Self {
+            duration_ms,
+            sample_rate,
+            steps_remaining: 0,
+            step_size: 0.0,
+            current_value: 0.0,
+        };
         s.setup();
         s
     }
