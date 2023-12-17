@@ -1,12 +1,15 @@
-use nannou::window::Id;
 use nannou_audio::Stream;
+
+use nannou_egui::{self, egui, Egui};
 
 use super::view::view;
 use super::*;
 use super::{audio::*, sequencer::Sequencer};
+use crate::app::params::*;
 use crate::dsp::{ResonatorBankParams, SpectralMask};
 use crate::generative::*;
 use crate::gui::spectrum::*;
+use nannou::prelude::WindowId as Id;
 
 use std::{
     cell::RefCell,
@@ -24,6 +27,9 @@ type CallbackTimerRef = Arc<Mutex<Instant>>;
 /// The app's model, i.e. its general state.
 pub struct Model {
     window: Id,
+
+    pub egui: Egui,
+    pub ui_params: UIParams,
 
     // AUDIO DATA
     /// The CPAL audio stream.
@@ -66,7 +72,6 @@ pub struct Model {
     pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
     /// The time since the last call to `update()`.
     pub delta_time: f64,
-    update_time: Instant,
 
     /// A Perlin noise contour generator.
     pub contours: Option<Arc<RwLock<Contours>>>,
@@ -91,7 +96,6 @@ impl Model {
     ///
     /// Panics if a new window cannot be initialized.
     pub fn build(app: &App) -> Self {
-        let max_spectral_block_size = 1 << 14; // 16,384
         let AudioSystem {
             stream: audio_stream,
             sample_rate_ref,
@@ -102,7 +106,7 @@ impl Model {
             post_spectrum,
             voice_event_sender,
             spectral_mask,
-        } = build_audio_system(max_spectral_block_size);
+        } = build_audio_system(MAX_SPECTRAL_BLOCK_SIZE);
 
         let (_w, _h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
 
@@ -124,8 +128,15 @@ impl Model {
             audio_senders.note_event.clone(),
         );
 
+        let egui = Egui::from_window(
+            &app.window(window).expect("expected a valid window id"),
+        );
+
         Self {
             window,
+
+            egui,
+            ui_params: build_ui_parameters(),
 
             audio_stream,
             audio_senders,
@@ -157,18 +168,6 @@ impl Model {
             contours: Some(Arc::new(RwLock::new(contours))),
             smooth_life: Some(Arc::new(RwLock::new(smooth_life))),
 
-            // contours: match current_gen_algo {
-            //     GenerativeAlgo::Contours => {
-            //         Some(Arc::new(RwLock::new(contours)))
-            //     }
-            //     GenerativeAlgo::SmoothLife => None,
-            // },
-            // smooth_life: match current_gen_algo {
-            //     GenerativeAlgo::Contours => None,
-            //     GenerativeAlgo::SmoothLife => {
-            //         Some(Arc::new(RwLock::new(smooth_life)))
-            //     }
-            // },
             mask_scan_line_pos: 0.0,
             mask_scan_line_increment: 0.1,
 
@@ -181,7 +180,6 @@ impl Model {
             sample_rate_ref,
 
             delta_time: 0.0,
-            update_time: Instant::now(),
 
             current_gen_algo,
         }
@@ -220,11 +218,14 @@ impl Model {
         todo!();
     }
 
+    /// # Panics
+    ///
+    /// This will panic if the `SmoothLife` generator cannot be locked.
     pub fn mask_rect(&self) -> Rect {
         self.contours.as_ref().map_or_else(
             || {
                 self.smooth_life.as_ref().map_or_else(
-                    || unreachable!(),
+                    || unreachable!("this should be unreachable as it is set to Some before this can be called."),
                     |sml| sml.read().unwrap().rect(),
                 )
             },
@@ -251,15 +252,7 @@ impl Model {
             .color(rgba::<u8>(0, 200, 0, 100));
     }
 
-    pub fn get_delta_time(&mut self) -> f64 {
-        self.delta_time = self.update_time.elapsed().as_secs_f64();
-        self.update_time = Instant::now();
-
-        self.delta_time
+    pub fn set_delta_time(&mut self, delta_time: f64) {
+        self.delta_time = delta_time;
     }
-}
-
-pub enum GenerativeAlgo {
-    Contours,
-    SmoothLife,
 }

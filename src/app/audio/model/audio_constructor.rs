@@ -4,7 +4,7 @@ use atomic_float::AtomicF64;
 use std::sync::atomic::AtomicUsize;
 use triple_buffer::Output;
 
-pub const DEFAULT_SPECTRAL_BLOCK_SIZE: usize = 1 << 10;
+pub const DEFAULT_SPECTRAL_BLOCK_SIZE: usize = 1 << 10; // 1024
 pub const DEFAULT_GAIN: f64 = 1.5;
 
 pub fn build_audio_model(mut context: AudioContext) -> AudioPackage {

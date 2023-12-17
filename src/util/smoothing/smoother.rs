@@ -22,11 +22,17 @@ impl<T: Smoothable> Smoother<T> {
         Self {
             ramp: Ramp::new(duration_ms, sample_rate),
             start_value: T::from_f64(0.0),
-            current_value: T::from_f64(0.0),
+            current_value: target_value,
             target_value,
 
             smoothing_type: SmoothingType::default(),
         }
+    }
+
+    /// Creates a smoother with `smoothing_type` smoothing.
+    pub fn with_smoothing_type(mut self, smoothing_type: SmoothingType) -> Self {
+        self.set_smoothing_type(smoothing_type);
+        self
     }
 
     /// Yields the `Smoother`'s next smoothed value, intended to be called

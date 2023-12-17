@@ -2,12 +2,13 @@ use super::*;
 use std::sync::{Arc, Mutex, RwLock};
 
 pub fn update(app: &App, model: &mut Model, update: Update) {
-    let dt = model.get_delta_time();
+    model.egui.set_elapsed_time(update.since_start);
+    let dt = update.since_last.as_secs_f64();
+    model.set_delta_time(dt);
     model.increment_mask_scan_line();
 
-    // if let Ok(mut mask) = model.spectral_mask.lock() {
+    let egui_ctx = model.egui.begin_frame();
     let pos = model.mask_scan_line_pos;
-
     let mask = Arc::clone(&model.spectral_mask);
 
     match model.current_gen_algo {
@@ -38,5 +39,4 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
             });
         }
     }
-    // }
 }

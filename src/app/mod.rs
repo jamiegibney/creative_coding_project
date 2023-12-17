@@ -8,11 +8,13 @@ mod key;
 mod model;
 mod mouse;
 pub mod musical;
+pub mod params;
 mod update;
 mod view;
 
-pub use model::{GenerativeAlgo, Model};
+pub use model::Model;
 pub use musical::*;
+pub use params::*;
 use update::update;
 
 /// Runs the app via Nannou.

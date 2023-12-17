@@ -62,6 +62,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     // if the frame fails to draw, we'll just ignore it
     let _ = draw.to_frame(app, &frame);
+    let _ = model.egui.draw_to_frame(&frame);
 }
 
 fn outline_rect(rect: &Rect, draw: &Draw, width: f32) {

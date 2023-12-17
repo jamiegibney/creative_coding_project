@@ -4,6 +4,7 @@ use crate::prelude::*;
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::noise::{NoiseFn, Perlin, Seedable};
 use nannou::prelude::*;
+use nannou::wgpu::*;
 
 use std::cell::RefCell;
 use std::ops::RangeInclusive;
@@ -388,6 +389,24 @@ impl DrawMask for Contours {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        let win = app.main_window();
+        let device = win.device();
+        let mut buf = device.create_buffer(&BufferDescriptor {
+            label: Some("hello"),
+            size: 128,
+            usage: BufferUsages::COPY_SRC | BufferUsages::COPY_DST,
+            mapped_at_creation: true,
+        });
+
+        let future = async move {
+            let mut slice = buf.slice(..);
+            if let Ok(_) = slice.map_async(wgpu::MapMode::Write).await {
+                let bytes = &mut slice.get_mapped_range_mut()[..];
+            }
+        };
+
+        device.poll(wgpu::Maintain::Poll);
+
         self.texture.upload_data(
             app.main_window().device(),
             &mut frame.command_encoder(),

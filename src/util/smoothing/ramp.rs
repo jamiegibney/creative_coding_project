@@ -8,7 +8,7 @@ const RAMP_TARGET: f64 = 1.0;
 /// Used as the internal system for `Smoother`.
 ///
 /// For thread-safe operations, use `SmootherAtomic`.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Ramp {
     /// The number of smoothing steps remaining until the target is reached.
     steps_remaining: i32,
@@ -31,11 +31,7 @@ pub struct Ramp {
 impl Ramp {
     /// Returns a new `Ramp` with the provided duration time in milliseconds.
     pub fn new(duration_ms: f64, sample_rate: f64) -> Self {
-        let mut s = Self {
-            duration_ms,
-            sample_rate,
-            ..Default::default()
-        };
+        let mut s = Self { duration_ms, sample_rate, ..Default::default() };
         s.setup();
         s
     }
@@ -49,12 +45,7 @@ impl Ramp {
     pub fn skip(&mut self, num_steps: u32) -> f64 {
         debug_assert_ne!(num_steps, 0);
 
-        let Self {
-            steps_remaining,
-            step_size,
-            current_value,
-            ..
-        } = self;
+        let Self { steps_remaining, step_size, current_value, .. } = self;
 
         if *steps_remaining <= 0 {
             return RAMP_TARGET;
@@ -63,7 +54,8 @@ impl Ramp {
         if *steps_remaining <= num_steps as i32 {
             *steps_remaining = 0;
             *current_value = RAMP_TARGET;
-        } else {
+        }
+        else {
             *current_value += *step_size * num_steps as f64;
             *steps_remaining -= num_steps as i32;
         }
@@ -86,12 +78,7 @@ impl Ramp {
     /// Fills block with filled samples. Progresses the `Ramp` by `block.len()`
     /// values.
     pub fn next_block_exact(&mut self, block: &mut [f64]) {
-        let Self {
-            steps_remaining,
-            step_size,
-            current_value,
-            ..
-        } = self;
+        let Self { steps_remaining, step_size, current_value, .. } = self;
 
         let steps_remaining = *steps_remaining as usize;
         let num_smoothed_values = block.len().min(steps_remaining);
@@ -111,7 +98,8 @@ impl Ramp {
 
             *current_value = RAMP_TARGET;
             block[num_smoothed_values - 1] = RAMP_TARGET;
-        } else {
+        }
+        else {
             block[..num_smoothed_values].fill_with(filler);
         }
 
@@ -124,8 +112,12 @@ impl Ramp {
     /// Same as the [`next_block`][Self::next_block()] method, but applies
     /// a mapping function to each element (should map `0.0` to `1.0` to
     /// the desired range).
-    pub fn next_block_mapped<T, F>(&mut self, block: &mut [T], _block_len: usize, function: F)
-    where
+    pub fn next_block_mapped<T, F>(
+        &mut self,
+        block: &mut [T],
+        _block_len: usize,
+        function: F,
+    ) where
         F: FnMut(f64) -> T,
         T: Smoothable,
     {
@@ -135,8 +127,11 @@ impl Ramp {
     /// Same as the [`next_block_exaxt`][Self::next_block_exact()] method,
     /// but applies a mapping function to each element (should map `0.0`
     /// to `1.0` to the desired range).
-    pub fn next_block_exact_mapped<T, F>(&mut self, block: &mut [T], mut mapping_function: F)
-    where
+    pub fn next_block_exact_mapped<T, F>(
+        &mut self,
+        block: &mut [T],
+        mut mapping_function: F,
+    ) where
         F: FnMut(f64) -> T,
         T: Smoothable,
     {
@@ -162,7 +157,8 @@ impl Ramp {
 
             self.current_value = RAMP_TARGET;
             block[num_smoothed_values - 1] = mapping_function(RAMP_TARGET);
-        } else {
+        }
+        else {
             block.iter_mut().take(num_smoothed_values).for_each(|x| {
                 self.current_value += self.step_size;
                 *x = mapping_function(self.current_value);
@@ -216,11 +212,8 @@ impl Ramp {
         let steps_remaining = self.duration_samples();
         self.steps_remaining = steps_remaining as i32;
 
-        self.step_size = if steps_remaining > 0 {
-            self.compute_step_size()
-        } else {
-            0.0
-        };
+        self.step_size =
+            if steps_remaining > 0 { self.compute_step_size() } else { 0.0 };
     }
 
     /// Computes the total number of steps required to reach the target value
@@ -232,5 +225,11 @@ impl Ramp {
     /// Computes the size of each step.
     fn compute_step_size(&self) -> f64 {
         (RAMP_TARGET - self.current_value) / (self.steps_remaining as f64)
+    }
+}
+
+impl Default for Ramp {
+    fn default() -> Self {
+        Self::new(0.1, unsafe { SAMPLE_RATE })
     }
 }
