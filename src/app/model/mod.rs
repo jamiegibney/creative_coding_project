@@ -174,7 +174,7 @@ impl Model {
 
             sequencer,
 
-            mask_thread_pool: ThreadPool::build(2)
+            mask_thread_pool: ThreadPool::build(1)
                 .expect("failed to build mask thread pool"),
 
             dsp_load,

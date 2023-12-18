@@ -27,6 +27,8 @@
         - "hard" clip
     - basic reverberator (use the comb filters?)
 - `UIParams` needs to initialise all the audio stuff
+- implement more advanced interpolation for smoothlife algorithm (i.e. bicubic or something else)
+    - alternatively, try blurring the result!
 
 ### Stuff to try
 - try to replace the generative algorithms with compute shaders, and then copy the content from the GPU to the CPU for audio processing 

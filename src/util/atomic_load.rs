@@ -8,7 +8,7 @@ pub trait AtomicLoad: Default {
     /// Shorthand method for `self.load(Relaxed)`.
     fn lr(&self) -> Self::NonAtomic;
     /// Shorthand method for `self.store(value, Relaxed)`.
-    fn sr(&mut self, value: Self::NonAtomic);
+    fn sr(&self, value: Self::NonAtomic);
 }
 
 impl AtomicLoad for AtomicI32 {
@@ -18,7 +18,7 @@ impl AtomicLoad for AtomicI32 {
         self.load(Relaxed)
     }
 
-    fn sr(&mut self, value: Self::NonAtomic) {
+    fn sr(&self, value: Self::NonAtomic) {
         self.store(value, Relaxed);
     }
 }
@@ -30,7 +30,7 @@ impl AtomicLoad for AtomicUsize {
         self.load(Relaxed)
     }
 
-    fn sr(&mut self, value: Self::NonAtomic) {
+    fn sr(&self, value: Self::NonAtomic) {
         self.store(value, Relaxed);
     }
 }
@@ -42,7 +42,7 @@ impl AtomicLoad for AtomicBool {
         self.load(Relaxed)
     }
 
-    fn sr(&mut self, value: Self::NonAtomic) {
+    fn sr(&self, value: Self::NonAtomic) {
         self.store(value, Relaxed);
     }
 }
@@ -54,7 +54,7 @@ impl AtomicLoad for AtomicF64 {
         self.load(Relaxed)
     }
 
-    fn sr(&mut self, value: Self::NonAtomic) {
+    fn sr(&self, value: Self::NonAtomic) {
         self.store(value, Relaxed);
     }
 }
