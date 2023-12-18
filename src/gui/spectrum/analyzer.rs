@@ -1,7 +1,6 @@
 use super::{process::RESULT_BUFFER_SIZE, *};
 use crate::{dsp::*, gui::rdp::rdp_in_place, prelude::*};
 use nannou::prelude::*;
-use rayon::prelude::*;
 use std::ptr::{addr_of, copy_nonoverlapping};
 
 const NUM_SPECTRUM_AVERAGES: usize = 10;
@@ -191,10 +190,10 @@ impl SpectrumAnalyzer {
         }
 
         // process the interpolated magnitude data with a low-pass filter to smooth it out.
-        // this step ensures that the low-frequency points are very consistent — the filter will
-        // maintain the last high-frequency points it processed in the last frame, so this
-        // effectively "flushes" that information and prepares it for the lower frequencies.
         for _ in 0..16 {
+            // this step ensures that the low-frequency points are consistent after filtering; the
+            // filter will maintain the last high-frequency points it processes from the last frame,
+            // so this effectively "flushes" that information and prepares it for the lower frequencies.
             let dc = self.interpolated[0][1];
             self.filter.process_mono(dc, 0);
         }
