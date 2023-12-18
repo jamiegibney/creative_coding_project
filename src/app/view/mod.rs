@@ -8,10 +8,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     // if frame.nth() < 2 {}
     draw.background().color(BLACK);
 
-    let V2 {
-        x: _width,
-        y: _height,
-    } = WINDOW_SIZE;
+    let V2 { x: _width, y: _height } = WINDOW_SIZE;
 
     // if PRINT_DSP_LOAD {
     //
@@ -19,8 +16,9 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
-    // let post_spectrum_line_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
+    // let post_spectrum_line_color = Rgba::new(1.0, 1.0, 1.0, 1.0);
     let post_spectrum_mesh_color = Rgba::new(0.0, 1.0, 0.0, 0.3);
+    let line_weight = 2.0;
 
     let mut pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
     let spectrum_rect = pre_spectrum.rect();
@@ -29,14 +27,16 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         .xy(spectrum_rect.xy())
         .color(BLACK);
 
-    pre_spectrum.draw(draw, Some(pre_spectrum_mesh_color), None);
+    pre_spectrum.draw(draw, Some(pre_spectrum_mesh_color), line_weight, None);
 
     drop(pre_spectrum);
 
-    model
-        .post_spectrum_analyzer
-        .borrow_mut()
-        .draw(draw, None, Some(post_spectrum_mesh_color));
+    model.post_spectrum_analyzer.borrow_mut().draw(
+        draw,
+        None,
+        line_weight,
+        Some(post_spectrum_mesh_color),
+    );
 
     outline_rect(model.pre_spectrum_analyzer.borrow().rect(), draw, 2.0);
 

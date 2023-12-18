@@ -56,6 +56,7 @@ pub fn normalise(value: f64, min: f64, max: f64) -> f64 {
 
 /// Returns a vector of interleaved elements from the input, i.e.
 /// `0.x, 0.y, 1.x, 1.y, ...`
+// TODO: make this an in-place mutation, some kind of sorting algorithm may be faster?
 pub fn interleave_dvec2_to_f64(input: &[DVec2]) -> Vec<f64> {
     let mut v = Vec::with_capacity(input.len() * 2);
 

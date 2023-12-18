@@ -145,7 +145,7 @@ pub fn decimate_points(points: &[[f64; 2]], epsilon: f64) -> Vec<usize> {
 #[allow(
     clippy::range_minus_one, clippy::option_if_let_else, clippy::cast_lossless
 )]
-pub fn decimate_points_in_place(
+pub fn rdp_in_place(
     points: &[[f64; 2]],
     indices: &mut Vec<usize>,
     epsilon: f64,

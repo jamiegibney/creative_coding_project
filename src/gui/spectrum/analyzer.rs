@@ -1,5 +1,5 @@
 use super::{process::RESULT_BUFFER_SIZE, *};
-use crate::{dsp::*, gui::rdp::decimate_points_in_place, prelude::*};
+use crate::{dsp::*, gui::rdp::rdp_in_place, prelude::*};
 use nannou::prelude::*;
 use rayon::prelude::*;
 use std::ptr::{addr_of, copy_nonoverlapping};
@@ -72,7 +72,17 @@ impl SpectrumAnalyzer {
             indices: (0..vec.len()).collect(),
             rect,
 
-            mesh_points: vec.iter().map(|p| DVec2::from_slice(p)).collect(),
+            mesh_points: {
+                let mut v: Vec<DVec2> =
+                    vec.iter().map(|p| DVec2::from_slice(p)).collect();
+                // add the extra elements which allow the mesh to be pinned to the
+                // bottom corners.
+                v.push(rect.bottom_right().as_f64());
+                v.push(rect.bottom_left().as_f64());
+                v.rotate_right(1);
+
+                v
+            },
 
             filter,
         }
@@ -90,6 +100,7 @@ impl SpectrumAnalyzer {
         &mut self,
         draw: &Draw,
         line_color: Option<Rgba>,
+        line_weight: f32,
         mesh_color: Option<Rgba>,
     ) {
         if line_color.is_some() || mesh_color.is_some() {
@@ -99,28 +110,34 @@ impl SpectrumAnalyzer {
             self.draw_mesh(draw, color);
         }
         if let Some(color) = line_color {
-            self.draw_line(draw, color);
+            self.draw_line(draw, color, line_weight);
         }
     }
 
-    fn draw_line(&mut self, draw: &Draw, color: Rgba) {
-        draw.polyline().weight(2.5).points_colored(
+    fn draw_line(&mut self, draw: &Draw, color: Rgba, weight: f32) {
+        draw.polyline().weight(weight).points_colored(
             self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
         );
     }
 
     fn draw_mesh(&mut self, draw: &Draw, color: Rgba) {
-        let start_point = self.rect.bottom_left().as_f64();
-        let end_point = self.rect.bottom_right().as_f64();
+        let br_point = self.rect.bottom_right().as_f64();
 
         unsafe {
             let ptr = self.mesh_points.as_mut_ptr();
             let len = self.spectrum_line.len();
-            copy_nonoverlapping(addr_of!(start_point), ptr, 1);
+
+            // we can then truncate the length of the mesh buffer to ignore decimated points.
+            self.mesh_points.set_len(self.spectrum_line.len() + 2);
+
+            // we always ignore the first point as it is set to the bottom-left point.
             copy_nonoverlapping(self.spectrum_line.as_ptr(), ptr.add(1), len);
-            copy_nonoverlapping(addr_of!(end_point), ptr.add(len + 1), 1);
+            // but we always need to add the bottom-right point here, as we don't know
+            // how many points were decimated.
+            copy_nonoverlapping(addr_of!(br_point), ptr.add(len + 1), 1);
         }
 
+        // now we can get the triangulation indices
         let indices = earcutr::earcut(
             &interleave_dvec2_to_f64(&self.mesh_points),
             &[],
@@ -128,6 +145,7 @@ impl SpectrumAnalyzer {
         )
         .unwrap();
 
+        // and draw the mesh :D
         draw.mesh().indexed_colored(
             self.mesh_points
                 .iter()
@@ -145,9 +163,10 @@ impl SpectrumAnalyzer {
 
         // then get an interpolated magnitude value for each point along the curve.
         for (i, pt) in self.interpolated.iter_mut().enumerate() {
-            let x = (i as f64 / width) * width + left;
+            // get the x coordinate
+            let x = (i as f64 / width).mul_add(width, left);
 
-            // get the frequency bin index and its offset
+            // get the frequency bin index and its interpolation value
             let (idx, interp) =
                 Self::bin_idx_t(xpos_to_freq(&self.rect, x), self.bin_step);
 
@@ -157,11 +176,10 @@ impl SpectrumAnalyzer {
                 continue;
             }
 
-            // get a slice of 4 points used for cubic interpolation...
+            // get a slice of 4 points used for cubic interpolation
             let slice = &self.averaged_data[(idx - 1)..=(idx + 2)];
 
-            // catmull-rom interpolation is used to give a lovely smoothed shape
-            // to the magnitude response.
+            // catmull-rom interpolation is used to produce a nicely smoothed path
             let mut mag = catmull_from_slice(slice, interp);
 
             // the magnitude is then clamped to -inf dB.
@@ -187,19 +205,24 @@ impl SpectrumAnalyzer {
         });
         */
 
-        // decimate points here
-        decimate_points_in_place(&self.interpolated, &mut self.indices, 0.01);
+        // point decimation is performed here to remove unneeded points, speeding up
+        // the rendering process.
+        rdp_in_place(&self.interpolated, &mut self.indices, 0.01);
+        // we need to truncate the length of this buffer so we ignore the unused elements.
         unsafe {
             self.spectrum_line.set_len(self.indices.len());
         }
         for (i, &idx) in self.indices.iter().enumerate() {
             self.spectrum_line[i] = {
                 let point = self.interpolated[idx];
+
                 let x = point[0];
                 let y = self.gain_to_ypos(point[1]);
+
                 dvec2(x, y)
             };
         }
+
         self.indices.clear();
     }
 
