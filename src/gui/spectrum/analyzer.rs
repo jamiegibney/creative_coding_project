@@ -44,7 +44,7 @@ impl SpectrumAnalyzer {
 
         let mut filter = FirstOrderFilter::new(10.0);
         filter.set_type(FilterType::Lowpass);
-        filter.set_freq(0.3);
+        filter.set_freq(1.0);
 
         let vec: Vec<[f64; 2]> = (0..resolution)
             .map(|i| {
@@ -190,20 +190,17 @@ impl SpectrumAnalyzer {
             *pt = [x, mag];
         }
 
-        /*
-        // bit of a hack here - the filter processes 10 samples but the values aren't
-        // used because it helps to "prime" the filter, smoothing out the curve at
-        // the very lowest frequencies. this needs to be done because the filter is
-        // reset for each frame, so has a little "blip" at DC.
-        // ideally the blip would be off screen, but this works well enough and the
-        // discontinuity is difficult to spot unless you're looking for it.
-        for _ in 0..10 {
-            self.filter.process_mono(0.0, 0);
+        // process the interpolated magnitude data with a low-pass filter to smooth it out.
+        // this step ensures that the low-frequency points are very consistent — the filter will
+        // maintain the last high-frequency points it processed in the last frame, so this
+        // effectively "flushes" that information and prepares it for the lower frequencies.
+        for _ in 0..16 {
+            let dc = self.interpolated[0][1];
+            self.filter.process_mono(dc, 0);
         }
-        self.interpolated.iter_mut().skip(10).for_each(|x| {
-            // x[1] = self.filter.process_mono(x[1], 0);
+        self.interpolated.iter_mut().for_each(|x| {
+            x[1] = self.filter.process_mono(x[1], 0);
         });
-        */
 
         // point decimation is performed here to remove unneeded points, speeding up
         // the rendering process.
@@ -226,7 +223,6 @@ impl SpectrumAnalyzer {
         self.indices.clear();
     }
 
-    // TODO this could probably be more efficient?
     fn average_spectrum_data(&mut self) {
         // copy the new set of magnitudes to the averaging buffers
         let mags = self.spectrum.read();
