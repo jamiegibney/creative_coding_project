@@ -96,6 +96,7 @@ impl Model {
     ///
     /// Panics if a new window cannot be initialized.
     pub fn build(app: &App) -> Self {
+        let params = build_ui_parameters();
         let AudioSystem {
             stream: audio_stream,
             sample_rate_ref,
@@ -106,7 +107,7 @@ impl Model {
             post_spectrum,
             voice_event_sender,
             spectral_mask,
-        } = build_audio_system(MAX_SPECTRAL_BLOCK_SIZE);
+        } = build_audio_system(MAX_SPECTRAL_BLOCK_SIZE, &params);
 
         let (_w, _h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
 
@@ -119,7 +120,7 @@ impl Model {
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
             dsp_load,
-        } = build_gui_elements(app, pre_spectrum, post_spectrum);
+        } = build_gui_elements(app, pre_spectrum, post_spectrum, &params);
 
         let current_gen_algo = GenerativeAlgo::SmoothLife;
 
@@ -136,7 +137,7 @@ impl Model {
             window,
 
             egui,
-            ui_params: build_ui_parameters(),
+            ui_params: params,
 
             audio_stream,
             audio_senders,

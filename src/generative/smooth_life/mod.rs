@@ -22,11 +22,11 @@ pub struct SmoothLife {
 }
 
 impl SmoothLife {
-    pub fn new(device: &wgpu::Device, rect: Rect) -> Self {
+    pub fn new(device: &wgpu::Device, rect: Rect, resolution: usize) -> Self {
         let w = rect.w().floor() as u32;
         let h = rect.h().floor() as u32;
 
-        let mut generator = SmoothLifeGeneratorAsync::new(32);
+        let mut generator = SmoothLifeGeneratorAsync::new(resolution);
         generator.set_speed(2.0);
         generator.set_state(SLState::fluid());
         generator.set_outer_radius(14.0);

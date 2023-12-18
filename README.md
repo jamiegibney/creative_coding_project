@@ -1,31 +1,36 @@
 # TODO
 
 ### Fixes
-- The DSP idle detection is too quick for notes with very quick release times for the spectrograms. Try to add a timer after all voices are finished which leaves enough time for the spectrogram to decay properly
 - Can't properly display pre and post spectrogram meshes simultaneously (earcutr issue?)
-- Bug where oversampling affects Biquad filter cutoff frequencies
-- Many DSP processors use the global sample rate - they should instead hold their own sample rate value so they can be compatible with upsampled blocks.
+- Randomising resonator bank pitches doesn't properly quantise to a scale 
+- Fix the spectrogram amplitude scaling
+- Fix the spectral filter gain compensation: it differs drastically with different window sizes
 
 ### Implementation
-- **PRIORITY** implement some GUI controls, which may make general development faster
-- Implement compression
-- Implement other allpass filter design, and look into the diopser implementation
-- Distortion
-    - Implement downsampling
-    - Implement frequency shifting
-    - Implement ring modulation
-- Implement EQ curves/nodes w nannou
-- Implement stereo width controls
-- Implement a basic reverberator (use the comb filters?)
-- Implement Perlin noise (does nannou have it already?)
-- Revise interpolation and transfer functions, as very few of them are tested
-- Implement a version of the poisson distribution, which may help for some randomised sequencing/note events
-- Implement FFT averaging for the spectrograms, which might solve the noisy high frequency information
+- **PRIORITY**: **GUI!**
+    - 3-band EQ
+    - sliders, knobs, buttons, menus
+- Voronoi noise algorithm
+    - to control pitch/amp/panning of each resonator
+    - to act as a spectral mask
+- point distribution/scattering algorithm
+- flow field/jitter to add motion to cells
+- sequencer for some kind of rhythmic note generation
+- DSP:
+    - pitch mod effects (chorus, flanger..)
+    - compression
+    - distortion
+        - better waveshaping
+        - downsampling
+        - frequency shifting
+        - ring modulation
+        - "hard" clip
+    - basic reverberator (use the comb filters?)
+- `UIParams` needs to initialise all the audio stuff
 
 ### Stuff to try
-- Try to plot the frequency response of time-domain filters (try computing the impulse response, then performing an FFT?)
-- Try to utilise the GPU?
-- **PRIORITY** Try having an "Effect" trait rather than just a "Filter" trait, and than have that implement DynClone. Perhaps it could have a "`try_clone()`" method for clone attempts? The idea is that every effects processor could support dynamic dispatch (`dyn Effect`), which might make setting up processing chains a lot easier
+- try to replace the generative algorithms with compute shaders, and then copy the content from the GPU to the CPU for audio processing 
+    - despite the copying overhead, the compute time will be dramatically reduced by the GPU.
 - HRTF processing
 
 ### Optimisations
@@ -34,7 +39,5 @@
     - STFT helper?
     - spectrum processing?
     - oversampling
-- Point decimation could mutate a buffer in-place
-- Interpolating between frequency bins involves a lot of recomputation, basic caching could speed up quite a bit
 - Find out why some spectrum points are not finite?
 - Oversampling could be much faster - better convolution algorithm? Process both channels in parallel?

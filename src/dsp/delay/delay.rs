@@ -91,7 +91,8 @@ impl Delay {
 impl Effect for Delay {
     fn process_mono(&mut self, input: f64, _: usize) -> f64 {
         let output = self.buffer.read();
-        self.buffer.push(input + output * self.feedback_amount);
+        self.buffer
+            .push(output.mul_add(self.feedback_amount, input));
 
         output
     }

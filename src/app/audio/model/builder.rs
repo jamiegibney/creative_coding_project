@@ -2,7 +2,6 @@ use super::*;
 use crossbeam_channel::{bounded, unbounded};
 use std::cell::RefCell;
 
-// TODO add the audio message channels (need to figure out what is needed)
 pub struct AudioModelBuilder {
     /// The audio model.
     model: AudioModel,
@@ -94,11 +93,16 @@ impl AudioModelBuilder {
     /// - [`data()`](Self::data)
     /// - [`data()`](Self::data)
     pub fn build(mut self) -> AudioPackage {
-        assert!(self.prepared_state == Self::PREPARED_CHECKSUM);
+        assert!(
+            self.prepared_state == Self::PREPARED_CHECKSUM,
+            "AudioModelBuilder::build(): failed to verify preparation checksum, please call all the required methods"
+        );
 
         AudioPackage {
             spectrum_outputs: self.spectrum_outputs(),
-            callback_timer_ref: Arc::clone(&self.model.data.callback_time_elapsed),
+            callback_timer_ref: Arc::clone(
+                &self.model.data.callback_time_elapsed,
+            ),
             sample_rate_ref: Arc::clone(&self.model.data.sample_rate),
             message_channels: self.message_channels(),
             model: self.model,
@@ -114,9 +118,11 @@ impl AudioModelBuilder {
         post_in.compute(&empty);
 
         let buffer = vec![0.0; MAX_BUFFER_SIZE * NUM_CHANNELS];
-        self.model.spectrograms.pre_fx_spectrogram_buffer = Arc::new(Mutex::new(buffer.clone()));
+        self.model.spectrograms.pre_fx_spectrogram_buffer =
+            Arc::new(Mutex::new(buffer.clone()));
 
-        self.model.spectrograms.post_fx_spectrogram_buffer = Arc::new(Mutex::new(buffer));
+        self.model.spectrograms.post_fx_spectrogram_buffer =
+            Arc::new(Mutex::new(buffer));
 
         let mut guard = loop {
             let res = self.model.spectrograms.pre_fx_spectrogram.try_lock();

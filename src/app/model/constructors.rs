@@ -37,7 +37,10 @@ pub struct AudioSystem {
 }
 
 /// Builds the audio stream, audio message channel senders, and input note handler.
-pub fn build_audio_system(spectral_block_size: usize) -> AudioSystem {
+pub fn build_audio_system(
+    spectral_block_size: usize,
+    params: &UIParams,
+) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
     let (spectral_mask, spectral_mask_output) =
@@ -109,6 +112,7 @@ pub fn build_gui_elements(
     app: &App,
     pre_spectrum: SpectrumOutput,
     post_spectrum: SpectrumOutput,
+    params: &UIParams,
 ) -> GuiElements {
     let contour_size = 256;
     let contour_size_fl = (contour_size / 2) as f32;
@@ -129,12 +133,16 @@ pub fn build_gui_elements(
     GuiElements {
         contours: Contours::new(app.main_window().device(), contour_rect)
             .with_num_threads(8)
-            .expect("failed to allocate 8 threads to contour generator")
+            .expect("failed to allocate threads to contour generator")
             .with_feathering(false)
-            .with_z_increment(0.2)
-            .with_num_contours(8)
-            .with_contour_range(0.3..=0.7),
-        smooth_life: SmoothLife::new(app.main_window().device(), contour_rect),
+            .with_z_increment(params.contour_speed)
+            .with_num_contours(params.contour_count)
+            .with_contour_range(0.0..=params.contour_thickness),
+        smooth_life: SmoothLife::new(
+            app.main_window().device(),
+            contour_rect,
+            params.smoothlife_resolution,
+        ),
 
         pre_spectrum_analyzer,
         post_spectrum_analyzer,
