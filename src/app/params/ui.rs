@@ -18,6 +18,8 @@ pub struct UIParams {
     pub mask_resolution: usize,
     /// Whether the spectral filter is pre- or post-FX.
     pub mask_is_post_fx: bool,
+    /// Whether to use the GPU to compute the generative algorithms.
+    pub mask_uses_gpu: bool,
 
     // CONTOURS ALGORITHMS
     /// The number of contours to draw.
@@ -145,6 +147,7 @@ impl Default for UIParams {
             mask_scan_line_speed: 0.1,
             mask_resolution: 1 << 9, // 512
             mask_is_post_fx: false,
+            mask_uses_gpu: true,
 
             contour_count: 8,
             contour_thickness: 0.6,
