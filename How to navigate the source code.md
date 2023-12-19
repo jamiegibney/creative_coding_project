@@ -35,9 +35,17 @@ If you're unfamiliar with Rust, here are some key things to bear in mind:
 - The primitive types look like `i32`, `f64`, `bool`, `usize`, etc.
 - `let` can (and often will) infer the type of a variable, and everything must have a type:
     ```rust
-    let int = 78324;        // type: i32
-    let float = 0.4352;     // type: f64
-    let boolean = false;    // type: bool
+    let a = 78324;  // type: i32
+    let b = 0.435;  // type: f64
+    let c = false;  // type: bool
+    ```
+- Variables can be redefined, which is called "overshadowing":
+    ```rust
+    let value = 42;
+    some_function(value);
+
+    let value = 9000;
+    some_function(value);
     ```
 - **All** blocks surrounded by `{}` are expressions, meaning they can have a value. The value of a `{}` block is often at the end, and is not terminated with a semicolon. For example:
     ```rust
@@ -55,11 +63,16 @@ If you're unfamiliar with Rust, here are some key things to bear in mind:
         important_number * 2.0
     };
     ```
-    - > This also applies to functions, so `return` is not always required to return values.
+- > This also applies to functions, so `return` is not always required to return values.
 - `(a, b)` is a *"tuple"*, which can hold multiple values.
-- `[T; N]` is a stack-allocated array which holds `N` values of `T`.
-- `&[T]` is a *"slice"* of `T` values, which usually means a reference to head-allocated data. All slices have a `.len()` method.
+- `[T; N]` is an array which holds `N` values of `T`. Arrays are stack-allocated by default.
+- `&[T]` is a *"slice"* of `T` values, which usually means a reference to heap-allocated data. All slices have a `.len()` method.
 - `&str` is a *"string slice"*, which is a reference to heap-allocated UTF-8 data.
+- The `Box` type is a pointer to owned data on the heap:
+    ```rust
+    let data = [1.234; 56];     // type: [f64; 56]      stack-allocated
+    let boxed = Box::new(data); // type: Box<[f64; 56]> heap-allocated
+    ```
 - `struct`s can (optionally) hold data and implement methods with `impl`.
 - `enum`s have variants, and variants can store data. `enum`s can also implement methods with `impl`.
 - `trait`s are a kind of interface — they can define methods which are implemented by `struct`s or `enum`s, and they can restrict what types can be used in certain contexts.
@@ -77,3 +90,44 @@ If you're unfamiliar with Rust, here are some key things to bear in mind:
 - `panic` is a term which refers to the program exiting, typically because of an unexpected or unrecoverable action.
 - Functions ending with `!` are macros, such as `println!()`, `vec![]`, or `todo!()`.
 - A `crate` is a library of Rust code — usually third-party.
+
+There are also some more advanced methods used in this project:
+
+- The `dyn` keyword refers to [dynamic dispatch](https://en.wikipedia.org/wiki/Dynamic_dispatch), and is used in Rust as "trait objects":
+    ```rust
+    // any trait
+    trait SomeTrait {
+        fn do_something();
+    }
+
+    // an example struct which implements SomeTrait
+    struct SomeStruct;
+    impl SomeTrait for SomeStruct {
+        // implementation...
+    }
+
+    // another example struct which implements SomeTrait
+    struct SomeOtherStruct;
+    impl SomeTrait for SomeOtherStruct {
+        // implementation...
+    }
+
+    // a struct which needs to hold any type which implements SomeTrait
+    struct OtherStruct {
+        some_trait_object: Box<dyn SomeTrait>, // this is a "trait object"
+    }
+
+    impl OtherStruct {
+        pub fn do_something_here(&self) {
+            // regardless of which type `some_trait_object` is, the `do_something()` 
+            // method of `SomeTrait` can be called, and the correct implementation is
+            // located at runtime. this is what dynamic dispatch is useful for!
+            self.some_trait_object.do_something();
+        }
+    }
+    ```
+- "Atomic" types are types which use atomic operations — operations which complete as whole steps. These are used in multi-threaded contexts to prevent different threads from accessing or interrupting half-complete operations.
+- The `Arc` type is a thread-safe, reference counting pointer. "Arc" stands for "Atomically Reference-Counted". It is used to share data amongst threads without needing to clone the data. However, it does not allow the underlying data to be mutated by default.
+- `Mutex` and `RwLock` are used to provide thread-safe "interior mutability" via a lock, which allows a value to mutated without a mutable reference to it.
+- `RefCell` allows for interior mutability by providing runtime borrow-checking (which is usually performed at compile-time). It is not thread-safe, however.
+- Multi-threading is used throughout the project as a way of asynchronously processing certain parts of the program — that is, certain operations are performed alongside the "main thread". A common example where multi-threaded is used is the audio processing, which is done on a separate thread. Accessing data on the audio thread requires the use of thread-safe pointers, or message channels such as `mpsc` in the standard library, or structs from the `triple_buffer` and `crossbeam_channel` crates.
