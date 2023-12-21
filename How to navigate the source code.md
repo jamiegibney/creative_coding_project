@@ -20,8 +20,8 @@ This project contains several main modules:
 
 Also note these top-level files:
 
-- `prelude.rs`: a file to allow easy access to certain code from anywhere in the program.
-- `settings.rs`: program-wide settings, such as the window size or default tempo.
+- `prelude.rs`: a file to allow easy access to certain code from anywhere in the project.
+- `settings.rs`: project-wide settings, such as the window size or default tempo.
 
 ### Third-party libraries
 This project relies on many third-party libraries. All of these "crates" are visible in the [`Cargo.toml`](./Cargo.toml) file under the `[dependencies]` section.
@@ -41,11 +41,13 @@ If you're unfamiliar with Rust, here are some key things to bear in mind:
     ```
 - Variables can be redefined, which is called "overshadowing":
     ```rust
-    let value = 42;
-    some_function(value);
-
-    let value = 9000;
-    some_function(value);
+    {
+        let value = 42;
+        some_function(value);
+    
+        let value = 9000;
+        some_function(value);
+    }
     ```
 - **All** blocks surrounded by `{}` are expressions, meaning they can have a value. The value of a `{}` block is often at the end, and is not terminated with a semicolon. For example:
     ```rust
