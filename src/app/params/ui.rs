@@ -8,6 +8,7 @@ pub mod eq;
 pub use eq::*;
 
 #[derive(Clone, Debug)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct UIParams {
     // ### SPECTRAL FILTER ###
     /// The algorithm to use for the spectral mask.

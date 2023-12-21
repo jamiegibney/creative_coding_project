@@ -9,13 +9,15 @@ mod model;
 mod mouse;
 pub mod musical;
 pub mod params;
-mod update;
-mod view;
+pub mod update;
+pub mod view;
+pub mod event;
 
 pub use model::Model;
 pub use musical::*;
 pub use params::*;
 use update::update;
+use event::event;
 
 /// Runs the app via Nannou.
 pub fn run_app() {

@@ -70,8 +70,6 @@ pub struct Model {
     pub pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
     /// The post-FX spectrogram.
     pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
-    /// The time since the last call to `update()`.
-    pub delta_time: f64,
 
     /// A Perlin noise contour generator.
     pub contours: Option<Arc<RwLock<Contours>>>,
@@ -81,6 +79,8 @@ pub struct Model {
     pub mask_scan_line_pos: f64,
     /// The amount to increment the position of the mask scan line each frame.
     pub mask_scan_line_increment: f64,
+
+    pub input_data: InputData,
 
     pub sequencer: Sequencer,
 
@@ -172,6 +172,8 @@ impl Model {
             mask_scan_line_pos: 0.0,
             mask_scan_line_increment: 0.1,
 
+            input_data: InputData::default(),
+
             sequencer,
 
             mask_thread_pool: ThreadPool::build(1)
@@ -179,8 +181,6 @@ impl Model {
 
             dsp_load,
             sample_rate_ref,
-
-            delta_time: 0.0,
 
             current_gen_algo,
         }
@@ -205,7 +205,7 @@ impl Model {
     /// Increments the internal position of the mask scan line.
     pub fn increment_mask_scan_line(&mut self) {
         self.mask_scan_line_pos +=
-            self.mask_scan_line_increment * self.delta_time;
+            self.mask_scan_line_increment * self.input_data.delta_time;
 
         if self.mask_scan_line_pos > 1.0 {
             self.mask_scan_line_pos -= 1.0;
@@ -227,10 +227,10 @@ impl Model {
             || {
                 self.smooth_life.as_ref().map_or_else(
                     || unreachable!("this should be unreachable as it is set to Some before this can be called."),
-                    |sml| sml.read().unwrap().rect(),
+                    |sml| *sml.read().unwrap().rect(),
                 )
             },
-            |ctr| ctr.read().unwrap().rect(),
+            |ctr| *ctr.read().unwrap().rect(),
         )
     }
 
@@ -253,8 +253,22 @@ impl Model {
             .color(rgba::<u8>(0, 200, 0, 100));
     }
 
-    pub fn set_delta_time(&mut self, delta_time: f64) {
-        self.delta_time = delta_time;
+    /// Updates the model's input data.
+    pub fn update_input_data(&mut self, app: &App, update: Update) {
+        self.egui.set_elapsed_time(update.since_start);
+
+        self.input_data.delta_time = update.since_last.as_secs_f64();
+        self.input_data.mouse_pos = app.mouse.position();
+        // mouse scroll delta is updated in the event() callback
+
+        self.input_data.is_left_clicked = app.mouse.buttons.left().is_down();
+        self.input_data.is_right_clicked = app.mouse.buttons.right().is_down();
+
+        let modifers = &app.keys.mods;
+        self.input_data.is_alt_down = modifers.alt();
+        self.input_data.is_os_mod_down = modifers.logo();
+        self.input_data.is_shift_down = modifers.shift();
+        self.input_data.is_ctrl_down = modifers.ctrl();
     }
 
     pub fn update_params(&self) {

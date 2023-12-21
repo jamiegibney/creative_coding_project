@@ -62,10 +62,6 @@ impl SmoothLife {
         self.use_bilinear
     }
 
-    pub fn rect(&self) -> Rect {
-        self.rect
-    }
-
     pub fn reset(&mut self) {
         self.generator.reset();
     }
@@ -91,9 +87,9 @@ impl SmoothLife {
     }
 }
 
-impl DrawMask for SmoothLife {
-    fn update(&mut self, delta_time: f64) {
-        self.generator.update(delta_time);
+impl UIDraw for SmoothLife {
+    fn update(&mut self, input_data: &InputData) {
+        self.generator.update(input_data.delta_time);
         self.update_image_buffer();
     }
 
@@ -108,6 +104,29 @@ impl DrawMask for SmoothLife {
             .xy(self.rect.xy())
             .wh(self.rect.wh());
     }
+
+    fn rect(&self) -> &Rect {
+        &self.rect
+    }
+}
+
+impl DrawMask for SmoothLife {
+    // fn update(&mut self, delta_time: f64) {
+    //     self.generator.update(delta_time);
+    //     self.update_image_buffer();
+    // }
+    //
+    // fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+    //     self.texture.upload_data(
+    //         app.main_window().device(),
+    //         &mut frame.command_encoder(),
+    //         self.image_buffer.as_flat_samples().as_slice(),
+    //     );
+    //
+    //     draw.texture(&self.texture)
+    //         .xy(self.rect.xy())
+    //         .wh(self.rect.wh());
+    // }
 
     fn column_to_mask(&self, mask: &mut crate::dsp::SpectralMask, x: f64) {
         if !(0.0..=1.0).contains(&x) {

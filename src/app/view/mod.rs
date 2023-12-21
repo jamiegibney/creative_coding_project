@@ -5,14 +5,9 @@ use super::*;
 pub fn view(app: &App, model: &Model, frame: Frame) {
     let draw = &app.draw();
     let window = app.main_window();
-    // if frame.nth() < 2 {}
-    // draw.background().color(BLACK);
+    draw.background().color(BLACK);
 
     let V2 { x: _width, y: _height } = WINDOW_SIZE;
-
-    // if PRINT_DSP_LOAD {
-    //
-    // }
 
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);

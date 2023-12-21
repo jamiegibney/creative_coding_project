@@ -15,9 +15,11 @@ fn egui_raw_event(
 pub fn build_window(app: &App, width: u32, height: u32) -> Id {
     app.new_window()
         .size(width, height)
+        .msaa_samples(4)
         .key_pressed(key::key_pressed)
         .key_released(key::key_released)
         .mouse_moved(mouse::mouse_moved)
+        .event(event)
         .view(view)
         .raw_event(egui_raw_event)
         .build()

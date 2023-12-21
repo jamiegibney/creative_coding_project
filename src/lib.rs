@@ -28,4 +28,6 @@ pub mod gui;
 // Generative algorithms
 pub mod generative;
 
+pub mod fonts;
+
 pub mod simd;

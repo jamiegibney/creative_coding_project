@@ -219,10 +219,6 @@ impl Contours {
         self.image_buffer.width() as usize
     }
 
-    pub fn rect(&self) -> Rect {
-        self.rect
-    }
-
     /// Synchronously processes the contour lines on one thread.
     fn compute(&mut self) {
         let width = self.width_px() as f64;
@@ -371,13 +367,12 @@ impl Contours {
     }
 }
 
-impl DrawMask for Contours {
-    /// Updates the internal image buffer and noise generator.
-    fn update(&mut self, delta_time: f64) {
+impl UIDraw for Contours {
+    fn update(&mut self, input_data: &InputData) {
         // important to update this first, as it ensures the generated image
         // matches what is sampled from the noise generator before this method
         // is called again
-        self.update_z(delta_time);
+        self.update_z(input_data.delta_time);
 
         if self.thread_pool.is_some() {
             self.compute_async();
@@ -398,6 +393,39 @@ impl DrawMask for Contours {
             .xy(self.rect.xy())
             .wh(self.rect.wh());
     }
+
+    fn rect(&self) -> &Rect {
+        &self.rect
+    }
+}
+
+impl DrawMask for Contours {
+    /// Updates the internal image buffer and noise generator.
+    // fn update(&mut self, delta_time: f64) {
+    //     // important to update this first, as it ensures the generated image
+    //     // matches what is sampled from the noise generator before this method
+    //     // is called again
+    //     self.update_z(delta_time);
+    //
+    //     if self.thread_pool.is_some() {
+    //         self.compute_async();
+    //     }
+    //     else {
+    //         self.compute();
+    //     }
+    // }
+
+    // fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+    //     self.texture.upload_data(
+    //         app.main_window().device(),
+    //         &mut frame.command_encoder(),
+    //         self.image_buffer.as_flat_samples().as_slice(),
+    //     );
+    //
+    //     draw.texture(&self.texture)
+    //         .xy(self.rect.xy())
+    //         .wh(self.rect.wh());
+    // }
 
     /// Directly mutates a `SpectralMask`, placing the contour information at
     /// `x` in it. `x` is expected to be between `0.0` and `1.0`, where `0.0` is
