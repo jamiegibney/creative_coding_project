@@ -38,12 +38,12 @@ impl<E: MenuEnum> Menu<E> {
             rect,
 
             label: None,
-            label_layout: default_layout(),
+            label_layout: default_text_layout(),
 
             current_item_name: String::with_capacity(16),
 
             item_names: Self::variant_names(),
-            item_text_layout: default_layout(),
+            item_text_layout: default_text_layout(),
             item_rects: Self::divide_rect(&rect, num_variants),
 
             selected_item_text_layout: None,

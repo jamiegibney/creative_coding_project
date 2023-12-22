@@ -64,9 +64,9 @@ impl TextSlider {
             log_scaling: false,
 
             label: None,
-            label_layout: default_layout(),
+            label_layout: default_text_layout(),
 
-            value_layout: default_layout(),
+            value_layout: default_text_layout(),
             value_num_chars: 5,
 
             value_prefix: None,

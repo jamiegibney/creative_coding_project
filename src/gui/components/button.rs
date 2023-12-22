@@ -36,12 +36,12 @@ impl Button {
             label: None,
 
             enabled_text: String::from("On"),
-            enabled_layout: default_layout(),
+            enabled_layout: default_text_layout(),
 
             disabled_text: String::from("Off"),
-            disabled_layout: default_layout(),
+            disabled_layout: default_text_layout(),
 
-            label_layout: default_layout(),
+            label_layout: default_text_layout(),
 
             is_toggle: true,
             enabled: false,

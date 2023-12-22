@@ -23,7 +23,7 @@ pub enum UIComponentState {
     Clicked,
 }
 
-pub fn default_layout() -> Layout {
+pub fn default_text_layout() -> Layout {
     Layout {
         line_spacing: 0.0,
         line_wrap: None,
