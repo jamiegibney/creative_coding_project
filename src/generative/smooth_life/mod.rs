@@ -39,9 +39,14 @@ impl SmoothLife {
                 .mip_level_count(4)
                 .sample_count(1)
                 .format(wgpu::TextureFormat::Rgba8Unorm)
-                .usage(wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING)
+                .usage(
+                    wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
+                )
                 .build(device),
-            image_buffer: ImageBuffer::from_fn(w, h, |_, _| Rgba([0, 0, 0, u8::MAX])),
+            image_buffer: ImageBuffer::from_fn(w, h, |_, _| {
+                Rgba([0, 0, 0, u8::MAX])
+            }),
             use_bilinear: false,
         }
     }
@@ -77,8 +82,9 @@ impl SmoothLife {
                 let yn = y as f64 / h;
 
                 let br = if self.use_bilinear {
-                    (self.generator.get_value(xn, yn) * 255.0) as u8
-                } else {
+                    (self.generator.get_value_bilinear(xn, yn) * 255.0) as u8
+                }
+                else {
                     (self.generator.get_value_nn(xn, yn) * 255.0) as u8
                 };
 
@@ -140,7 +146,7 @@ impl DrawMask for SmoothLife {
             let bin_freq = mask.bin_freq(i, sr);
             let y = 1.0 - freq_log_norm(bin_freq, 20.0, sr);
 
-            mask[i] = self.generator.get_value(x, y);
+            mask[i] = self.generator.get_value_bilinear(x, y);
         }
     }
 }

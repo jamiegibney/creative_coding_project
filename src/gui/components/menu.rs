@@ -257,6 +257,13 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
                         self.variant = E::from_idx(i).unwrap();
 
                         self.update_current_name();
+                        
+                        if let Some(cb) = &self.callback {
+                            cb(self.variant);
+                        }
+
+                        self.can_update_state = false;
+
                         break;
                     }
                     self.hovered_idx = None;

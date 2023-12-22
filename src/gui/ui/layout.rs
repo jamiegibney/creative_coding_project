@@ -3,9 +3,13 @@ use nannou::prelude::*;
 
 // god help me
 
+fn def_rect() -> Rect {
+    Rect::from_xy_wh(pt2(-4000.0, 1000.0), pt2(300.0, 300.0))
+}
+
 pub struct MaskUILayout {
     pub algorithm: Rect,
-    pub scal_line_speed: Rect,
+    pub scan_line_speed: Rect,
     pub resolution: Rect,
     pub is_post_fx: Rect,
     pub uses_gpu: Rect,
@@ -14,13 +18,20 @@ pub struct MaskUILayout {
 
 impl Default for MaskUILayout {
     fn default() -> Self {
+        let w = 70.0;
+        let contour_size_fl = 128.0;
+        let reset_rect = Rect::from_corners(
+            pt2(-contour_size_fl / 2.0 - 230.0, -contour_size_fl - 50.0),
+            pt2(-contour_size_fl / 2.0 - 230.0 + w, -contour_size_fl - 10.0),
+        );
+
         Self {
-            algorithm: todo!(),
-            scal_line_speed: todo!(),
-            resolution: todo!(),
-            is_post_fx: todo!(),
-            uses_gpu: todo!(),
-            reset: todo!(),
+            algorithm: Rect::from_xy_wh(pt2(-358.0, -130.0), pt2(30.0, 35.0)),
+            scan_line_speed: reset_rect.shift(pt2(60.0, 0.0)),
+            resolution: def_rect(),
+            is_post_fx: def_rect(),
+            uses_gpu: def_rect(),
+            reset: reset_rect,
         }
     }
 }
@@ -33,11 +44,7 @@ pub struct ContourUILayout {
 
 impl Default for ContourUILayout {
     fn default() -> Self {
-        Self {
-            count: todo!(),
-            thickness: todo!(),
-            speed: todo!(),
-        }
+        Self { count: def_rect(), thickness: def_rect(), speed: def_rect() }
     }
 }
 
@@ -49,11 +56,7 @@ pub struct SmoothLifeUILayout {
 
 impl Default for SmoothLifeUILayout {
     fn default() -> Self {
-        Self {
-            resolution: todo!(),
-            speed: todo!(),
-            preset: todo!(),
-        }
+        Self { resolution: def_rect(), speed: def_rect(), preset: def_rect() }
     }
 }
 
@@ -65,11 +68,7 @@ pub struct SpectrogramUILayout {
 
 impl Default for SpectrogramUILayout {
     fn default() -> Self {
-        Self {
-            resolution: todo!(),
-            timing: todo!(),
-            view: todo!(),
-        }
+        Self { resolution: def_rect(), timing: def_rect(), view: def_rect() }
     }
 }
 
@@ -87,14 +86,14 @@ pub struct ResoBankUILayout {
 impl Default for ResoBankUILayout {
     fn default() -> Self {
         Self {
-            scale: todo!(),
-            root_note: todo!(),
-            spread: todo!(),
-            shift: todo!(),
-            inharm: todo!(),
-            pan: todo!(),
-            quantise: todo!(),
-            randomise: todo!(),
+            scale: def_rect(),
+            root_note: def_rect(),
+            spread: def_rect(),
+            shift: def_rect(),
+            inharm: def_rect(),
+            pan: def_rect(),
+            quantise: def_rect(),
+            randomise: def_rect(),
         }
     }
 }
@@ -106,7 +105,7 @@ pub struct LowpassUILayout {
 
 impl Default for LowpassUILayout {
     fn default() -> Self {
-        Self { cutoff_hz: todo!(), q: todo!() }
+        Self { cutoff_hz: def_rect(), q: def_rect() }
     }
 }
 
@@ -117,7 +116,7 @@ pub struct HighpassUILayout {
 
 impl Default for HighpassUILayout {
     fn default() -> Self {
-        Self { cutoff_hz: todo!(), q: todo!() }
+        Self { cutoff_hz: def_rect(), q: def_rect() }
     }
 }
 
@@ -131,10 +130,10 @@ pub struct DelayUILayout {
 impl Default for DelayUILayout {
     fn default() -> Self {
         Self {
-            time_ms: todo!(),
-            feedback: todo!(),
-            mix: todo!(),
-            tempo_sync: todo!(),
+            time_ms: def_rect(),
+            feedback: def_rect(),
+            mix: def_rect(),
+            tempo_sync: def_rect(),
         }
     }
 }
@@ -146,7 +145,7 @@ pub struct DistortionUILayout {
 
 impl Default for DistortionUILayout {
     fn default() -> Self {
-        Self { amount: todo!(), dist_type: todo!() }
+        Self { amount: def_rect(), dist_type: def_rect() }
     }
 }
 

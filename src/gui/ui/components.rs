@@ -1,5 +1,6 @@
 use super::*;
 use crate::{app::*, fonts::*};
+use nannou::prelude::*;
 use nannou::text::{Font, Layout};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -128,7 +129,7 @@ impl UIComponents {
                 let scan_line_speed = Arc::clone(&params.mask_scan_line_speed);
                 TextSlider::new(
                     scan_line_speed.lr(),
-                    ui_layout.mask_general.scal_line_speed,
+                    ui_layout.mask_general.scan_line_speed,
                 )
                 .with_output_range(0.01..=1.0)
                 .with_value_chars(4)
@@ -146,11 +147,14 @@ impl UIComponents {
                 Button::new(ui_layout.mask_general.uses_gpu)
                     .with_callback(move |state| mask_uses_gpu.sr(state))
             },
-            mask_reset: Button::new(ui_layout.mask_general.reset),
+            mask_reset: Button::new(ui_layout.mask_general.reset)
+                .with_label("Reset")
+                .toggleable(false),
 
             contour_count: {
                 let contour_count = Arc::clone(&params.contour_count);
                 TextSlider::new(0.0, ui_layout.contour.count)
+                    .with_output_range(1.0..=40.0)
                     .with_integer_rounding()
                     .with_default_value(contour_count.lr() as f64)
                     .with_callback(move |_, value| {
@@ -160,12 +164,14 @@ impl UIComponents {
             contour_thickness: {
                 let contour_thickness = Arc::clone(&params.contour_thickness);
                 TextSlider::new(0.0, ui_layout.contour.thickness)
+                    .with_output_range(0.1..=0.9)
                     .with_default_value(contour_thickness.lr())
                     .with_callback(move |_, value| contour_thickness.sr(value))
             },
             contour_speed: {
                 let contour_speed = Arc::clone(&params.contour_speed);
                 TextSlider::new(0.0, ui_layout.contour.speed)
+                    .with_output_range(0.01..=1.0)
                     .with_default_value(contour_speed.lr())
                     .with_callback(move |_, value| contour_speed.sr(value))
             },
@@ -183,6 +189,8 @@ impl UIComponents {
             smoothlife_speed: {
                 let smoothlife_speed = Arc::clone(&params.smoothlife_speed);
                 TextSlider::new(0.0, ui_layout.smooth_life.speed)
+                    .with_output_range(0.1..=0.9)
+                    .with_default_value(smoothlife_speed.lr())
                     .with_callback(move |_, value| smoothlife_speed.sr(value))
             },
             smoothlife_preset: {
@@ -208,6 +216,8 @@ impl UIComponents {
             spectrogram_timing: {
                 let spectrogram_timing = Arc::clone(&params.spectrogram_timing);
                 TextSlider::new(0.0, ui_layout.spectrogram.timing)
+                    .with_output_range(0.25..=4.0)
+                    .with_default_value(1.0)
                     .with_callback(move |_, value| spectrogram_timing.sr(value))
             },
             spectrogram_view: {
@@ -233,7 +243,9 @@ impl UIComponents {
                 let reso_bank_root_note =
                     Arc::clone(&params.reso_bank_root_note);
                 TextSlider::new(0.0, ui_layout.reso_bank.root_note)
+                    .with_output_range(1.0..=127.0)
                     .with_default_value(reso_bank_root_note.lr() as f64)
+                    .with_integer_rounding()
                     .with_callback(move |_, value| {
                         reso_bank_root_note.sr(value as u8);
                     })
@@ -247,6 +259,7 @@ impl UIComponents {
             reso_bank_shift: {
                 let reso_bank_shift = Arc::clone(&params.reso_bank_shift);
                 TextSlider::new(0.0, ui_layout.reso_bank.shift)
+                    .with_output_range(-24.0..=24.0)
                     .with_default_value(reso_bank_shift.lr())
                     .with_callback(move |_, value| reso_bank_shift.sr(value))
             },
@@ -272,6 +285,7 @@ impl UIComponents {
             low_pass_cutoff_hz: {
                 let low_pass_cutoff_hz = Arc::clone(&params.low_pass_cutoff_hz);
                 TextSlider::new(0.0, ui_layout.low_pass.cutoff_hz)
+                    .with_output_range(10.0..=20000.0)
                     .with_default_value(low_pass_cutoff_hz.current_value())
                     .with_callback(move |_, value| {
                         low_pass_cutoff_hz.set_target_value(value);
@@ -280,6 +294,7 @@ impl UIComponents {
             low_pass_q: {
                 let low_pass_q = Arc::clone(&params.low_pass_q);
                 TextSlider::new(0.0, ui_layout.low_pass.q)
+                    .with_output_range(0.025..=10.0)
                     .with_default_value(low_pass_q.current_value())
                     .with_callback(move |_, value| {
                         low_pass_q.set_target_value(value);
@@ -289,6 +304,7 @@ impl UIComponents {
             high_pass_cutoff_hz: {
                 let hp_cutoff = Arc::clone(&params.high_pass_cutoff_hz);
                 TextSlider::new(0.0, ui_layout.high_pass.cutoff_hz)
+                    .with_output_range(10.0..=20000.0)
                     .with_default_value(hp_cutoff.current_value())
                     .with_callback(move |_, value| {
                         hp_cutoff.set_target_value(value);
@@ -297,6 +313,7 @@ impl UIComponents {
             high_pass_q: {
                 let high_pass_q = Arc::clone(&params.high_pass_q);
                 TextSlider::new(0.0, ui_layout.high_pass.q)
+                    .with_output_range(0.025..=10.0)
                     .with_default_value(high_pass_q.current_value())
                     .with_callback(move |_, value| {
                         high_pass_q.set_target_value(value);
@@ -306,6 +323,7 @@ impl UIComponents {
             pp_delay_time_ms: {
                 let pp_delay_time_ms = Arc::clone(&params.pp_delay_time_ms);
                 TextSlider::new(0.0, ui_layout.delay.time_ms)
+                    .with_output_range(0.1..=1.0)
                     .with_default_value(pp_delay_time_ms.current_value())
                     .with_callback(move |_, value| {
                         pp_delay_time_ms.set_target_value(value);
@@ -355,13 +373,120 @@ impl UIComponents {
     }
 
     pub fn attach_reso_bank_randomise_callback<F: Fn(bool) + 'static>(
-        &mut self,
+        mut self,
         cb: F,
-    ) {
+    ) -> Self {
         self.reso_bank_randomise.set_callback(cb);
+        self
     }
 
-    pub fn attach_mask_reset_callback<F: Fn(bool) + 'static>(&mut self, cb: F) {
+    pub fn attach_mask_reset_callback<F: Fn(bool) + 'static>(
+        mut self,
+        cb: F,
+    ) -> Self {
         self.mask_reset.set_callback(cb);
+        self
+    }
+}
+
+impl UIDraw for UIComponents {
+    fn update(&mut self, input_data: &InputData) {
+        self.mask_algorithm.update(input_data);
+        self.mask_scan_line_speed.update(input_data);
+        self.mask_is_post_fx.update(input_data);
+        self.mask_uses_gpu.update(input_data);
+        self.mask_reset.update(input_data);
+
+        match self.mask_algorithm.output() {
+            GenerativeAlgo::Contours => {
+                self.contour_count.update(input_data);
+                self.contour_thickness.update(input_data);
+                self.contour_speed.update(input_data);
+            }
+            GenerativeAlgo::SmoothLife => {
+                self.smoothlife_resolution.update(input_data);
+                self.smoothlife_speed.update(input_data);
+                self.smoothlife_preset.update(input_data);
+            }
+        }
+
+        self.spectrogram_resolution.update(input_data);
+        self.spectrogram_timing.update(input_data);
+        self.spectrogram_view.update(input_data);
+
+        self.reso_bank_scale.update(input_data);
+        self.reso_bank_root_note.update(input_data);
+        self.reso_bank_spread.update(input_data);
+        self.reso_bank_shift.update(input_data);
+        self.reso_bank_inharm.update(input_data);
+        self.reso_bank_pan.update(input_data);
+        self.reso_bank_quantise.update(input_data);
+        self.reso_bank_randomise.update(input_data);
+
+        self.low_pass_cutoff_hz.update(input_data);
+        self.low_pass_q.update(input_data);
+
+        self.high_pass_cutoff_hz.update(input_data);
+        self.high_pass_q.update(input_data);
+
+        self.pp_delay_time_ms.update(input_data);
+        self.pp_delay_feedback.update(input_data);
+        self.pp_delay_mix.update(input_data);
+        self.pp_delay_tempo_sync.update(input_data);
+
+        self.dist_amount.update(input_data);
+        self.dist_type.update(input_data);
+    }
+
+    fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        self.mask_scan_line_speed.draw(app, draw, frame);
+        self.mask_is_post_fx.draw(app, draw, frame);
+        self.mask_uses_gpu.draw(app, draw, frame);
+        self.mask_reset.draw(app, draw, frame);
+        self.mask_algorithm.draw(app, draw, frame); // menu
+
+        match self.mask_algorithm.output() {
+            GenerativeAlgo::Contours => {
+                self.contour_count.draw(app, draw, frame);
+                self.contour_thickness.draw(app, draw, frame);
+                self.contour_speed.draw(app, draw, frame);
+            }
+            GenerativeAlgo::SmoothLife => {
+                self.smoothlife_resolution.draw(app, draw, frame);
+                self.smoothlife_speed.draw(app, draw, frame);
+                self.smoothlife_preset.draw(app, draw, frame);
+            }
+        }
+
+        self.spectrogram_timing.draw(app, draw, frame);
+        self.spectrogram_resolution.draw(app, draw, frame); // menu
+        self.spectrogram_view.draw(app, draw, frame); // menu
+
+        self.reso_bank_root_note.draw(app, draw, frame);
+        self.reso_bank_spread.draw(app, draw, frame);
+        self.reso_bank_shift.draw(app, draw, frame);
+        self.reso_bank_inharm.draw(app, draw, frame);
+        self.reso_bank_pan.draw(app, draw, frame);
+        self.reso_bank_quantise.draw(app, draw, frame);
+        self.reso_bank_randomise.draw(app, draw, frame);
+        self.reso_bank_scale.draw(app, draw, frame); // menu
+
+        self.low_pass_cutoff_hz.draw(app, draw, frame);
+        self.low_pass_q.draw(app, draw, frame);
+
+        self.high_pass_cutoff_hz.draw(app, draw, frame);
+        self.high_pass_q.draw(app, draw, frame);
+
+        self.pp_delay_time_ms.draw(app, draw, frame);
+        self.pp_delay_feedback.draw(app, draw, frame);
+        self.pp_delay_mix.draw(app, draw, frame);
+        self.pp_delay_tempo_sync.draw(app, draw, frame);
+
+        self.dist_amount.draw(app, draw, frame);
+        self.dist_type.draw(app, draw, frame); // menu
+    }
+
+    fn rect(&self) -> &nannou::prelude::Rect {
+        unimplemented!("UIComponents does not have a bounding rect!")
     }
 }

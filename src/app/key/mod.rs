@@ -24,7 +24,7 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             .send(())
             .unwrap(),
         Key::M => model.audio_senders.spectral_mask_post_fx.send(()).unwrap(),
-        Key::R => match model.current_gen_algo {
+        Key::R => match *model.ui_params.mask_algorithm.read().unwrap() {
             GenerativeAlgo::Contours => {
                 let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
 
@@ -32,16 +32,19 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 drop(ctr);
             }
             GenerativeAlgo::SmoothLife => {
-                let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
+                let mut sml =
+                    model.smooth_life.as_mut().unwrap().write().unwrap();
 
                 sml.reset();
                 drop(sml);
             }
         },
         Key::Q => {
-            model.current_gen_algo = match model.current_gen_algo {
-                GenerativeAlgo::Contours => GenerativeAlgo::SmoothLife,
-                GenerativeAlgo::SmoothLife => GenerativeAlgo::Contours,
+            if let Ok(mut guard) = model.ui_params.mask_algorithm.write() {
+                *guard = match *guard {
+                    GenerativeAlgo::Contours => GenerativeAlgo::SmoothLife,
+                    GenerativeAlgo::SmoothLife => GenerativeAlgo::Contours,
+                };
             }
         }
         Key::N => {
@@ -58,7 +61,8 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             return;
         }
         *v = true;
-    } else {
+    }
+    else {
         return;
     }
 
@@ -80,10 +84,7 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         model
             .audio_senders
             .note_event
-            .send(NoteEvent::NoteOn {
-                note,
-                timing: samples_elapsed,
-            })
+            .send(NoteEvent::NoteOn { note, timing: samples_elapsed })
             .unwrap();
     }
 }
@@ -112,10 +113,7 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
         model
             .audio_senders
             .note_event
-            .send(NoteEvent::NoteOff {
-                note,
-                timing: samples_elapsed,
-            })
+            .send(NoteEvent::NoteOff { note, timing: samples_elapsed })
             .unwrap();
     }
 }
@@ -124,7 +122,8 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
 fn octave_from_key(octave: Octave, key: Key) -> Octave {
     if matches!(key, Key::K | Key::O | Key::L | Key::P) {
         octave.transpose(1)
-    } else {
+    }
+    else {
         octave
     }
 }

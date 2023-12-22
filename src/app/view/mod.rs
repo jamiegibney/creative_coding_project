@@ -7,10 +7,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let window = app.main_window();
     draw.background().color(BLACK);
 
-    let V2 {
-        x: _width,
-        y: _height,
-    } = WINDOW_SIZE;
+    let V2 { x: _width, y: _height } = WINDOW_SIZE;
 
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
@@ -38,25 +35,29 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     outline_rect(model.pre_spectrum_analyzer.borrow().rect(), draw, 2.0);
 
-    match model.current_gen_algo {
-        GenerativeAlgo::Contours => model
-            .contours
-            .as_ref()
-            .unwrap()
-            .read()
-            .unwrap()
-            .draw(app, draw, &frame),
-        GenerativeAlgo::SmoothLife => model
-            .smooth_life
-            .as_ref()
-            .unwrap()
-            .read()
-            .unwrap()
-            .draw(app, draw, &frame),
+    if let Ok(algo) = model.ui_params.mask_algorithm.read() {
+        match *algo {
+            GenerativeAlgo::Contours => model
+                .contours
+                .as_ref()
+                .unwrap()
+                .read()
+                .unwrap()
+                .draw(app, draw, &frame),
+            GenerativeAlgo::SmoothLife => model
+                .smooth_life
+                .as_ref()
+                .unwrap()
+                .read()
+                .unwrap()
+                .draw(app, draw, &frame),
+        }
     }
     model.draw_mask_scan_line(draw);
 
     outline_rect(&model.mask_rect(), draw, 2.0);
+
+    model.ui_components.draw(app, draw, &frame);
 
     // if the frame fails to draw, we'll just ignore it
     let _ = draw.to_frame(app, &frame);

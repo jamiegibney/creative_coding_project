@@ -206,7 +206,7 @@ impl UIDraw for Button {
                 self.state = UIComponentState::Clicked;
                 self.enabled = !self.enabled;
 
-                if let Some(cb) = self.callback.as_mut() {
+                if let Some(cb) = &self.callback {
                     cb(self.enabled);
                 }
             }
@@ -221,7 +221,7 @@ impl UIDraw for Button {
             if !matches!(self.state, UIComponentState::Clicked) {
                 self.state = UIComponentState::Clicked;
 
-                if let Some(cb) = self.callback.as_mut() {
+                if let Some(cb) = &self.callback {
                     cb(true);
                 }
             }

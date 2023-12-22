@@ -9,6 +9,7 @@ use crate::app::params::*;
 use crate::dsp::{ResonatorBankParams, SpectralMask};
 use crate::generative::*;
 use crate::gui::spectrum::*;
+use crate::gui::UIComponents;
 use nannou::prelude::WindowId as Id;
 
 use std::{
@@ -35,7 +36,7 @@ pub struct Model {
     /// The CPAL audio stream.
     pub audio_stream: nannou_audio::Stream<AudioModel>,
     /// Channels to send messages directly to the audio thread.
-    pub audio_senders: AudioMessageSenders,
+    pub audio_senders: Arc<AudioMessageSenders>,
 
     /// A thread-safe reference to the mask used for spectral filtering.
     // pub spectral_mask: Arc<Mutex<SpectralMask>>,
@@ -71,6 +72,8 @@ pub struct Model {
     /// The post-FX spectrogram.
     pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
 
+    pub ui_components: UIComponents,
+
     /// A Perlin noise contour generator.
     pub contours: Option<Arc<RwLock<Contours>>>,
     /// A SmoothLife simulation.
@@ -85,8 +88,6 @@ pub struct Model {
     pub sequencer: Sequencer,
 
     pub mask_thread_pool: ThreadPool,
-
-    pub current_gen_algo: GenerativeAlgo,
 }
 
 impl Model {
@@ -122,8 +123,6 @@ impl Model {
             dsp_load,
         } = build_gui_elements(app, pre_spectrum, post_spectrum, &params);
 
-        let current_gen_algo = GenerativeAlgo::SmoothLife;
-
         let sequencer = Sequencer::new(
             sample_rate_ref.lr(),
             audio_senders.note_event.clone(),
@@ -133,10 +132,41 @@ impl Model {
             &app.window(window).expect("expected a valid window id"),
         );
 
+        let audio_senders = Arc::new(audio_senders);
+        let cl = Arc::clone(&audio_senders);
+
+        let contours = Arc::new(RwLock::new(contours));
+        let smooth_life = Arc::new(RwLock::new(smooth_life));
+        let ctr = Arc::clone(&contours);
+        let sml = Arc::clone(&smooth_life);
+        let gen_algo = Arc::clone(&params.mask_algorithm);
+
+        let ui_components = UIComponents::new(&params)
+            .attach_reso_bank_randomise_callback(move |_| {
+                cl.resonator_bank_reset_pitch.send(());
+            })
+            .attach_mask_reset_callback(move |_| {
+                if let Ok(guard) = gen_algo.read() {
+                    match *guard {
+                        GenerativeAlgo::Contours => {
+                            if let Ok(mut guard) = ctr.write() {
+                                guard.reset_seed();
+                            }
+                        }
+                        GenerativeAlgo::SmoothLife => {
+                            if let Ok(mut guard) = sml.write() {
+                                guard.reset();
+                            }
+                        }
+                    }
+                }
+            });
+
         Self {
             window,
 
             egui,
+            ui_components,
             ui_params: params,
 
             audio_stream,
@@ -166,8 +196,8 @@ impl Model {
 
             spectral_mask: Arc::new(Mutex::new(spectral_mask)),
 
-            contours: Some(Arc::new(RwLock::new(contours))),
-            smooth_life: Some(Arc::new(RwLock::new(smooth_life))),
+            contours: Some(contours),
+            smooth_life: Some(smooth_life),
 
             mask_scan_line_pos: 0.0,
             mask_scan_line_increment: 0.1,
@@ -181,8 +211,6 @@ impl Model {
 
             dsp_load,
             sample_rate_ref,
-
-            current_gen_algo,
         }
     }
 
@@ -204,8 +232,8 @@ impl Model {
 
     /// Increments the internal position of the mask scan line.
     pub fn increment_mask_scan_line(&mut self) {
-        self.mask_scan_line_pos +=
-            self.mask_scan_line_increment * self.input_data.delta_time;
+        let increment = self.ui_params.mask_scan_line_speed.lr();
+        self.mask_scan_line_pos += increment * self.input_data.delta_time;
 
         if self.mask_scan_line_pos > 1.0 {
             self.mask_scan_line_pos -= 1.0;
@@ -213,10 +241,6 @@ impl Model {
         else if self.mask_scan_line_pos < 0.0 {
             self.mask_scan_line_pos += 1.0;
         }
-    }
-
-    pub fn set_mask(&mut self, mask: GenerativeAlgo) {
-        todo!();
     }
 
     /// # Panics
