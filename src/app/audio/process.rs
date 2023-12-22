@@ -37,8 +37,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // if there is no note event, no active voice, and there was no audio
     // processed in the last frame, most of the signal processing can be skipped.
-    if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle
-    {
+    if next_event.is_none() && !voice_handler.is_voice_active() && audio_is_idle {
         callback_timer(audio);
         return;
     }
@@ -56,10 +55,8 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                 Some(event) if (event.timing() as usize) <= block_start => {
                     match event {
                         NoteEvent::NoteOn { note, .. } => {
-                            voice_handler.start_voice(
-                                note,
-                                Some(audio.generation.amp_envelope.clone()),
-                            );
+                            voice_handler
+                                .start_voice(note, Some(audio.generation.amp_envelope.clone()));
                         }
                         NoteEvent::NoteOff { note, .. } => {
                             voice_handler.start_release_for_voice(None, note);
@@ -191,8 +188,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     #[allow(clippy::needless_range_loop)]
     for (i, fr) in buffer.frames_mut().enumerate() {
         for ch in 0..NUM_CHANNELS {
-            fr[ch] =
-                audio.processors.pre_fx_dc_filter[ch].process_mono(fr[ch], ch);
+            fr[ch] = audio.processors.pre_fx_dc_filter[ch].process_mono(fr[ch], ch);
             fr[ch] = audio.processors.resonator_bank.process_mono(fr[ch], ch);
         }
 
@@ -210,8 +206,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
             // sample = audio.processors.filter_lp[ch].process(sample);
             sample = audio.processors.filter_hp[ch].process(sample);
             sample = smooth_soft_clip(sample, 1.0);
-            sample =
-                audio.processors.post_fx_dc_filter[ch].process_mono(sample, ch);
+            sample = audio.processors.post_fx_dc_filter[ch].process_mono(sample, ch);
 
             fr[ch] = sample;
         }
@@ -269,9 +264,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         output[1] = output[1].clamp(-ceiling, ceiling) * gain;
 
         // used to decide whether to skip DSP processing in the next block or not
-        if (output[0].abs() > SIGNAL_EPSILON
-            || output[1].abs() > SIGNAL_EPSILON)
-            && !is_processing
+        if (output[0].abs() > SIGNAL_EPSILON || output[1].abs() > SIGNAL_EPSILON) && !is_processing
         {
             is_processing = true;
         }

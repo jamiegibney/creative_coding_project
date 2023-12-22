@@ -100,9 +100,7 @@ impl AudioModelBuilder {
 
         AudioPackage {
             spectrum_outputs: self.spectrum_outputs(),
-            callback_timer_ref: Arc::clone(
-                &self.model.data.callback_time_elapsed,
-            ),
+            callback_timer_ref: Arc::clone(&self.model.data.callback_time_elapsed),
             sample_rate_ref: Arc::clone(&self.model.data.sample_rate),
             message_channels: self.message_channels(),
             model: self.model,
@@ -118,11 +116,9 @@ impl AudioModelBuilder {
         post_in.compute(&empty);
 
         let buffer = vec![0.0; MAX_BUFFER_SIZE * NUM_CHANNELS];
-        self.model.spectrograms.pre_fx_spectrogram_buffer =
-            Arc::new(Mutex::new(buffer.clone()));
+        self.model.spectrograms.pre_fx_spectrogram_buffer = Arc::new(Mutex::new(buffer.clone()));
 
-        self.model.spectrograms.post_fx_spectrogram_buffer =
-            Arc::new(Mutex::new(buffer));
+        self.model.spectrograms.post_fx_spectrogram_buffer = Arc::new(Mutex::new(buffer));
 
         let mut guard = loop {
             let res = self.model.spectrograms.pre_fx_spectrogram.try_lock();

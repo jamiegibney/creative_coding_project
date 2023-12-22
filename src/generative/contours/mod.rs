@@ -62,10 +62,7 @@ impl Contours {
                 .mip_level_count(4)
                 .sample_count(1)
                 .format(wgpu::TextureFormat::Rgba8Unorm)
-                .usage(
-                    wgpu::TextureUsages::COPY_DST
-                        | wgpu::TextureUsages::TEXTURE_BINDING,
-                )
+                .usage(wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING)
                 .build(device),
             image_buffer: ImageBuffer::from_fn(width, height, |_, _| {
                 Rgba([255, 255, 255, u8::MAX])
@@ -149,8 +146,7 @@ impl Contours {
         // TODO: this should return Result<Self>.
         if self.set_num_threads(num_threads) {
             Some(self)
-        }
-        else {
+        } else {
             None
         }
     }
@@ -177,12 +173,7 @@ impl Contours {
                 let mut v = Vec::with_capacity(num_threads);
                 (0..num_threads).for_each(|_| {
                     v.push(Arc::new(Mutex::new(vec![
-                        Rgba([
-                            255,
-                            255,
-                            255,
-                            u8::MAX,
-                        ]);
+                        Rgba([255, 255, 255, u8::MAX,]);
                         px_per_thread
                     ])));
                 });
@@ -190,8 +181,7 @@ impl Contours {
             };
 
             true
-        }
-        else {
+        } else {
             false
         }
     }
@@ -271,10 +261,9 @@ impl Contours {
                             let y_norm = actual_y as f64 / height as f64;
 
                             let noise = noise.get([x_norm, y_norm, z]);
-                            let br = (Self::contour_brightness(
-                                num_contours, &range, noise, feathered,
-                            ) * 255.0)
-                                as u8;
+                            let br =
+                                (Self::contour_brightness(num_contours, &range, noise, feathered)
+                                    * 255.0) as u8;
                             buf[y * width + x] = Rgba([br, br, br, u8::MAX]);
                         }
                     }
@@ -291,9 +280,7 @@ impl Contours {
             .pixels_mut()
             .enumerate()
             .for_each(|(i, pxl)| {
-                if let Ok(guard) =
-                    self.thread_buffers[i / pxl_per_thread].lock()
-                {
+                if let Ok(guard) = self.thread_buffers[i / pxl_per_thread].lock() {
                     if pxl_per_thread != 0 {
                         *pxl = guard[i % pxl_per_thread];
                     }
@@ -305,8 +292,7 @@ impl Contours {
     fn contour(&self, value: f64) -> f64 {
         if self.range.contains(&value) {
             0.0
-        }
-        else {
+        } else {
             1.0
         }
     }
@@ -347,21 +333,16 @@ impl Contours {
         if feathered {
             if (min..=mid).contains(&px) {
                 xfer::s_curve(normalise(px, min, mid), 0.1)
-            }
-            else if (mid..=max).contains(&px) {
+            } else if (mid..=max).contains(&px) {
                 (xfer::s_curve(1.0 - normalise(px, mid, max), 0.1))
-            }
-            else {
+            } else {
                 0.0
             }
-        }
-        else if (min..=mid).contains(&px) {
+        } else if (min..=mid).contains(&px) {
             xfer::s_curve_round(normalise(px, min, mid), 0.97)
-        }
-        else if (mid..=max).contains(&px) {
+        } else if (mid..=max).contains(&px) {
             (1.0 - xfer::s_curve_round(normalise(px, mid, max), -0.97))
-        }
-        else {
+        } else {
             0.0
         }
     }
@@ -376,8 +357,7 @@ impl UIDraw for Contours {
 
         if self.thread_pool.is_some() {
             self.compute_async();
-        }
-        else {
+        } else {
             self.compute();
         }
     }
@@ -453,9 +433,8 @@ impl DrawMask for Contours {
             // let mapped = ((noise + 1.0) / 2.0) * self.num_contours as f64;
 
             // apply the contouring method
-            mask[i] = Self::contour_brightness(
-                self.num_contours, &self.range, noise, self.feathering,
-            );
+            mask[i] =
+                Self::contour_brightness(self.num_contours, &self.range, noise, self.feathering);
         }
     }
 }

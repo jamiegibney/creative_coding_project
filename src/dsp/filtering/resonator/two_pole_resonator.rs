@@ -10,7 +10,11 @@ struct Coefs {
 
 impl Coefs {
     pub fn identity() -> Self {
-        Self { b0: 1.0, a1: 0.0, a2: 0.0 }
+        Self {
+            b0: 1.0,
+            a1: 0.0,
+            a2: 0.0,
+        }
     }
 }
 

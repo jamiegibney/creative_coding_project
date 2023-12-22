@@ -1,4 +1,18 @@
 # Navigating the project's source code
+Please bear in mind that this project does not provide:
+- A configurable number of audio channels
+- A configurable audio buffer size
+- A configurable sample rate
+- A configurable oversampling factor
+- MIDI support
+- Window resizing
+- An audio plugin implementation (e.g. VST)
+- Tested cross-platform support
+- Proper use of SIMD operations
+- Proper error handling
+- A model example of safe, robust, well-tested, or efficient code
+- An example of idiomatic Rust code
+- Unit tests for each module
 
 ### Documentation
 Not every part of this project is documented, but many useful objects, methods, and functions are. Some files contain step-by-step comments to explain a process, and others provide documentation comments to explain how a certain function or method should be used. Most documentation is intended to make certain modules easier to use for the programmer using them.

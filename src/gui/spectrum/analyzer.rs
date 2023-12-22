@@ -55,10 +55,7 @@ impl SpectrumAnalyzer {
         Self {
             spectrum,
 
-            spectrum_averaging: vec![
-                vec![0.0; RESULT_BUFFER_SIZE];
-                NUM_SPECTRUM_AVERAGES
-            ],
+            spectrum_averaging: vec![vec![0.0; RESULT_BUFFER_SIZE]; NUM_SPECTRUM_AVERAGES],
             averaging_write_pos: 0,
 
             averaged_data: vec![0.0; RESULT_BUFFER_SIZE],
@@ -72,8 +69,7 @@ impl SpectrumAnalyzer {
             rect,
 
             mesh_points: {
-                let mut v: Vec<DVec2> =
-                    vec.iter().map(|p| DVec2::from_slice(p)).collect();
+                let mut v: Vec<DVec2> = vec.iter().map(|p| DVec2::from_slice(p)).collect();
                 // add the extra elements which allow the mesh to be pinned to the
                 // bottom corners.
                 v.push(rect.bottom_right().as_f64());
@@ -114,9 +110,9 @@ impl SpectrumAnalyzer {
     }
 
     fn draw_line(&mut self, draw: &Draw, color: Rgba, weight: f32) {
-        draw.polyline().weight(weight).points_colored(
-            self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
-        );
+        draw.polyline()
+            .weight(weight)
+            .points_colored(self.spectrum_line.iter().map(|x| (x.as_f32(), color)));
     }
 
     fn draw_mesh(&mut self, draw: &Draw, color: Rgba) {
@@ -137,12 +133,7 @@ impl SpectrumAnalyzer {
         }
 
         // now we can get the triangulation indices
-        let indices = earcutr::earcut(
-            &interleave_dvec2_to_f64(&self.mesh_points),
-            &[],
-            2,
-        )
-        .unwrap();
+        let indices = earcutr::earcut(&interleave_dvec2_to_f64(&self.mesh_points), &[], 2).unwrap();
 
         // and draw the mesh :D
         draw.mesh().indexed_colored(
@@ -166,8 +157,7 @@ impl SpectrumAnalyzer {
             let x = (i as f64 / width).mul_add(width, left);
 
             // get the frequency bin index and its interpolation value
-            let (idx, interp) =
-                Self::bin_idx_t(xpos_to_freq(&self.rect, x), self.bin_step);
+            let (idx, interp) = Self::bin_idx_t(xpos_to_freq(&self.rect, x), self.bin_step);
 
             // points outside of the working range are set to -inf dB
             if !(1..self.averaged_data.len() - 2).contains(&idx) {
@@ -248,8 +238,7 @@ impl SpectrumAnalyzer {
     }
 
     fn increment_averaging_pos(&mut self) {
-        self.averaging_write_pos =
-            (self.averaging_write_pos + 1) % NUM_SPECTRUM_AVERAGES;
+        self.averaging_write_pos = (self.averaging_write_pos + 1) % NUM_SPECTRUM_AVERAGES;
     }
 
     fn bin_idx_t(freq: f64, step: f64) -> (usize, f64) {

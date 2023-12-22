@@ -7,7 +7,10 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let window = app.main_window();
     draw.background().color(BLACK);
 
-    let V2 { x: _width, y: _height } = WINDOW_SIZE;
+    let V2 {
+        x: _width,
+        y: _height,
+    } = WINDOW_SIZE;
 
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);

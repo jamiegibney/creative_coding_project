@@ -2,7 +2,7 @@ use crate::app::audio::NoteHandler;
 use std::sync::{Arc, Mutex};
 
 pub use crate::app::{audio::NoteEvent, Scale};
-pub use crate::gui::{UIDraw, DrawMask, InputData};
+pub use crate::gui::{DrawMask, InputData, UIDraw};
 pub use crate::settings::*;
 pub use crate::simd::{SimdBuffer, SimdType};
 pub use crate::util::*;

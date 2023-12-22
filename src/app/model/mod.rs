@@ -270,45 +270,4 @@ impl Model {
         self.input_data.is_shift_down = modifers.shift();
         self.input_data.is_ctrl_down = modifers.ctrl();
     }
-
-    pub fn update_params(&self) {
-        let UIParams {
-            mask_algorithm,
-            mask_scan_line_speed,
-            mask_resolution,
-            mask_is_post_fx,
-            mask_uses_gpu,
-            contour_count,
-            contour_thickness,
-            contour_speed,
-            smoothlife_resolution,
-            smoothlife_speed,
-            smoothlife_preset,
-            spectrogram_resolution,
-            spectrogram_timing,
-            spectrogram_view,
-            reso_bank_scale,
-            reso_bank_root_note,
-            reso_bank_spread,
-            reso_bank_shift,
-            reso_bank_inharm,
-            reso_bank_pan,
-            reso_bank_quantise,
-            low_pass_cutoff_hz,
-            low_pass_q,
-            high_pass_cutoff_hz,
-            high_pass_q,
-            pp_delay_time_ms,
-            pp_delay_feedback,
-            pp_delay_mix,
-            pp_delay_tempo_sync,
-            dist_amount,
-            dist_type,
-            eq_params,
-        } = self.ui_params;
-
-        // let mut contours = self.contours.as_ref().unwrap().write().unwrap();
-        // contours.set_num_contours(contour_count);
-        // contours.set_num_contours(contour_count);
-    }
 }

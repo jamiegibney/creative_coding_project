@@ -1,35 +1,9 @@
 #![allow(clippy::suboptimal_flops)]
 use super::*;
-use std::fmt::{Debug, Display};
-
-/// A trait for preparing an enum for use with the [`Menu`] UI component.
-///
-/// The enum must also implement:
-/// - [`Display`], so its name can be printed in the menu
-/// - [`Clone`] and [`Copy`], so the value can be returned from the menu
-/// - [`Default`], so the menu knows which variant to use when created
-/// - [`Debug`], so the whole menu can be debugged
-///
-/// Please see the documentation of all the required methods for more information.
-pub trait MenuEnum: Display + Clone + Copy + Default + Debug {
-    /// The number of variants in the enum, used to layout the menu.
-    ///
-    /// ***Note***: you can technically set this to less than the actual number of
-    /// variants to truncate the menu. Setting a value greater than the number of
-    /// variants, however, will cause the menu to panic when it is created.
-    fn num_variants() -> usize;
-    /// The index for a given variant. Used to avoid having to iterate through all variants
-    /// each frame. You should ensure that this matches the layout of [`from_idx()`](MenuEnum::from_idx).
-    fn idx(&self) -> usize;
-    /// The variant from a given index. This method should be used to describe the
-    /// order of elements in the menu.
-    fn from_idx(idx: usize) -> Option<Self>;
-}
 
 /// A menu UI component, which essentially exposes an `enum` as a menu.
 ///
 /// Requires that the `enum` implements the [`MenuEnum`] trait.
-#[derive(Clone, Debug)]
 pub struct Menu<E: MenuEnum> {
     rect: Rect,
 
@@ -50,6 +24,8 @@ pub struct Menu<E: MenuEnum> {
     can_update_state: bool,
     state: UIComponentState,
 
+    callback: Option<Box<dyn Fn(E)>>,
+
     variant: E,
 }
 
@@ -57,6 +33,7 @@ impl<E: MenuEnum> Menu<E> {
     /// Creates a new, default `Menu`.
     pub fn new(rect: Rect) -> Self {
         let num_variants = E::num_variants();
+
         let mut s = Self {
             rect,
 
@@ -76,6 +53,8 @@ impl<E: MenuEnum> Menu<E> {
             is_open: false,
             can_update_state: false,
             state: UIComponentState::Idle,
+
+            callback: None,
 
             variant: E::default(),
         };
@@ -110,7 +89,9 @@ impl<E: MenuEnum> Menu<E> {
     /// Sets the font size for the item labels.
     pub fn with_item_font_size(mut self, size: u32) -> Self {
         self.item_text_layout.font_size = size;
-        self.selected_item_text_layout.as_mut().unwrap().font_size = size;
+        if let Some(layout) = &mut self.selected_item_text_layout {
+            layout.font_size = size;
+        }
         self
     }
 
@@ -122,6 +103,16 @@ impl<E: MenuEnum> Menu<E> {
     /// Provides a text layout for the selected item when the menu is open.
     pub fn with_selected_item_text_layout(self, layout: Layout) -> Self {
         Self { selected_item_text_layout: Some(layout), ..self }
+    }
+
+    /// Provides a callback to the menu, which is called whenever a new item is selected.
+    ///
+    /// The callback's argument is the current variant of the menu.
+    pub fn with_callback<F>(self, callback: F) -> Self
+    where
+        F: Fn(E) + 'static,
+    {
+        Self { callback: Some(Box::new(callback)), ..self }
     }
 
     /// Creates the menu in its open state.
@@ -138,6 +129,13 @@ impl<E: MenuEnum> Menu<E> {
     }
 
     /* * * METHODS * * */
+
+    /// Sets a callback, which is called whenever a new item is selected.
+    ///
+    /// The callback's argument is the current variant of the menu.
+    pub fn set_callback<F: Fn(E) + 'static>(&mut self, callback: F) {
+        self.callback = Some(Box::new(callback));
+    }
 
     /// Returns the current item of the menu.
     pub fn output(&self) -> E {

@@ -108,8 +108,7 @@ impl<E: Effect> AudioUtility<E> {
         if -1.0 <= self.width && self.width < 0.0 {
             side_l *= 1.0 + self.width;
             side_r *= 1.0 + self.width;
-        }
-        else if 0.0 <= self.width && self.width <= 1.0 {
+        } else if 0.0 <= self.width && self.width <= 1.0 {
             mid *= 1.0 - self.width;
         }
 

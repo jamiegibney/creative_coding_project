@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 /// Common scale representations.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Scale {
@@ -9,14 +11,14 @@ pub enum Scale {
     Chromatic,
 }
 
-impl std::string::ToString for Scale {
-    fn to_string(&self) -> String {
+impl Display for Scale {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Major => String::from("Major"),
-            Self::Minor => String::from("Minor"),
-            Self::MajPentatonic => String::from("Major Pentatonic"),
-            Self::MinPentatonic => String::from("Minor Pentatonic"),
-            Self::Chromatic => String::from("Chromatic"),
+            Self::Major => write!(f, "Major"),
+            Self::Minor => write!(f, "Minor"),
+            Self::MajPentatonic => write!(f, "Major Pentatonic"),
+            Self::MinPentatonic => write!(f, "Minor Pentatonic"),
+            Self::Chromatic => write!(f, "Chromatic"),
         }
     }
 }

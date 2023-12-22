@@ -9,11 +9,17 @@ pub struct StereoWrapper<E> {
 
 impl<E: Effect + Clone> StereoWrapper<E> {
     pub fn from_single(effect: E) -> Self {
-        Self { l: effect.clone(), r: effect }
+        Self {
+            l: effect.clone(),
+            r: effect,
+        }
     }
 
     pub fn from_pair(effect_l: E, effect_r: E) -> Self {
-        Self { l: effect_l, r: effect_r }
+        Self {
+            l: effect_l,
+            r: effect_r,
+        }
     }
 
     pub fn unwrap(self) -> (E, E) {

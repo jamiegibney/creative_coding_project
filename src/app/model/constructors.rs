@@ -15,13 +15,14 @@ fn egui_raw_event(
 pub fn build_window(app: &App, width: u32, height: u32) -> Id {
     app.new_window()
         .size(width, height)
+        .resizable(false)
         .msaa_samples(4)
         .key_pressed(key::key_pressed)
         .key_released(key::key_released)
         .mouse_moved(mouse::mouse_moved)
         .event(event)
         .view(view)
-        .raw_event(egui_raw_event)
+        // .raw_event(egui_raw_event)
         .build()
         .expect("failed to build app window!")
 }
@@ -137,13 +138,13 @@ pub fn build_gui_elements(
             .with_num_threads(8)
             .expect("failed to allocate threads to contour generator")
             .with_feathering(false)
-            .with_z_increment(params.contour_speed)
-            .with_num_contours(params.contour_count)
-            .with_contour_range(0.0..=params.contour_thickness),
+            .with_z_increment(params.contour_speed.lr())
+            .with_num_contours(params.contour_count.lr())
+            .with_contour_range(0.0..=params.contour_thickness.lr()),
         smooth_life: SmoothLife::new(
             app.main_window().device(),
             contour_rect,
-            params.smoothlife_resolution,
+            params.smoothlife_resolution.lr(),
         ),
 
         pre_spectrum_analyzer,

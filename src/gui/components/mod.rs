@@ -1,6 +1,12 @@
 pub mod button;
 pub mod menu;
+pub mod menu_trait;
 pub mod text_slider;
+
+pub use button::Button;
+pub use menu::Menu;
+pub use menu_trait::MenuEnum;
+pub use text_slider::TextSlider;
 
 use super::colors::*;
 use super::*;

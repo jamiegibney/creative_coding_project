@@ -1,5 +1,7 @@
 use atomic_float::AtomicF64;
-use std::sync::atomic::{AtomicBool, AtomicI32, AtomicUsize, Ordering::Relaxed};
+use std::sync::atomic::{
+    AtomicBool, AtomicI32, AtomicU32, AtomicUsize, Ordering::Relaxed,
+};
 
 /// Trait for shorthand implementation of Relaxed atomic load and store operations.
 pub trait AtomicLoad: Default {
@@ -13,6 +15,18 @@ pub trait AtomicLoad: Default {
 
 impl AtomicLoad for AtomicI32 {
     type NonAtomic = i32;
+
+    fn lr(&self) -> Self::NonAtomic {
+        self.load(Relaxed)
+    }
+
+    fn sr(&self, value: Self::NonAtomic) {
+        self.store(value, Relaxed);
+    }
+}
+
+impl AtomicLoad for AtomicU32 {
+    type NonAtomic = u32;
 
     fn lr(&self) -> Self::NonAtomic {
         self.load(Relaxed)

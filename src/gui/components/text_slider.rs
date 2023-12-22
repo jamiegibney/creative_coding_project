@@ -86,7 +86,10 @@ impl TextSlider {
 
     /// Provides the `TextSlider` with a label.
     pub fn with_label(self, label: &str) -> Self {
-        Self { label: str_to_option(label), ..self }
+        Self {
+            label: str_to_option(label),
+            ..self
+        }
     }
 
     /// Sets the font size for both the label and value readout.
@@ -97,12 +100,18 @@ impl TextSlider {
 
     /// Sets the text layout of the label.
     pub fn with_label_layout(self, layout: Layout) -> Self {
-        Self { label_layout: layout, ..self }
+        Self {
+            label_layout: layout,
+            ..self
+        }
     }
 
     /// Sets the text layout of the value readout.
     pub fn with_value_layout(self, layout: Layout) -> Self {
-        Self { value_layout: layout, ..self }
+        Self {
+            value_layout: layout,
+            ..self
+        }
     }
 
     /// Sets the number of chars used to show the value read out. The default value
@@ -134,7 +143,10 @@ impl TextSlider {
 
     /// Sets the output range of the `TextSlider`. The default is `0.0..=1.0`.
     pub fn with_output_range(mut self, range: RangeInclusive<f64>) -> Self {
-        let mut s = Self { output_range: range, ..self };
+        let mut s = Self {
+            output_range: range,
+            ..self
+        };
         s.update_output_value();
 
         s
@@ -142,14 +154,10 @@ impl TextSlider {
 
     /// Provides a default value to the `TextSlider`.
     pub fn with_default_value(mut self, value: f64) -> Self {
-        let mut s =
-            Self {
-                default_value: Some(value.clamp(
-                    *self.output_range.start(),
-                    *self.output_range.end(),
-                )),
-                ..self
-            };
+        let mut s = Self {
+            default_value: Some(value.clamp(*self.output_range.start(), *self.output_range.end())),
+            ..self
+        };
         s.reset_to_default();
 
         s
@@ -158,17 +166,26 @@ impl TextSlider {
     /// Enables logarithmic output value scaling for the `TextSlider`.
     pub fn with_log_scaling(self) -> Self {
         unimplemented!();
-        Self { log_scaling: true, ..self }
+        Self {
+            log_scaling: true,
+            ..self
+        }
     }
 
     /// Provides a text prefix for the value readout.
     pub fn with_prefix(self, prefix: &str) -> Self {
-        Self { value_prefix: str_to_option(prefix), ..self }
+        Self {
+            value_prefix: str_to_option(prefix),
+            ..self
+        }
     }
 
     /// Provides a text suffix for the value readout.
     pub fn with_suffix(self, suffix: &str) -> Self {
-        Self { value_suffix: str_to_option(suffix), ..self }
+        Self {
+            value_suffix: str_to_option(suffix),
+            ..self
+        }
     }
 
     /// Provides a callback which is called whenever the `TextSlider`'s value is updated.
@@ -178,12 +195,18 @@ impl TextSlider {
     where
         F: FnMut(f64, f64) + 'static,
     {
-        Self { callback: Some(Box::new(cb)), ..self }
+        Self {
+            callback: Some(Box::new(cb)),
+            ..self
+        }
     }
 
     /// Sets the drag sensitivity of the `TextSlider`. The default value is `0.001`.
     pub fn with_sensitivity(self, sensitivity: f64) -> Self {
-        Self { drag_sensitivity: sensitivity, ..self }
+        Self {
+            drag_sensitivity: sensitivity,
+            ..self
+        }
     }
 
     /// Uses integer rounding for the output value.
@@ -374,11 +397,9 @@ impl TextSlider {
 
         let truncate_to = if decimal_idx == self.value_num_chars - 1 {
             self.value_num_chars + 1
-        }
-        else if decimal_idx > self.value_num_chars {
+        } else if decimal_idx > self.value_num_chars {
             decimal_idx
-        }
-        else {
+        } else {
             self.value_num_chars
         };
 
@@ -401,9 +422,8 @@ impl UIDraw for TextSlider {
 
         // should the value update based on mouse scrolling?
         if y_scr.abs() >= 1.0 {
-            let sensitivity = self.drag_sensitivity
-                * if input_data.is_shift_down { 0.1 } else { 1.0 }
-                * 0.4;
+            let sensitivity =
+                self.drag_sensitivity * if input_data.is_shift_down { 0.1 } else { 1.0 } * 0.4;
 
             self.raw_value = (y_scr as f64)
                 .mul_add(sensitivity, self.raw_value)
@@ -421,9 +441,7 @@ impl UIDraw for TextSlider {
         }
 
         // should the value reset?
-        if !self.is_active && input_data.is_alt_down
-            || input_data.is_os_mod_down
-        {
+        if !self.is_active && input_data.is_alt_down || input_data.is_os_mod_down {
             self.reset_to_default();
         }
 
@@ -440,11 +458,10 @@ impl UIDraw for TextSlider {
                 return;
             }
 
-            let sensitivity = self.drag_sensitivity
-                * if input_data.is_shift_down { 0.1 } else { 1.0 };
+            let sensitivity =
+                self.drag_sensitivity * if input_data.is_shift_down { 0.1 } else { 1.0 };
 
-            self.raw_value =
-                delta.mul_add(sensitivity, self.raw_value).clamp(0.0, 1.0);
+            self.raw_value = delta.mul_add(sensitivity, self.raw_value).clamp(0.0, 1.0);
 
             self.update_output_value();
         }

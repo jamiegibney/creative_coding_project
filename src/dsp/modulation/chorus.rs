@@ -16,9 +16,7 @@ impl Chorus {
     pub fn new(sample_rate: f64) -> Self {
         Self {
             delay_taps: vec![
-                StereoWrapper::from_single(Delay::new(
-                    250.0, sample_rate
-                ));
+                StereoWrapper::from_single(Delay::new(250.0, sample_rate));
                 Self::DEFAULT_NUM_TAPS
             ],
             lfo: Generator::Sine(SineOsc::new(3.0, sample_rate)),

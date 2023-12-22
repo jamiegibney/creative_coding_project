@@ -1,13 +1,15 @@
 #![allow(clippy::should_implement_trait)]
-use super::ramp::Ramp;
+use super::ramp_atomic::RampAtomic;
 use super::*;
 use crate::prelude::*;
 
 use SmoothingType as ST;
 
-#[derive(Debug, Default, Clone)]
-pub struct Smoother<T: Smoothable> {
-    ramp: Ramp,
+// TODO: this could easily be consolidated with the non-atomic smoother:
+// some ramp traits and one smoothable trait would work just fine
+#[derive(Debug, Default)]
+pub struct SmootherAtomic<T: SmoothableAtomic> {
+    ramp: RampAtomic,
     start_value: T,
     target_value: T,
     current_value: T,
@@ -15,12 +17,12 @@ pub struct Smoother<T: Smoothable> {
     smoothing_type: ST,
 }
 
-impl<T: Smoothable> Smoother<T> {
+impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// Creates a new `Smoother` with linear smoothing (see the
     /// [`set_smoothing_type()`][Self::set_smoothing_type()] method).
     pub fn new(duration_ms: f64, target_value: T, sample_rate: f64) -> Self {
         Self {
-            ramp: Ramp::new(duration_ms, sample_rate),
+            ramp: RampAtomic::new(duration_ms, sample_rate),
             start_value: T::from_f64(0.0),
             current_value: target_value,
             target_value,
@@ -30,7 +32,10 @@ impl<T: Smoothable> Smoother<T> {
     }
 
     /// Creates a smoother with `smoothing_type` smoothing.
-    pub fn with_smoothing_type(mut self, smoothing_type: SmoothingType) -> Self {
+    pub fn with_smoothing_type(
+        mut self,
+        smoothing_type: SmoothingType,
+    ) -> Self {
         self.set_smoothing_type(smoothing_type);
         self
     }
@@ -75,7 +80,9 @@ impl<T: Smoothable> Smoother<T> {
                 ST::SineTop => lerp(a, b, xfer::sine_upper(t)),
                 ST::SineBottom => lerp(a, b, xfer::sine_lower(t)),
                 ST::CurveNormal(c) => lerp(a, b, xfer::s_curve(t, c)),
-                ST::CurveLinearStart(c) => lerp(a, b, xfer::s_curve_linear_centre(t, c)),
+                ST::CurveLinearStart(c) => {
+                    lerp(a, b, xfer::s_curve_linear_centre(t, c))
+                }
                 ST::CurveRounder(c) => lerp(a, b, xfer::s_curve_round(t, c)),
             })
         });
@@ -160,11 +167,15 @@ impl<T: Smoothable> Smoother<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
+            ST::CurveNormal(tension) => {
+                interp::lerp(a, b, xfer::s_curve(t, tension))
+            }
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
+            ST::CurveRounder(tension) => {
+                interp::lerp(a, b, xfer::s_curve_round(t, tension))
+            }
         });
 
         self.current_value
@@ -178,11 +189,15 @@ impl<T: Smoothable> Smoother<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
+            ST::CurveNormal(tension) => {
+                interp::lerp(a, b, xfer::s_curve(t, tension))
+            }
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
+            ST::CurveRounder(tension) => {
+                interp::lerp(a, b, xfer::s_curve_round(t, tension))
+            }
         })
     }
 }

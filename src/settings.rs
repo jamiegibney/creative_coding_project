@@ -99,4 +99,3 @@ pub const DEFAULT_BPM: f64 = 120.0;
 
 /// The maximum block size for the spectral filter.
 pub const MAX_SPECTRAL_BLOCK_SIZE: usize = 1 << 14; // 16,384
-

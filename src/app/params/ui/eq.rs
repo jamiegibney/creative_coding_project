@@ -30,30 +30,30 @@ pub enum HighBandType {
 }
 
 /// Parameters for a three-band EQ with restricted filter types.
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub struct EQParams {
     /// The filter type of the low EQ band.
     pub low_band_type: LowBandType,
     /// The cutoff frequency of the low EQ band in hertz.
-    pub low_band_cutoff: Smoother<f64>,
+    pub low_band_cutoff: Arc<SmootherAtomic<f64>>,
     /// The gain/Q value of the low EQ band.
-    pub low_band_gain: Smoother<f64>,
+    pub low_band_gain: Arc<SmootherAtomic<f64>>,
 
     /// The filter type of the mid EQ band.
     pub mid_band_type: MidBandType,
     /// The cutoff frequency of the mid EQ band in hertz.
-    pub mid_band_cutoff: Smoother<f64>,
+    pub mid_band_cutoff: Arc<SmootherAtomic<f64>>,
     /// The gain value of the mid EQ band — only applicable to the peak filter.
-    pub mid_band_gain: Smoother<f64>,
+    pub mid_band_gain: Arc<SmootherAtomic<f64>>,
     /// The Q value of the mid EQ band.
-    pub mid_band_q: Smoother<f64>,
+    pub mid_band_q: Arc<SmootherAtomic<f64>>,
 
     /// The filter type of the high EQ band.
     pub high_band_type: HighBandType,
     /// The cutoff frequency of the high EQ band in hertz.
-    pub high_band_cutoff: Smoother<f64>,
+    pub high_band_cutoff: Arc<SmootherAtomic<f64>>,
     /// The gain/Q value of the high EQ band.
-    pub high_band_gain: Smoother<f64>,
+    pub high_band_gain: Arc<SmootherAtomic<f64>>,
 }
 
 impl Default for EQParams {

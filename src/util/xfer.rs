@@ -34,15 +34,12 @@ pub fn s_curve(mut input: f64, tension: f64) -> f64 {
     if tension.is_sign_positive() {
         if input.is_sign_positive() {
             -(1.0 - input).powf(c) + 1.0
-        }
-        else {
+        } else {
             (input + 1.0).powf(c) - 1.0
         }
-    }
-    else if input.is_sign_positive() {
+    } else if input.is_sign_positive() {
         input.powf(c)
-    }
-    else {
+    } else {
         1.0 - (-input).powf(c) - 1.0
     }
 }
@@ -63,11 +60,9 @@ pub fn s_curve_linear_centre(input: f64, tension: f64) -> f64 {
 
     if k < x && x <= 1.0 {
         (sq - x2 + t_min1_sq) / (c * (c - 2.0))
-    }
-    else if -1.0 <= x && x <= -k {
+    } else if -1.0 <= x && x <= -k {
         (sq + x2 + t_min1_sq) / (c * (2.0 - c))
-    }
-    else {
+    } else {
         x
     }
 }
@@ -84,15 +79,13 @@ pub fn s_curve_round(input: f64, tension: f64) -> f64 {
     // this maps the curvature similarly for positive and negative inputs
     let c = if tension < 0.0 {
         tension.clamp(-1.0, 0.0) * 0.907
-    }
-    else {
+    } else {
         tension.clamp(0.0, 1.0) * 10.0
     };
 
     if 0.0 < x && x <= 1.0 {
         x * (1.0 + c) / c.mul_add(x, 1.0)
-    }
-    else {
+    } else {
         -x * (1.0 + c) / c.mul_add(x, -1.0)
     }
 }
