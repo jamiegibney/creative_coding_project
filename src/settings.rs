@@ -97,5 +97,8 @@ pub const MAX_NOTE_EVENTS_PER_BUFFER: usize = 12;
 /// The default BPM for the device.
 pub const DEFAULT_BPM: f64 = 120.0;
 
+/// The default BPM for the device.
+pub const DEFAULT_SMOOTHLIFE_SIZE: usize = 32;
+
 /// The maximum block size for the spectral filter.
 pub const MAX_SPECTRAL_BLOCK_SIZE: usize = 1 << 14; // 16,384

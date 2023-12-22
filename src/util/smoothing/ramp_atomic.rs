@@ -45,7 +45,7 @@ impl RampAtomic {
     }
 
     /// Skips `num_steps` samples, returning the new value.
-    pub fn skip(&mut self, num_steps: u32) -> f64 {
+    pub fn skip(&self, num_steps: u32) -> f64 {
         if num_steps == 0 {
             return self.current_value();
         }
@@ -78,13 +78,13 @@ impl RampAtomic {
 
     /// Fills `block` with the next `block_len` smoothed values. Progresses
     /// the `Ramp`.
-    pub fn next_block(&mut self, block: &mut [f64], block_len: usize) {
+    pub fn next_block(&self, block: &mut [f64], block_len: usize) {
         self.next_block_exact(&mut block[..block_len]);
     }
 
     /// Fills block with filled samples. Progresses the `Ramp` by `block.len()`
     /// values.
-    pub fn next_block_exact(&mut self, block: &mut [f64]) {
+    pub fn next_block_exact(&self, block: &mut [f64]) {
         let Self { steps_remaining, step_size, current_value, .. } = self;
 
         let step_size = self.step_size.lr();
@@ -121,7 +121,7 @@ impl RampAtomic {
     /// a mapping function to each element (should map `0.0` to `1.0` to
     /// the desired range).
     pub fn next_block_mapped<T, F>(
-        &mut self,
+        &self,
         block: &mut [T],
         _block_len: usize,
         function: F,
@@ -136,7 +136,7 @@ impl RampAtomic {
     /// but applies a mapping function to each element (should map `0.0`
     /// to `1.0` to the desired range).
     pub fn next_block_exact_mapped<T, F>(
-        &mut self,
+        &self,
         block: &mut [T],
         mut mapping_function: F,
     ) where

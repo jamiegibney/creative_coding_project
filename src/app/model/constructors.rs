@@ -144,7 +144,10 @@ pub fn build_gui_elements(
         smooth_life: SmoothLife::new(
             app.main_window().device(),
             contour_rect,
-            params.smoothlife_resolution.lr(),
+            params
+                .smoothlife_resolution
+                .try_read()
+                .map_or(DEFAULT_SMOOTHLIFE_SIZE, |mut guard| guard.value()),
         ),
 
         pre_spectrum_analyzer,

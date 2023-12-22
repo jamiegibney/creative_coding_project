@@ -143,3 +143,57 @@ impl MenuEnum for Scale {
         }
     }
 }
+
+impl MenuEnum for SmoothLifeSize {
+    fn num_variants() -> usize {
+        6
+    }
+
+    fn idx(&self) -> usize {
+        match self {
+            Self::S16 => 0,
+            Self::S32 => 1,
+            Self::S64 => 2,
+            Self::S128 => 3,
+            Self::S256 => 4,
+            Self::S512 => 5,
+        }
+    }
+
+    fn from_idx(idx: usize) -> Option<Self> {
+        match idx {
+            0 => Some(Self::S16),
+            1 => Some(Self::S32),
+            2 => Some(Self::S64),
+            3 => Some(Self::S128),
+            4 => Some(Self::S256),
+            5 => Some(Self::S512),
+            _ => None,
+        }
+    }
+}
+
+impl MenuEnum for SpectrogramSize {
+    fn num_variants() -> usize {
+        4
+    }
+
+    fn idx(&self) -> usize {
+        match self {
+            Self::S1024 => 0,
+            Self::S2048 => 1,
+            Self::S4096 => 2,
+            Self::S8192 => 3,
+        }
+    }
+
+    fn from_idx(idx: usize) -> Option<Self> {
+        match idx {
+            0 => Some(Self::S1024),
+            1 => Some(Self::S2048),
+            2 => Some(Self::S4096),
+            3 => Some(Self::S8192),
+            _ => None,
+        }
+    }
+}

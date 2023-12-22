@@ -60,50 +60,32 @@ impl Button {
     /// non-toggleable buttons. The default for non-toggleable buttons is
     /// `"Button"`.
     pub fn with_label(self, label: &str) -> Self {
-        Self {
-            label: str_to_option(label),
-            ..self
-        }
+        Self { label: str_to_option(label), ..self }
     }
 
     /// Provides a text layout for the button's label.
     pub fn with_label_layout(self, layout: Layout) -> Self {
-        Self {
-            label_layout: layout,
-            ..self
-        }
+        Self { label_layout: layout, ..self }
     }
 
     /// Provides a text layout for the button's enabled state.
     pub fn with_enabled_layout(self, layout: Layout) -> Self {
-        Self {
-            enabled_layout: layout,
-            ..self
-        }
+        Self { enabled_layout: layout, ..self }
     }
 
     /// Provides a text layout for the button's disabled state.
     pub fn with_disabled_layout(self, layout: Layout) -> Self {
-        Self {
-            disabled_layout: layout,
-            ..self
-        }
+        Self { disabled_layout: layout, ..self }
     }
 
     /// Sets the enabled text for a toggleable button. The default is `"On"`.
     pub fn with_enabled_text(self, text: &str) -> Self {
-        Self {
-            enabled_text: text.to_string(),
-            ..self
-        }
+        Self { enabled_text: text.to_string(), ..self }
     }
 
     /// Sets the disabled text for a toggleable button. The default is `"Off"`.
     pub fn with_disabled_text(self, text: &str) -> Self {
-        Self {
-            disabled_text: text.to_string(),
-            ..self
-        }
+        Self { disabled_text: text.to_string(), ..self }
     }
 
     /// Sets the font size for the whole `Button`.
@@ -129,10 +111,7 @@ impl Button {
     where
         F: Fn(bool) + 'static,
     {
-        Self {
-            callback: Some(Box::new(cb)),
-            ..self
-        }
+        Self { callback: Some(Box::new(cb)), ..self }
     }
 
     /// Sets whether the button should be toggleable or not. Both types have
@@ -151,10 +130,7 @@ impl Button {
     /// - Configurable label string and text layout.
     /// - Optional callback to be called when the button is pressed (recommended).
     pub fn toggleable(self, should_be_toggleable: bool) -> Self {
-        Self {
-            is_toggle: should_be_toggleable,
-            ..self
-        }
+        Self { is_toggle: should_be_toggleable, ..self }
     }
 
     /* * * METHODS * * */
@@ -188,6 +164,15 @@ impl Button {
     pub fn disabled_layout_mut(&mut self) -> &mut Layout {
         &mut self.disabled_layout
     }
+
+    /// Provides a which is called when the button is pressed, regardless of button
+    /// type (toggleable or non-toggleable).
+    ///
+    /// The argument is the state of the button. This is always `true` for
+    /// non-toggleable buttons.
+    pub fn set_callback<F: Fn(bool) + 'static>(&mut self, cb: F) {
+        self.callback = Some(Box::new(cb));
+    }
 }
 
 impl UIDraw for Button {
@@ -216,17 +201,22 @@ impl UIDraw for Button {
 
         if self.is_toggle {
             // toggle the button and call the callback, if it exists.
-            if left_clicked && !matches!(self.state, UIComponentState::Clicked) {
+            if left_clicked && !matches!(self.state, UIComponentState::Clicked)
+            {
                 self.state = UIComponentState::Clicked;
                 self.enabled = !self.enabled;
 
                 if let Some(cb) = self.callback.as_mut() {
                     cb(self.enabled);
                 }
-            } else if !left_clicked && matches!(self.state, UIComponentState::Clicked) {
+            }
+            else if !left_clicked
+                && matches!(self.state, UIComponentState::Clicked)
+            {
                 self.state = UIComponentState::Hovered;
             }
-        } else if input_data.is_left_clicked {
+        }
+        else if input_data.is_left_clicked {
             // if non-toggleable, call the callback when clicked, if it exists.
             if !matches!(self.state, UIComponentState::Clicked) {
                 self.state = UIComponentState::Clicked;
@@ -235,7 +225,8 @@ impl UIDraw for Button {
                     cb(true);
                 }
             }
-        } else {
+        }
+        else {
             self.state = UIComponentState::Hovered;
         }
     }
@@ -253,11 +244,7 @@ impl UIDraw for Button {
             draw.rect()
                 .xy(padded.xy())
                 .wh(padded.wh())
-                .color(if is_clicked {
-                    BG_HOVERED
-                } else {
-                    BG_NON_SELECTED
-                });
+                .color(if is_clicked { BG_HOVERED } else { BG_NON_SELECTED });
 
             let label_rect = padded.pad_bottom(3.5);
 
@@ -267,7 +254,8 @@ impl UIDraw for Button {
                 .wh(padded.wh())
                 .color(if is_clicked { VALUE } else { LABEL })
                 .layout(&self.label_layout);
-        } else if let Some(label) = self.label.as_ref() {
+        }
+        else if let Some(label) = self.label.as_ref() {
             let label_rect = padded.pad_bottom(h * 0.5);
 
             // label
@@ -281,7 +269,8 @@ impl UIDraw for Button {
         if self.is_toggle {
             let value_rect = if self.label.is_some() {
                 padded.pad_top(h * 0.5)
-            } else {
+            }
+            else {
                 padded
             };
 
@@ -300,7 +289,8 @@ impl UIDraw for Button {
                     .wh(value_rect.wh())
                     .color(VALUE)
                     .layout(&self.enabled_layout);
-            } else {
+            }
+            else {
                 // disabled text
                 draw.text(&self.disabled_text)
                     .xy(value_rect.xy())

@@ -12,7 +12,7 @@ pub trait SmoothableAtomic: Default + Clone + Copy {
     fn to_f64(self) -> f64;
     fn from_f64(value: f64) -> Self;
 
-    fn atomic_new(value: Self) -> Self::Atomic;
+    fn atomic_new(self) -> Self::Atomic;
     fn atomic_load(this: &Self::Atomic) -> Self;
     fn atomic_store(this: &Self::Atomic, value: Self);
 }
@@ -41,8 +41,8 @@ impl SmoothableAtomic for f32 {
     }
 
     #[inline]
-    fn atomic_new(value: Self) -> Self::Atomic {
-        AtomicF32::new(value)
+    fn atomic_new(self) -> Self::Atomic {
+        AtomicF32::new(self)
     }
 
     #[inline]
@@ -79,8 +79,8 @@ impl SmoothableAtomic for f64 {
     }
 
     #[inline]
-    fn atomic_new(value: Self) -> Self::Atomic {
-        AtomicF64::new(value)
+    fn atomic_new(self) -> Self::Atomic {
+        AtomicF64::new(self)
     }
 
     #[inline]
@@ -118,8 +118,8 @@ impl SmoothableAtomic for i32 {
     }
 
     #[inline]
-    fn atomic_new(value: Self) -> Self::Atomic {
-        AtomicI32::new(value)
+    fn atomic_new(self) -> Self::Atomic {
+        AtomicI32::new(self)
     }
 
     #[inline]

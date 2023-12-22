@@ -4,149 +4,149 @@ use nannou::prelude::*;
 // god help me
 
 pub struct MaskUILayout {
-    pub mask_algorithm: Rect,
-    pub mask_scan_line_speed: Rect,
-    pub mask_resolution: Rect,
-    pub mask_is_post_fx: Rect,
-    pub mask_uses_gpu: Rect,
-    pub mask_reset: Rect,
+    pub algorithm: Rect,
+    pub scal_line_speed: Rect,
+    pub resolution: Rect,
+    pub is_post_fx: Rect,
+    pub uses_gpu: Rect,
+    pub reset: Rect,
 }
 
 impl Default for MaskUILayout {
     fn default() -> Self {
         Self {
-            mask_algorithm: todo!(),
-            mask_scan_line_speed: todo!(),
-            mask_resolution: todo!(),
-            mask_is_post_fx: todo!(),
-            mask_uses_gpu: todo!(),
-            mask_reset: todo!(),
+            algorithm: todo!(),
+            scal_line_speed: todo!(),
+            resolution: todo!(),
+            is_post_fx: todo!(),
+            uses_gpu: todo!(),
+            reset: todo!(),
         }
     }
 }
 
 pub struct ContourUILayout {
-    pub contour_count: Rect,
-    pub contour_thickness: Rect,
-    pub contour_speed: Rect,
+    pub count: Rect,
+    pub thickness: Rect,
+    pub speed: Rect,
 }
 
 impl Default for ContourUILayout {
     fn default() -> Self {
         Self {
-            contour_count: todo!(),
-            contour_thickness: todo!(),
-            contour_speed: todo!(),
+            count: todo!(),
+            thickness: todo!(),
+            speed: todo!(),
         }
     }
 }
 
 pub struct SmoothLifeUILayout {
-    pub smoothlife_resolution: Rect,
-    pub smoothlife_speed: Rect,
-    pub smoothlife_preset: Rect,
+    pub resolution: Rect,
+    pub speed: Rect,
+    pub preset: Rect,
 }
 
 impl Default for SmoothLifeUILayout {
     fn default() -> Self {
         Self {
-            smoothlife_resolution: todo!(),
-            smoothlife_speed: todo!(),
-            smoothlife_preset: todo!(),
+            resolution: todo!(),
+            speed: todo!(),
+            preset: todo!(),
         }
     }
 }
 
 pub struct SpectrogramUILayout {
-    pub spectrogram_resolution: Rect,
-    pub spectrogram_timing: Rect,
-    pub spectrogram_view: Rect,
+    pub resolution: Rect,
+    pub timing: Rect,
+    pub view: Rect,
 }
 
 impl Default for SpectrogramUILayout {
     fn default() -> Self {
         Self {
-            spectrogram_resolution: todo!(),
-            spectrogram_timing: todo!(),
-            spectrogram_view: todo!(),
+            resolution: todo!(),
+            timing: todo!(),
+            view: todo!(),
         }
     }
 }
 
 pub struct ResoBankUILayout {
-    pub reso_bank_scale: Rect,
-    pub reso_bank_root_note: Rect,
-    pub reso_bank_spread: Rect,
-    pub reso_bank_shift: Rect,
-    pub reso_bank_inharm: Rect,
-    pub reso_bank_pan: Rect,
-    pub reso_bank_quantise: Rect,
-    pub reso_bank_randomise: Rect,
+    pub scale: Rect,
+    pub root_note: Rect,
+    pub spread: Rect,
+    pub shift: Rect,
+    pub inharm: Rect,
+    pub pan: Rect,
+    pub quantise: Rect,
+    pub randomise: Rect,
 }
 
 impl Default for ResoBankUILayout {
     fn default() -> Self {
         Self {
-            reso_bank_scale: todo!(),
-            reso_bank_root_note: todo!(),
-            reso_bank_spread: todo!(),
-            reso_bank_shift: todo!(),
-            reso_bank_inharm: todo!(),
-            reso_bank_pan: todo!(),
-            reso_bank_quantise: todo!(),
-            reso_bank_randomise: todo!(),
+            scale: todo!(),
+            root_note: todo!(),
+            spread: todo!(),
+            shift: todo!(),
+            inharm: todo!(),
+            pan: todo!(),
+            quantise: todo!(),
+            randomise: todo!(),
         }
     }
 }
 
 pub struct LowpassUILayout {
-    pub low_pass_cutoff_hz: Rect,
-    pub low_pass_q: Rect,
+    pub cutoff_hz: Rect,
+    pub q: Rect,
 }
 
 impl Default for LowpassUILayout {
     fn default() -> Self {
-        Self { low_pass_cutoff_hz: todo!(), low_pass_q: todo!() }
+        Self { cutoff_hz: todo!(), q: todo!() }
     }
 }
 
 pub struct HighpassUILayout {
-    pub high_pass_cutoff_hz: Rect,
-    pub high_pass_q: Rect,
+    pub cutoff_hz: Rect,
+    pub q: Rect,
 }
 
 impl Default for HighpassUILayout {
     fn default() -> Self {
-        Self { high_pass_cutoff_hz: todo!(), high_pass_q: todo!() }
+        Self { cutoff_hz: todo!(), q: todo!() }
     }
 }
 
 pub struct DelayUILayout {
-    pub pp_delay_time_ms: Rect,
-    pub pp_delay_feedback: Rect,
-    pub pp_delay_mix: Rect,
-    pub pp_delay_tempo_sync: Rect,
+    pub time_ms: Rect,
+    pub feedback: Rect,
+    pub mix: Rect,
+    pub tempo_sync: Rect,
 }
 
 impl Default for DelayUILayout {
     fn default() -> Self {
         Self {
-            pp_delay_time_ms: todo!(),
-            pp_delay_feedback: todo!(),
-            pp_delay_mix: todo!(),
-            pp_delay_tempo_sync: todo!(),
+            time_ms: todo!(),
+            feedback: todo!(),
+            mix: todo!(),
+            tempo_sync: todo!(),
         }
     }
 }
 
 pub struct DistortionUILayout {
-    pub dist_amount: Rect,
+    pub amount: Rect,
     pub dist_type: Rect,
 }
 
 impl Default for DistortionUILayout {
     fn default() -> Self {
-        Self { dist_amount: todo!(), dist_type: todo!() }
+        Self { amount: todo!(), dist_type: todo!() }
     }
 }
 

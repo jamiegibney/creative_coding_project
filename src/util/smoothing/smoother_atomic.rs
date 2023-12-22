@@ -5,14 +5,12 @@ use crate::prelude::*;
 
 use SmoothingType as ST;
 
-// TODO: this could easily be consolidated with the non-atomic smoother:
-// some ramp traits and one smoothable trait would work just fine
 #[derive(Debug, Default)]
 pub struct SmootherAtomic<T: SmoothableAtomic> {
     ramp: RampAtomic,
-    start_value: T,
-    target_value: T,
-    current_value: T,
+    start_value: AtomicF64,
+    current_value: AtomicF64,
+    target_value: T::Atomic,
 
     smoothing_type: ST,
 }
@@ -23,9 +21,9 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     pub fn new(duration_ms: f64, target_value: T, sample_rate: f64) -> Self {
         Self {
             ramp: RampAtomic::new(duration_ms, sample_rate),
-            start_value: T::from_f64(0.0),
-            current_value: target_value,
-            target_value,
+            start_value: AtomicF64::new(0.0),
+            target_value: target_value.atomic_new(),
+            current_value: AtomicF64::new(target_value.to_f64()),
 
             smoothing_type: SmoothingType::default(),
         }
@@ -45,7 +43,7 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// [`next_block()`][Self::next_block()] method. If you need to skip a
     /// certain number of samples, see the [`skip()`][Self::skip()] method.
     /// Both methods provide optimizations over calling this method N times.
-    pub fn next(&mut self) -> T {
+    pub fn next(&self) -> T {
         self.skip(1)
     }
 
@@ -53,7 +51,7 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// to calling the [`next()`][Self::next()] method `num_steps` times, but
     /// provides some internal optimizations.
     ///
-    pub fn skip(&mut self, num_steps: u32) -> T {
+    pub fn skip(&self, num_steps: u32) -> T {
         self.ramp.skip(num_steps);
 
         self.interpolated_value()
@@ -62,7 +60,7 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// Computes the `block_len` next elements and places them into `block`.
     ///
     /// Progresses the `Smoother` by `block_len` steps.
-    pub fn next_block(&mut self, block: &mut [T], block_len: usize) {
+    pub fn next_block(&self, block: &mut [T], block_len: usize) {
         debug_assert!(block_len <= block.len());
         self.next_block_exact(&mut block[..block_len]);
     }
@@ -70,8 +68,11 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// Computes a block of new elements and places them into `block`.
     ///
     /// Progresses the `Smoother` by `block.len()` steps.
-    pub fn next_block_exact(&mut self, block: &mut [T]) {
-        let (a, b) = (self.start_value.to_f64(), self.target_value.to_f64());
+    pub fn next_block_exact(&self, block: &mut [T]) {
+        let (a, b) = (
+            self.start_value.lr(),
+            T::atomic_load(&self.target_value).to_f64(),
+        );
 
         self.ramp.next_block_exact_mapped(block, |t: f64| {
             T::from_f64(match self.smoothing_type {
@@ -92,20 +93,23 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// to the [`next()`][Self::next()] method (or its variants) will have
     /// no effect, and will return the current value.
     pub fn stop_in_place(&mut self) {
-        self.target_value = self.current_value;
+        T::atomic_store(
+            &self.target_value,
+            T::from_f64(self.current_value.lr()),
+        );
         self.finish();
     }
 
     /// Forces the `Smoother` to finish smoothing and reach its target value
     /// immediately.
-    pub fn finish(&mut self) {
+    pub fn finish(&self) {
         self.ramp.reset();
     }
 
     /// Returns the `Smoother`'s current value, i.e. the last value returned
     /// by its [`next()`][Self::next()] method.
     pub fn current_value(&self) -> T {
-        self.current_value
+        T::from_f64(self.current_value.lr())
     }
 
     /// Sets the smoothing (interpolation) type of the `Smoother`. See the
@@ -116,24 +120,25 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
 
     /// Sets the new target value of the `Smoother`. This will automatically
     /// set its starting value to the current value.
-    pub fn set_target_value(&mut self, target_value: T) {
-        self.start_value = self.current_value;
-        self.target_value = target_value;
+    pub fn set_target_value(&self, target_value: T) {
+        self.start_value.sr(self.current_value.lr());
+        T::atomic_store(&self.target_value, target_value);
         self.ramp.reset();
     }
 
     /// Sets the starting value of the `Smoother` (the value it is
     /// interpolating from).
     pub fn set_start_value(&mut self, start_value: T) {
-        self.start_value = start_value;
+        self.start_value.sr(start_value.to_f64());
     }
 
     /// Resets the `Smoother` to its default settings.
     pub fn reset(&mut self) {
         self.ramp.reset();
-        self.start_value = T::from_f64(0.0);
-        self.target_value = T::from_f64(0.0);
-        self.current_value = T::from_f64(0.0);
+
+        self.start_value.sr(0.0);
+        self.current_value.sr(0.0);
+        T::atomic_store(&self.target_value, T::from_f64(0.0));
     }
 
     pub fn reset_to(&mut self, value: T) {
@@ -155,14 +160,14 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     }
 
     /// Computes the interpolated value based on the current `SmoothingType`.
-    fn interpolated_value(&mut self) -> T {
+    fn interpolated_value(&self) -> T {
         let (a, b, t) = (
-            self.start_value.to_f64(),
-            self.target_value.to_f64(),
+            self.start_value.lr(),
+            T::atomic_load(&self.target_value).to_f64(),
             self.ramp.current_value(),
         );
 
-        self.current_value = T::from_f64(match self.smoothing_type {
+        let current_value = T::from_f64(match self.smoothing_type {
             ST::Linear => interp::lerp(a, b, t),
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
@@ -178,11 +183,16 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
             }
         });
 
-        self.current_value
+        self.current_value.sr(current_value.to_f64());
+
+        current_value
     }
 
     fn map(&self, t: f64) -> T {
-        let (a, b) = (self.start_value.to_f64(), self.target_value.to_f64());
+        let (a, b) = (
+            self.start_value.lr(),
+            T::atomic_load(&self.target_value).to_f64(),
+        );
 
         T::from_f64(match self.smoothing_type {
             ST::Linear => interp::lerp(a, b, t),

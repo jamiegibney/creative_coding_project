@@ -22,8 +22,6 @@ pub struct UIParams {
     pub mask_algorithm: Arc<RwLock<GenerativeAlgo>>,
     /// The speed of the spectral mask scan line.
     pub mask_scan_line_speed: Arc<AtomicF64>,
-    /// The resolution of the spectral filter.
-    pub mask_resolution: Arc<AtomicUsize>,
     /// Whether the spectral filter is pre- or post-FX.
     pub mask_is_post_fx: Arc<AtomicBool>,
     /// Whether to use the GPU to compute the generative algorithms.
@@ -39,7 +37,7 @@ pub struct UIParams {
 
     // SMOOTHLIFE ALGORITHM
     /// The resolution of the smooth life simulation.
-    pub smoothlife_resolution: Arc<AtomicUsize>,
+    pub smoothlife_resolution: Arc<RwLock<SmoothLifeSize>>,
     /// The speed of the smoothlife simulation.
     pub smoothlife_speed: Arc<AtomicF64>,
     /// The state preset of the smoothlife simulation.
@@ -47,7 +45,7 @@ pub struct UIParams {
 
     // ### SPECTROGRAMS ###
     /// The resolution of both spectrograms.
-    pub spectrogram_resolution: Arc<AtomicUsize>,
+    pub spectrogram_resolution: Arc<RwLock<SpectrogramSize>>,
     /// The timing of the spectrograms.
     pub spectrogram_timing: Arc<AtomicF64>,
     /// Which spectrograms are drawn.
@@ -100,6 +98,65 @@ pub struct UIParams {
     // // EQ
     // /// The parameters for the three-band EQ.
     // pub eq_params: EQParams,
+}
+
+impl Default for UIParams {
+    fn default() -> Self {
+        Self {
+            mask_algorithm: Arc::new(RwLock::new(GenerativeAlgo::default())),
+            mask_scan_line_speed: Arc::new(AtomicF64::new(0.1)),
+            mask_is_post_fx: Arc::new(AtomicBool::new(false)),
+            mask_uses_gpu: Arc::new(AtomicBool::new(true)),
+
+            contour_count: Arc::new(AtomicU32::new(8)),
+            contour_thickness: Arc::new(AtomicF64::new(0.6)),
+            contour_speed: Arc::new(AtomicF64::new(0.2)),
+
+            smoothlife_resolution: Arc::new(RwLock::new(
+                SmoothLifeSize::default(),
+            )),
+            smoothlife_speed: Arc::new(AtomicF64::new(2.0)),
+            smoothlife_preset: Arc::new(RwLock::new(
+                SmoothLifePreset::default(),
+            )),
+
+            spectrogram_resolution: Arc::new(RwLock::new(
+                SpectrogramSize::default(),
+            )),
+            spectrogram_timing: Arc::new(AtomicF64::new(1.0)),
+            spectrogram_view: Arc::new(RwLock::new(SpectrogramView::default())),
+
+            reso_bank_scale: Arc::new(RwLock::new(Scale::default())),
+            reso_bank_root_note: Arc::new(AtomicU8::new(69)), // A4 (440 Hz)
+            reso_bank_spread: Arc::new(AtomicF64::new(0.5)),
+            reso_bank_shift: Arc::new(AtomicF64::new(0.0)),
+            reso_bank_inharm: Arc::new(AtomicF64::new(0.3)),
+            reso_bank_pan: Arc::new(AtomicF64::new(1.0)),
+            reso_bank_quantise: Arc::new(AtomicBool::new(true)),
+
+            low_pass_cutoff_hz: smoother(4000.0),
+            low_pass_q: smoother(BUTTERWORTH_Q),
+
+            high_pass_cutoff_hz: smoother(500.0),
+            high_pass_q: smoother(BUTTERWORTH_Q),
+
+            pp_delay_time_ms: smoother(0.35),
+            pp_delay_feedback: smoother(0.75),
+            pp_delay_mix: smoother(0.5),
+            pp_delay_tempo_sync: Arc::new(AtomicBool::new(false)),
+
+            dist_amount: smoother(0.0),
+            dist_type: Arc::new(RwLock::new(DistortionType::default())),
+            // eq_params: EQParams::default(),
+        }
+    }
+}
+
+fn smoother(val: f64) -> Arc<SmootherAtomic<f64>> {
+    Arc::new(
+        SmootherAtomic::new(0.03, val, unsafe { SAMPLE_RATE })
+            .with_smoothing_type(SmoothingType::Linear),
+    )
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -188,61 +245,58 @@ impl Display for DistortionType {
     }
 }
 
-impl Default for UIParams {
-    fn default() -> Self {
-        Self {
-            mask_algorithm: Arc::new(RwLock::new(GenerativeAlgo::default())),
-            mask_scan_line_speed: Arc::new(AtomicF64::new(0.1)),
-            mask_resolution: Arc::new(AtomicUsize::new(1 << 9)), // 512
-            mask_is_post_fx: Arc::new(AtomicBool::new(false)),
-            mask_uses_gpu: Arc::new(AtomicBool::new(true)),
+#[derive(Clone, Copy, Debug, Default)]
+pub enum SmoothLifeSize {
+    S16,
+    #[default]
+    S32,
+    S64,
+    S128,
+    S256,
+    S512,
+}
 
-            contour_count: Arc::new(AtomicU32::new(8)),
-            contour_thickness: Arc::new(AtomicF64::new(0.6)),
-            contour_speed: Arc::new(AtomicF64::new(0.2)),
-
-            smoothlife_resolution: Arc::new(AtomicUsize::new(1 << 6)), // 64
-            smoothlife_speed: Arc::new(AtomicF64::new(2.0)),
-            smoothlife_preset: Arc::new(RwLock::new(
-                SmoothLifePreset::default(),
-            )),
-
-            spectrogram_resolution: Arc::new(AtomicUsize::new(
-                DEFAULT_SPECTRAL_BLOCK_SIZE,
-            )),
-            spectrogram_timing: Arc::new(AtomicF64::new(1.0)),
-            spectrogram_view: Arc::new(RwLock::new(SpectrogramView::default())),
-
-            reso_bank_scale: Arc::new(RwLock::new(Scale::default())),
-            reso_bank_root_note: Arc::new(AtomicU8::new(69)), // A4 (440 Hz)
-            reso_bank_spread: Arc::new(AtomicF64::new(0.5)),
-            reso_bank_shift: Arc::new(AtomicF64::new(0.0)),
-            reso_bank_inharm: Arc::new(AtomicF64::new(0.3)),
-            reso_bank_pan: Arc::new(AtomicF64::new(1.0)),
-            reso_bank_quantise: Arc::new(AtomicBool::new(true)),
-
-            low_pass_cutoff_hz: smoother(4000.0),
-            low_pass_q: smoother(BUTTERWORTH_Q),
-
-            high_pass_cutoff_hz: smoother(500.0),
-            high_pass_q: smoother(BUTTERWORTH_Q),
-
-            pp_delay_time_ms: smoother(0.35),
-            pp_delay_feedback: smoother(0.75),
-            pp_delay_mix: smoother(0.5),
-            pp_delay_tempo_sync: Arc::new(AtomicBool::new(false)),
-
-            dist_amount: smoother(0.0),
-            dist_type: Arc::new(RwLock::new(DistortionType::default())),
-
-            // eq_params: EQParams::default(),
+impl SmoothLifeSize {
+    pub fn value(&self) -> usize {
+        match self {
+            Self::S16 => 16,
+            Self::S32 => 32,
+            Self::S64 => 64,
+            Self::S128 => 128,
+            Self::S256 => 256,
+            Self::S512 => 512,
         }
     }
 }
 
-fn smoother(val: f64) -> Arc<SmootherAtomic<f64>> {
-    Arc::new(
-        SmootherAtomic::new(0.03, val, unsafe { SAMPLE_RATE })
-            .with_smoothing_type(SmoothingType::Linear),
-    )
+impl Display for SmoothLifeSize {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.value())
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum SpectrogramSize {
+    S1024,
+    #[default]
+    S2048,
+    S4096,
+    S8192,
+}
+
+impl SpectrogramSize {
+    pub fn value(&self) -> usize {
+        match self {
+            Self::S1024 => 1024,
+            Self::S2048 => 2048,
+            Self::S4096 => 4096,
+            Self::S8192 => 8192,
+        }
+    }
+}
+
+impl Display for SpectrogramSize {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.value())
+    }
 }
