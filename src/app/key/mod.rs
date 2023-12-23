@@ -32,8 +32,7 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 drop(ctr);
             }
             GenerativeAlgo::SmoothLife => {
-                let mut sml =
-                    model.smooth_life.as_mut().unwrap().write().unwrap();
+                let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
 
                 sml.reset();
                 drop(sml);
@@ -61,8 +60,7 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             return;
         }
         *v = true;
-    }
-    else {
+    } else {
         return;
     }
 
@@ -84,7 +82,10 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         model
             .audio_senders
             .note_event
-            .send(NoteEvent::NoteOn { note, timing: samples_elapsed })
+            .send(NoteEvent::NoteOn {
+                note,
+                timing: samples_elapsed,
+            })
             .unwrap();
     }
 }
@@ -113,7 +114,10 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
         model
             .audio_senders
             .note_event
-            .send(NoteEvent::NoteOff { note, timing: samples_elapsed })
+            .send(NoteEvent::NoteOff {
+                note,
+                timing: samples_elapsed,
+            })
             .unwrap();
     }
 }
@@ -122,8 +126,7 @@ pub fn key_released(_app: &App, model: &mut Model, key: Key) {
 fn octave_from_key(octave: Octave, key: Key) -> Octave {
     if matches!(key, Key::K | Key::O | Key::L | Key::P) {
         octave.transpose(1)
-    }
-    else {
+    } else {
         octave
     }
 }

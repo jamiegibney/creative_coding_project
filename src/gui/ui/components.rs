@@ -13,7 +13,7 @@ pub struct UIComponents {
     mask_scan_line_speed: TextSlider,
     /// toggle
     mask_is_post_fx: Button,
-    mask_resolution: Menu<SpectrogramSize>,
+    mask_resolution: Menu<SpectralFilterSize>,
     /// trigger
     mask_reset: Button,
 
@@ -61,19 +61,27 @@ pub struct UIComponents {
     // ### POST EFFECTS ###
     effects_label: Label,
 
-    // ### Low pass
-    low_pass_label: Label,
+    // ### Low filter
+    low_filter_label: Label,
+    /// toggle
+    low_filter_type: Button,
     /// f64 (smoother callback)
-    low_pass_cutoff_hz: TextSlider,
+    low_filter_cutoff: TextSlider,
     /// f64 (smoother callback)
-    low_pass_q: TextSlider,
+    low_filter_q: TextSlider,
+    // f64 (smoother callback)
+    low_filter_gain: TextSlider,
 
-    // ### High pass
-    high_pass_label: Label,
+    // ### High filter
+    high_filter_label: Label,
+    /// toggle
+    high_filter_type: Button,
     /// f64 (smoother callback)
-    high_pass_cutoff_hz: TextSlider,
+    high_filter_cutoff: TextSlider,
     /// f64 (smoother callback)
-    high_pass_q: TextSlider,
+    high_filter_q: TextSlider,
+    // f64 (smoother callback)
+    high_filter_gain: TextSlider,
 
     // ### Ping-pong delay
     delay_label: Label,
@@ -368,28 +376,36 @@ impl UIComponents {
                 .with_text_layout(big_label_layout()),
             reso_bank_scale: {
                 let reso_bank_scale = Arc::clone(&params.reso_bank_scale);
-                Menu::new(ui_layout.reso_bank.scale).with_callback(
-                    move |selected| {
+                Menu::new(ui_layout.reso_bank.scale)
+                    .with_callback(move |selected| {
                         let mut guard = reso_bank_scale.write().unwrap();
                         *guard = selected;
-                    },
-                )
+                    })
+                    .with_item_text_layout(small_value_layout())
+                    .with_selected_item_text_layout(small_value_layout())
             },
             reso_bank_root_note: {
                 let reso_bank_root_note =
                     Arc::clone(&params.reso_bank_root_note);
                 TextSlider::new(0.0, ui_layout.reso_bank.root_note)
                     .with_output_range(1.0..=127.0)
-                    .with_default_value(reso_bank_root_note.lr() as f64)
+                    .with_value_layout(small_value_layout())
+                    .with_default_value(69.0) // A4
                     .with_integer_rounding()
                     .with_callback(move |_, value| {
                         reso_bank_root_note.sr(value as u8);
                     })
+                    .with_formatting_callback(|raw, val| String::from("A#4"))
             },
             reso_bank_spread: {
                 let reso_bank_spread = Arc::clone(&params.reso_bank_spread);
                 TextSlider::new(0.0, ui_layout.reso_bank.spread)
                     .with_label("Freq. spread")
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
                     .with_value_chars(4)
                     .with_default_value(reso_bank_spread.lr())
                     .with_callback(move |_, value| reso_bank_spread.sr(value))
@@ -399,6 +415,11 @@ impl UIComponents {
                 TextSlider::new(0.0, ui_layout.reso_bank.shift)
                     .with_label("Freq. shift")
                     .with_suffix(" st")
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
                     .with_value_chars(4)
                     .with_output_range(-24.0..=24.0)
                     .with_default_value(reso_bank_shift.lr())
@@ -408,6 +429,11 @@ impl UIComponents {
                 let reso_bank_inharm = Arc::clone(&params.reso_bank_inharm);
                 TextSlider::new(0.0, ui_layout.reso_bank.inharm)
                     .with_label("Inharmonic")
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
                     .with_value_chars(4)
                     .with_default_value(reso_bank_inharm.lr())
                     .with_callback(move |_, value| reso_bank_inharm.sr(value))
@@ -416,6 +442,11 @@ impl UIComponents {
                 let reso_bank_pan = Arc::clone(&params.reso_bank_pan);
                 TextSlider::new(0.0, ui_layout.reso_bank.pan)
                     .with_label("Panning")
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
                     .with_value_chars(4)
                     .with_default_value(reso_bank_pan.lr())
                     .with_callback(move |_, value| reso_bank_pan.sr(value))
@@ -424,69 +455,190 @@ impl UIComponents {
                 let reso_bank_quantise = Arc::clone(&params.reso_bank_quantise);
                 Button::new(ui_layout.reso_bank.quantise)
                     .with_callback(move |state| reso_bank_quantise.sr(state))
+                    .with_state(true)
+                    .with_enabled_layout(small_value_layout())
+                    .with_disabled_layout(small_value_layout())
                     .with_enabled_text("Quantise On")
                     .with_disabled_text("Quantise Off")
             },
             reso_bank_randomise: Button::new(ui_layout.reso_bank.randomise)
-                .with_label("Reset!"),
+                .with_label("Reset!")
+                .with_label_layout(main_value_layout())
+                .toggleable(false),
 
             effects_label: Label::new(ui_layout.other.effects_label)
                 .with_text("EFFECTS")
                 .with_text_layout(big_label_layout()),
 
-            low_pass_label: Label::new(ui_layout.low_filter.label)
+            low_filter_label: Label::new(ui_layout.low_filter.label)
                 .with_text("LOW FILTER")
                 // .with_text_color(Rgb::new(0.1, 0.3, 0.6))
                 .with_text_layout(big_label_layout()),
-            low_pass_cutoff_hz: {
-                let low_pass_cutoff_hz = Arc::clone(&params.low_pass_cutoff_hz);
+            low_filter_type: {
+                let low_filter_type = Arc::clone(&params.low_filter_is_shelf);
+                Button::new(ui_layout.low_filter.f_type)
+                    .with_label("Type")
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
+                    })
+                    .with_enabled_text("Shelf")
+                    .with_disabled_text("Cut")
+                    .with_enabled_layout(main_value_layout())
+                    .with_disabled_layout(main_value_layout())
+                    .with_callback(move |state| low_filter_type.sr(state))
+            },
+            low_filter_cutoff: {
+                let low_filter_cutoff = Arc::clone(&params.low_filter_cutoff);
                 TextSlider::new(0.0, ui_layout.low_filter.cutoff_hz)
                     .with_label("Cutoff")
-                    .with_suffix(" Hz")
-                    .with_output_range(10.0..=20000.0)
-                    .with_default_value(low_pass_cutoff_hz.current_value())
-                    .with_callback(move |_, value| {
-                        low_pass_cutoff_hz.set_target_value(value);
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
                     })
-                // .with_formatting_callback(|raw_value, output_value| todo!())
+                    .with_value_layout(main_value_layout())
+                    // .with_output_range(3.4868..=135.0762) // 10 to 20k
+                    .with_output_range(3.4868..=71.2131) // 10 to 500
+                    .with_default_value(freq_to_note(
+                        low_filter_cutoff.current_value(),
+                    ))
+                    .with_callback(move |_, value| {
+                        low_filter_cutoff.set_target_value(note_to_freq(value));
+                    })
+                    .with_formatting_callback(|raw_value, output_value| {
+                        let val = note_to_freq(output_value);
+
+                        if val < 100.0 {
+                            format!("{val:.2} Hz")
+                        }
+                        else if val < 1000.0 {
+                            format!("{val:.1} Hz")
+                        }
+                        else if val < 10000.0 {
+                            format!("{:.2} kHz", val / 1000.0)
+                        }
+                        else {
+                            format!("{:.1} kHz", val / 1000.0)
+                        }
+                    })
             },
-            low_pass_q: {
-                let low_pass_q = Arc::clone(&params.low_pass_q);
+            low_filter_q: {
+                let low_filter_q = Arc::clone(&params.low_filter_q);
                 TextSlider::new(0.0, ui_layout.low_filter.q)
                     .with_label("Q")
-                    .with_value_chars(5)
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_value_chars(4)
                     .with_output_range(0.025..=10.0)
-                    .with_default_value(low_pass_q.current_value())
+                    .with_default_value(low_filter_q.current_value())
                     .with_callback(move |_, value| {
-                        low_pass_q.set_target_value(value);
+                        low_filter_q.set_target_value(value);
+                    })
+            },
+            low_filter_gain: {
+                let low_filter_gain = Arc::clone(&params.low_filter_gain_db);
+                TextSlider::new(0.0, ui_layout.low_filter.gain)
+                    .with_label("Gain")
+                    .with_label_layout(Layout {
+                        justify: Justify::Right,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(-12.0..=12.0)
+                    .with_value_chars(5)
+                    .with_suffix(" dB")
+                    .with_default_value(low_filter_gain.current_value())
+                    .with_callback(move |_, value| {
+                        low_filter_gain.set_target_value(value);
                     })
             },
 
-            high_pass_label: Label::new(ui_layout.high_filter.label)
+            high_filter_label: Label::new(ui_layout.high_filter.label)
                 .with_text("HIGH FILTER")
-                // .with_text_color(Rgb::new(0.6, 0.3, 0.1))
                 .with_text_layout(big_label_layout()),
-            high_pass_cutoff_hz: {
-                let hp_cutoff = Arc::clone(&params.high_pass_cutoff_hz);
+            high_filter_type: {
+                let high_filter_type = Arc::clone(&params.high_filter_is_shelf);
+                Button::new(ui_layout.high_filter.f_type)
+                    .with_label("Type")
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_enabled_text("Shelf")
+                    .with_disabled_text("Cut")
+                    .with_enabled_layout(main_value_layout())
+                    .with_disabled_layout(main_value_layout())
+                    .with_callback(move |state| high_filter_type.sr(state))
+            },
+            high_filter_cutoff: {
+                let high_filter_cutoff = Arc::clone(&params.high_filter_cutoff);
                 TextSlider::new(0.0, ui_layout.high_filter.cutoff_hz)
                     .with_label("Cutoff")
-                    .with_suffix(" Hz")
-                    .with_output_range(10.0..=20000.0)
-                    .with_default_value(hp_cutoff.current_value())
-                    .with_callback(move |_, value| {
-                        hp_cutoff.set_target_value(value);
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
                     })
-                // .with_formatting_callback(|raw_value, output_value| todo!())
+                    .with_value_layout(main_value_layout())
+                    // .with_output_range(3.4868..=135.0762) // 10 to 20k
+                    .with_output_range(71.2131..=135.0762) // 500 to 20k
+                    .with_default_value(freq_to_note(
+                        high_filter_cutoff.current_value(),
+                    ))
+                    .with_callback(move |_, value| {
+                        high_filter_cutoff
+                            .set_target_value(note_to_freq(value));
+                    })
+                    .with_formatting_callback(|raw_value, output_value| {
+                        let val = note_to_freq(output_value);
+
+                        if val < 100.0 {
+                            format!("{val:.2} Hz")
+                        }
+                        else if val < 1000.0 {
+                            format!("{val:.1} Hz")
+                        }
+                        else if val < 10000.0 {
+                            format!("{:.2} kHz", val / 1000.0)
+                        }
+                        else {
+                            format!("{:.1} kHz", val / 1000.0)
+                        }
+                    })
             },
-            high_pass_q: {
-                let high_pass_q = Arc::clone(&params.high_pass_q);
+            high_filter_q: {
+                let high_filter_q = Arc::clone(&params.high_filter_q);
                 TextSlider::new(0.0, ui_layout.high_filter.q)
                     .with_label("Q")
-                    .with_value_chars(5)
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_value_chars(4)
                     .with_output_range(0.025..=10.0)
-                    .with_default_value(high_pass_q.current_value())
+                    .with_default_value(high_filter_q.current_value())
                     .with_callback(move |_, value| {
-                        high_pass_q.set_target_value(value);
+                        high_filter_q.set_target_value(value);
+                    })
+            },
+            high_filter_gain: {
+                let high_filter_gain = Arc::clone(&params.high_filter_gain_db);
+                TextSlider::new(0.0, ui_layout.high_filter.gain)
+                    .with_label("Gain")
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(-12.0..=12.0)
+                    .with_value_chars(5)
+                    .with_suffix(" dB")
+                    .with_default_value(high_filter_gain.current_value())
+                    .with_callback(move |_, value| {
+                        high_filter_gain.set_target_value(value);
                     })
             },
 
@@ -569,9 +721,11 @@ impl UIComponents {
                 .with_label("Master Gain")
                 .with_label_layout(main_label_layout())
                 .with_value_layout(main_value_layout())
-                .with_output_range(-100.0..=12.0)
-                .with_default_value(0.0)
-                .with_formatting_callback(|raw_value, val| {
+                .with_output_range(0.0..=3.9811) // -inf to +12
+                .with_default_value(1.00001)
+                .with_formatting_callback(|_, val| {
+                    let val = level_to_db(val);
+
                     if val <= -99.9 {
                         return String::from("-inf dB");
                     }
@@ -658,11 +812,25 @@ impl UIDraw for UIComponents {
         self.reso_bank_quantise.update(input_data);
         self.reso_bank_randomise.update(input_data);
 
-        self.low_pass_cutoff_hz.update(input_data);
-        self.low_pass_q.update(input_data);
+        self.low_filter_type.update(input_data);
+        self.low_filter_cutoff.update(input_data);
 
-        self.high_pass_cutoff_hz.update(input_data);
-        self.high_pass_q.update(input_data);
+        if self.low_filter_type.enabled() {
+            self.low_filter_gain.update(input_data);
+        }
+        else {
+            self.low_filter_q.update(input_data);
+        }
+
+        self.high_filter_type.update(input_data);
+        self.high_filter_cutoff.update(input_data);
+
+        if self.high_filter_type.enabled() {
+            self.high_filter_gain.update(input_data);
+        }
+        else {
+            self.high_filter_q.update(input_data);
+        }
 
         self.dist_amount.update(input_data);
         self.dist_type.update(input_data);
@@ -684,8 +852,8 @@ impl UIDraw for UIComponents {
         self.mask_label.draw(app, draw, frame);
         self.spectrogram_label.draw(app, draw, frame);
         self.reso_bank_label.draw(app, draw, frame);
-        self.low_pass_label.draw(app, draw, frame);
-        self.high_pass_label.draw(app, draw, frame);
+        self.low_filter_label.draw(app, draw, frame);
+        self.high_filter_label.draw(app, draw, frame);
         self.dist_label.draw(app, draw, frame);
         self.delay_label.draw(app, draw, frame);
         self.comp_label.draw(app, draw, frame);
@@ -723,11 +891,25 @@ impl UIDraw for UIComponents {
         self.reso_bank_randomise.draw(app, draw, frame);
         self.reso_bank_scale.draw(app, draw, frame); // menu
 
-        self.low_pass_cutoff_hz.draw(app, draw, frame);
-        self.low_pass_q.draw(app, draw, frame);
+        self.low_filter_type.draw(app, draw, frame);
+        self.low_filter_cutoff.draw(app, draw, frame);
 
-        self.high_pass_cutoff_hz.draw(app, draw, frame);
-        self.high_pass_q.draw(app, draw, frame);
+        if self.low_filter_type.enabled() {
+            self.low_filter_gain.draw(app, draw, frame);
+        }
+        else {
+            self.low_filter_q.draw(app, draw, frame);
+        }
+
+        self.high_filter_type.draw(app, draw, frame);
+        self.high_filter_cutoff.draw(app, draw, frame);
+
+        if self.high_filter_type.enabled() {
+            self.high_filter_gain.draw(app, draw, frame);
+        }
+        else {
+            self.high_filter_q.draw(app, draw, frame);
+        }
 
         self.dist_amount.draw(app, draw, frame);
         self.dist_type.draw(app, draw, frame); // menu

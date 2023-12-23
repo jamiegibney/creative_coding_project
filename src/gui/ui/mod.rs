@@ -4,5 +4,5 @@ use super::*;
 pub mod components;
 pub mod layout;
 
-use layout::*;
 pub use components::*;
+use layout::*;

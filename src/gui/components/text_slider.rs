@@ -144,6 +144,9 @@ impl TextSlider {
     }
 
     /// Provides a default value to the `TextSlider`.
+    ///
+    /// Must be called after [`with_output_range()`](Self::with_output_range),
+    /// if provided.
     pub fn with_default_value(mut self, value: f64) -> Self {
         let mut s =
             Self {
@@ -432,10 +435,11 @@ impl UIDraw for TextSlider {
         if !self.within_bounds(input.mouse_pos) && !self.is_active {
             self.can_update = !input.is_left_clicked;
         }
-        else if (!self.can_update && !input.is_left_clicked) || self.is_active {
+        else if (!self.can_update && !input.is_left_clicked) || self.is_active
+        {
             self.can_update = true;
         }
-        
+
         // should the slider update?
         if !self.should_update(input) || !self.can_update {
             return;
@@ -465,9 +469,7 @@ impl UIDraw for TextSlider {
         }
 
         // should the value reset?
-        if !self.is_active && input.is_alt_down
-            || input.is_os_mod_down
-        {
+        if !self.is_active && input.is_alt_down || input.is_os_mod_down {
             self.reset_to_default();
         }
 

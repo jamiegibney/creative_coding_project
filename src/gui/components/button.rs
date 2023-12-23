@@ -135,6 +135,11 @@ impl Button {
 
     /* * * METHODS * * */
 
+    /// Returns the state of the button.
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
+
     /// Returns a reference to the button's label text layout.
     pub fn label_layout(&self) -> &Layout {
         &self.label_layout
@@ -233,7 +238,6 @@ impl UIDraw for Button {
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
         let (x, y, w, h) = self.rect.x_y_w_h();
-        let padding = w * 0.05;
         let rect = self.rect;
 
         if !self.is_toggle {
@@ -256,7 +260,7 @@ impl UIDraw for Button {
                 .layout(&self.label_layout);
         }
         else if let Some(label) = self.label.as_ref() {
-            let label_rect = rect.pad_bottom(h * 0.5);
+            let label_rect = rect.shift_y(rect.h() + rect.h() * 0.1);
 
             // label
             draw.text(label)
@@ -267,20 +271,13 @@ impl UIDraw for Button {
         }
 
         if self.is_toggle {
-            let value_rect = if self.label.is_some() {
-                rect.pad_top(h * 0.5)
-            }
-            else {
-                rect
-            };
-
             // background rect
             draw.rect()
-                .xy(value_rect.xy())
-                .wh(value_rect.wh())
+                .xy(rect.xy())
+                .wh(rect.wh())
                 .color(BG_NON_SELECTED);
 
-            let value_rect = value_rect.pad_bottom(2.5);
+            let value_rect = rect.pad_bottom(2.5);
 
             if self.enabled {
                 // enabled text

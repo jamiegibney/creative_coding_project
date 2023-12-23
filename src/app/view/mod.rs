@@ -1,5 +1,5 @@
-use nannou::geom::{path, Path};
 use crate::gui::colors::*;
+use nannou::geom::{path, Path};
 
 use super::*;
 
@@ -8,7 +8,10 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let window = app.main_window();
     draw.background().color(BLACK);
 
-    let V2 { x: _width, y: _height } = WINDOW_SIZE;
+    let V2 {
+        x: _width,
+        y: _height,
+    } = WINDOW_SIZE;
 
     let bank_rect = &model.bank_rect;
     draw.rect()

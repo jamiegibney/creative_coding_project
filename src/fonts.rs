@@ -11,4 +11,3 @@ pub const REGULAR_FONT_BYTES: &[u8] = include_bytes!("../assets/fonts/Muli-SemiB
 pub const MEDIUM_FONT_BYTES: &[u8] = include_bytes!("../assets/fonts/Muli-Bold.ttf");
 /// Muli Black
 pub const BOLD_FONT_BYTES: &[u8] = include_bytes!("../assets/fonts/Muli-Black.ttf");
-

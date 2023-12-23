@@ -15,7 +15,7 @@ pub const NON_SELECTED: Rgb =
 
 /// Non-selected background (main background color).
 pub const BG_NON_SELECTED: Rgb =
-    Rgb { red: 0.2, green: 0.2, blue: 0.2, standard: PhantomData };
+    Rgb { red: 0.18, green: 0.18, blue: 0.18, standard: PhantomData };
 
 /// Hovered-over text labels.
 pub const HOVERED: Rgb =

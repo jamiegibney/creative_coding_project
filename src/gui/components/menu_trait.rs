@@ -197,3 +197,38 @@ impl MenuEnum for SpectrogramSize {
         }
     }
 }
+
+impl MenuEnum for SpectralFilterSize {
+    fn num_variants() -> usize {
+        9
+    }
+
+    fn idx(&self) -> usize {
+        match self {
+            Self::S64 => 0,
+            Self::S128 => 1,
+            Self::S256 => 2,
+            Self::S512 => 3,
+            Self::S1024 => 4,
+            Self::S2048 => 5,
+            Self::S4096 => 6,
+            Self::S8192 => 7,
+            Self::S16384 => 8,
+        }
+    }
+
+    fn from_idx(idx: usize) -> Option<Self> {
+        match idx {
+            0 => Some(Self::S64),
+            1 => Some(Self::S128),
+            2 => Some(Self::S256),
+            3 => Some(Self::S512),
+            4 => Some(Self::S1024),
+            5 => Some(Self::S2048),
+            6 => Some(Self::S4096),
+            7 => Some(Self::S8192),
+            8 => Some(Self::S16384),
+            _ => None,
+        }
+    }
+}

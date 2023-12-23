@@ -30,10 +30,7 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     }
 
     /// Creates a smoother with `smoothing_type` smoothing.
-    pub fn with_smoothing_type(
-        mut self,
-        smoothing_type: SmoothingType,
-    ) -> Self {
+    pub fn with_smoothing_type(mut self, smoothing_type: SmoothingType) -> Self {
         self.set_smoothing_type(smoothing_type);
         self
     }
@@ -81,9 +78,7 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
                 ST::SineTop => lerp(a, b, xfer::sine_upper(t)),
                 ST::SineBottom => lerp(a, b, xfer::sine_lower(t)),
                 ST::CurveNormal(c) => lerp(a, b, xfer::s_curve(t, c)),
-                ST::CurveLinearStart(c) => {
-                    lerp(a, b, xfer::s_curve_linear_centre(t, c))
-                }
+                ST::CurveLinearStart(c) => lerp(a, b, xfer::s_curve_linear_centre(t, c)),
                 ST::CurveRounder(c) => lerp(a, b, xfer::s_curve_round(t, c)),
             })
         });
@@ -93,10 +88,7 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// to the [`next()`][Self::next()] method (or its variants) will have
     /// no effect, and will return the current value.
     pub fn stop_in_place(&mut self) {
-        T::atomic_store(
-            &self.target_value,
-            T::from_f64(self.current_value.lr()),
-        );
+        T::atomic_store(&self.target_value, T::from_f64(self.current_value.lr()));
         self.finish();
     }
 
@@ -172,15 +164,11 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => {
-                interp::lerp(a, b, xfer::s_curve(t, tension))
-            }
+            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => {
-                interp::lerp(a, b, xfer::s_curve_round(t, tension))
-            }
+            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
         });
 
         self.current_value.sr(current_value.to_f64());
@@ -199,15 +187,11 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => {
-                interp::lerp(a, b, xfer::s_curve(t, tension))
-            }
+            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => {
-                interp::lerp(a, b, xfer::s_curve_round(t, tension))
-            }
+            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
         })
     }
 }

@@ -69,7 +69,10 @@ pub struct V2 {
 
 /// The size of the application's window in display units.
 // pub const WINDOW_SIZE: V2 = V2 { x: 1400.0, y: 800.0 };
-pub const WINDOW_SIZE: V2 = V2 { x: 1400.0, y: 800.0 };
+pub const WINDOW_SIZE: V2 = V2 {
+    x: 1400.0,
+    y: 800.0,
+};
 
 // TODO this is constant for now, but should be variable later.
 /// The default DSP buffer size.

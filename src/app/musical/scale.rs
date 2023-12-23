@@ -5,9 +5,9 @@ use std::fmt::Display;
 pub enum Scale {
     Major,
     Minor,
+    #[default]
     MajPentatonic,
     MinPentatonic,
-    #[default]
     Chromatic,
 }
 
@@ -48,8 +48,7 @@ impl Scale {
         while !(lower..=(lower + 12.0)).contains(&note) {
             if note > lower {
                 lower += 12.0;
-            }
-            else {
+            } else {
                 lower -= 12.0;
             }
         }
@@ -82,6 +81,5 @@ impl ScaleValues {
     pub const MINOR: [f64; 7] = [0.0, 2.0, 4.0, 5.0, 7.0, 9.0, 11.0];
     pub const MAJ_PENTATONIC: [f64; 5] = [0.0, 2.0, 4.0, 7.0, 9.0];
     pub const MIN_PENTATONIC: [f64; 5] = [0.0, 2.0, 4.0, 7.0, 9.0];
-    pub const CHROMATIC: [f64; 12] =
-        [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0];
+    pub const CHROMATIC: [f64; 12] = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0];
 }

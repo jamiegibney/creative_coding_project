@@ -38,8 +38,8 @@ impl Default for MaskUILayout {
         let upper_size = 256.0;
 
         let reso_rect = Rect::from_xy_wh(
-            pt2(0.0, 332.0 - SMALL_HEIGHT * 2.0),
-            pt2(small_width_chars(4), SMALL_HEIGHT * 4.0),
+            pt2(0.0, 332.0 - SMALL_HEIGHT * 4.5),
+            pt2(small_width_chars(5), SMALL_HEIGHT * 9.0),
         );
 
         let sp_w = small_width_chars(6);
@@ -208,45 +208,170 @@ impl Default for ResoBankUILayout {
     fn default() -> Self {
         let label_rect =
             Rect::from_xy_wh(pt2(-412.0, 366.0), pt2(120.0, MAIN_HEIGHT));
+
+        // let bank_rect = Rect::from_corners(
+        //     pt2(-540.0, 50.0),
+        //     pt2(-540.0 + upper_size, 50.0 + upper_size),
+        // );
+
+        let reset_rect = Rect::from_xy_wh(
+            pt2(-412.0, 28.0),
+            pt2(main_width_chars(6), MAIN_HEIGHT),
+        );
+
+        let sh_w = main_width_chars(8);
+        let shift_rect = Rect::from_xy_wh(
+            pt2(-540.0 - sh_w / 2.0 - 10.0, 258.0 + MAIN_HEIGHT / 2.0),
+            pt2(sh_w, MAIN_HEIGHT),
+        );
+
+        let sp_w = main_width_chars(4);
+        let spread_rect = Rect::from_xy_wh(
+            pt2(-540.0 - sp_w / 2.0 - 10.0, 190.0 + MAIN_HEIGHT / 2.0),
+            pt2(sp_w, MAIN_HEIGHT),
+        );
+
+        let ih_w = main_width_chars(4);
+        let inharm_rect = Rect::from_xy_wh(
+            pt2(-540.0 - ih_w / 2.0 - 10.0, 120.0 + MAIN_HEIGHT / 2.0),
+            pt2(ih_w, MAIN_HEIGHT),
+        );
+
+        let pn_w = main_width_chars(4);
+        let pan_rect = Rect::from_xy_wh(
+            pt2(-540.0 - pn_w / 2.0 - 10.0, 50.0 + MAIN_HEIGHT / 2.0),
+            pt2(pn_w, MAIN_HEIGHT),
+        );
+
+        let qn_w = small_width_chars(12);
+        let quant_rect = Rect::from_xy_wh(
+            pt2(-398.0 + qn_w / 2.0, 323.0),
+            pt2(qn_w, SMALL_HEIGHT),
+        );
+
+        let sc_w = small_width_chars(9);
+        let scale_rect = Rect::from_xy_wh(
+            pt2(-495.0 + sc_w / 2.0, 332.0 - SMALL_HEIGHT * 2.5),
+            pt2(sc_w, SMALL_HEIGHT * 5.0),
+        );
+
+        let rn_w = small_width_chars(3);
+        let root_rect = Rect::from_xy_wh(
+            pt2(-540.0 + rn_w / 2.0, 323.0),
+            pt2(rn_w, SMALL_HEIGHT),
+        );
+
         Self {
             label: label_rect,
-            scale: def_rect(),
-            root_note: def_rect(),
-            spread: def_rect(),
-            shift: def_rect(),
-            inharm: def_rect(),
-            pan: def_rect(),
-            quantise: def_rect(),
-            randomise: def_rect(),
+
+            root_note: root_rect,
+            scale: scale_rect,
+            quantise: quant_rect,
+
+            shift: shift_rect,
+            spread: spread_rect,
+            inharm: inharm_rect,
+            pan: pan_rect,
+
+            randomise: reset_rect,
         }
     }
 }
 
 pub struct LowFilterUILayout {
     pub label: Rect,
+    pub f_type: Rect,
     pub cutoff_hz: Rect,
     pub q: Rect,
+    pub gain: Rect,
 }
 
 impl Default for LowFilterUILayout {
     fn default() -> Self {
         let label_rect =
             Rect::from_xy_wh(pt2(-615.0, -45.0), pt2(120.0, MAIN_HEIGHT));
-        Self { label: label_rect, cutoff_hz: def_rect(), q: def_rect() }
+
+        // let spectrum_rect =
+        //     Rect::from_corners(pt2(-540.0, -310.0), pt2(128.0, -40.0));
+
+        let ty_w = main_width_chars(5);
+        let type_rect = Rect::from_xy_wh(
+            pt2(-540.0 - ty_w / 2.0 - 10.0, -120.0 + MAIN_HEIGHT / 2.0),
+            pt2(ty_w, MAIN_HEIGHT),
+        );
+
+        let co_w = main_width_chars(9);
+        let cutoff_rect = Rect::from_xy_wh(
+            pt2(-540.0 - co_w / 2.0 - 10.0, -215.0 + MAIN_HEIGHT / 2.0),
+            pt2(co_w, MAIN_HEIGHT),
+        );
+
+        let q_w = main_width_chars(4);
+        let q_rect = Rect::from_xy_wh(
+            pt2(-540.0 - q_w / 2.0 - 10.0, -310.0 + MAIN_HEIGHT / 2.0),
+            pt2(q_w, MAIN_HEIGHT),
+        );
+
+        let gn_w = main_width_chars(8);
+        let gain_rect = Rect::from_xy_wh(
+            pt2(-540.0 - gn_w / 2.0 - 10.0, -310.0 + MAIN_HEIGHT / 2.0),
+            pt2(gn_w, MAIN_HEIGHT),
+        );
+
+        Self {
+            label: label_rect,
+            f_type: type_rect,
+            cutoff_hz: cutoff_rect,
+            q: q_rect,
+            gain: gain_rect,
+        }
     }
 }
 
 pub struct HighFilterUILayout {
     pub label: Rect,
+    pub f_type: Rect,
     pub cutoff_hz: Rect,
     pub q: Rect,
+    pub gain: Rect,
 }
 
 impl Default for HighFilterUILayout {
     fn default() -> Self {
         let label_rect =
             Rect::from_xy_wh(pt2(210.0, -45.0), pt2(120.0, MAIN_HEIGHT));
-        Self { label: label_rect, cutoff_hz: def_rect(), q: def_rect() }
+
+        let ty_w = main_width_chars(5);
+        let type_rect = Rect::from_xy_wh(
+            pt2(128.0 + ty_w / 2.0 + 10.0, -120.0 + MAIN_HEIGHT / 2.0),
+            pt2(ty_w, MAIN_HEIGHT),
+        );
+
+        let co_w = main_width_chars(9);
+        let cutoff_rect = Rect::from_xy_wh(
+            pt2(128.0 + co_w / 2.0 + 10.0, -215.0 + MAIN_HEIGHT / 2.0),
+            pt2(co_w, MAIN_HEIGHT),
+        );
+
+        let q_w = main_width_chars(4);
+        let q_rect = Rect::from_xy_wh(
+            pt2(128.0 + q_w / 2.0 + 10.0, -310.0 + MAIN_HEIGHT / 2.0),
+            pt2(q_w, MAIN_HEIGHT),
+        );
+
+        let gn_w = main_width_chars(8);
+        let gain_rect = Rect::from_xy_wh(
+            pt2(128.0 + gn_w / 2.0 + 10.0, -310.0 + MAIN_HEIGHT / 2.0),
+            pt2(gn_w, MAIN_HEIGHT),
+        );
+
+        Self {
+            label: label_rect,
+            f_type: type_rect,
+            cutoff_hz: cutoff_rect,
+            q: q_rect,
+            gain: gain_rect,
+        }
     }
 }
 

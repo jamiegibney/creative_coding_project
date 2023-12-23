@@ -25,7 +25,7 @@ pub struct UIParams {
     /// Whether the spectral filter is pre- or post-FX.
     pub mask_is_post_fx: Arc<AtomicBool>,
     /// Whether to use the GPU to compute the generative algorithms.
-    pub mask_uses_gpu: Arc<AtomicBool>,
+    pub mask_resolution: Arc<RwLock<SpectralFilterSize>>,
 
     // CONTOURS ALGORITHMS
     /// The number of contours to draw.
@@ -69,18 +69,25 @@ pub struct UIParams {
 
     // ### POST EFFECTS ###
 
-    // TODO: atomic smoothers required!
     // LOW-PASS
-    /// The cutoff of the low-pass filter in Hz.
-    pub low_pass_cutoff_hz: Arc<SmootherAtomic<f64>>,
-    /// The Q value of the low-pass filter.
-    pub low_pass_q: Arc<SmootherAtomic<f64>>,
+    /// The cutoff of the filter in Hz.
+    pub low_filter_cutoff: Arc<SmootherAtomic<f64>>,
+    /// The Q value of the cut filter.
+    pub low_filter_q: Arc<SmootherAtomic<f64>>,
+    /// The gain value of the shelf filter
+    pub low_filter_gain_db: Arc<SmootherAtomic<f64>>,
+    /// Whether the low filter is a shelf filter or not.
+    pub low_filter_is_shelf: Arc<AtomicBool>,
 
     // HIGH-PASS
     /// The cutoff of the high-pass filter in Hz.
-    pub high_pass_cutoff_hz: Arc<SmootherAtomic<f64>>,
+    pub high_filter_cutoff: Arc<SmootherAtomic<f64>>,
     /// The Q value of the high-pass filter.
-    pub high_pass_q: Arc<SmootherAtomic<f64>>,
+    pub high_filter_q: Arc<SmootherAtomic<f64>>,
+    /// The gain value of the shelf filter.
+    pub high_filter_gain_db: Arc<SmootherAtomic<f64>>,
+    /// Whether the high filter is a shelf filter or not.
+    pub high_filter_is_shelf: Arc<AtomicBool>,
 
     // PING-PONG DELAY
     /// The time between ping-pong delay taps in milliseconds.
@@ -106,7 +113,7 @@ impl Default for UIParams {
             mask_algorithm: Arc::new(RwLock::new(GenerativeAlgo::default())),
             mask_scan_line_speed: Arc::new(AtomicF64::new(0.1)),
             mask_is_post_fx: Arc::new(AtomicBool::new(false)),
-            mask_uses_gpu: Arc::new(AtomicBool::new(true)),
+            mask_resolution: Arc::new(RwLock::new(SpectralFilterSize::default())),
 
             contour_count: Arc::new(AtomicU32::new(8)),
             contour_thickness: Arc::new(AtomicF64::new(0.6)),
@@ -134,11 +141,15 @@ impl Default for UIParams {
             reso_bank_pan: Arc::new(AtomicF64::new(1.0)),
             reso_bank_quantise: Arc::new(AtomicBool::new(true)),
 
-            low_pass_cutoff_hz: smoother(4000.0),
-            low_pass_q: smoother(BUTTERWORTH_Q),
+            low_filter_cutoff: smoother(4000.0),
+            low_filter_q: smoother(BUTTERWORTH_Q),
+            low_filter_gain_db: smoother(0.0),
+            low_filter_is_shelf: Arc::new(AtomicBool::new(true)),
 
-            high_pass_cutoff_hz: smoother(500.0),
-            high_pass_q: smoother(BUTTERWORTH_Q),
+            high_filter_cutoff: smoother(500.0),
+            high_filter_q: smoother(BUTTERWORTH_Q),
+            high_filter_gain_db: smoother(0.0),
+            high_filter_is_shelf: Arc::new(AtomicBool::new(true)),
 
             pp_delay_time_ms: smoother(0.35),
             pp_delay_feedback: smoother(0.75),
@@ -296,6 +307,42 @@ impl SpectrogramSize {
 }
 
 impl Display for SpectrogramSize {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.value())
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum SpectralFilterSize {
+    S64,
+    S128,
+    S256,
+    S512,
+    #[default]
+    S1024,
+    S2048,
+    S4096,
+    S8192,
+    S16384,
+}
+
+impl SpectralFilterSize {
+    pub fn value(&self) -> usize {
+        match self {
+            Self::S64 => 64,
+            Self::S128 => 128,
+            Self::S256 => 256,
+            Self::S512 => 512,
+            Self::S1024 => 1024,
+            Self::S2048 => 2048,
+            Self::S4096 => 4096,
+            Self::S8192 => 8192,
+            Self::S16384 => 16384,
+        }
+    }
+}
+
+impl Display for SpectralFilterSize {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{}", self.value())
     }

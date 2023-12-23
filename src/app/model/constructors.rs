@@ -3,11 +3,7 @@ use super::*;
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::mpsc;
 
-fn egui_raw_event(
-    _app: &App,
-    model: &mut Model,
-    event: &nannou::winit::event::WindowEvent,
-) {
+fn egui_raw_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
     model.egui.handle_raw_event(event);
 }
 
@@ -40,17 +36,12 @@ pub struct AudioSystem {
 }
 
 /// Builds the audio stream, audio message channel senders, and input note handler.
-pub fn build_audio_system(
-    spectral_block_size: usize,
-    params: &UIParams,
-) -> AudioSystem {
+pub fn build_audio_system(spectral_block_size: usize, params: &UIParams) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
     let (spectral_mask, spectral_mask_output) =
-        triple_buffer::TripleBuffer::new(
-            &SpectralMask::new(spectral_block_size).with_size(512),
-        )
-        .split();
+        triple_buffer::TripleBuffer::new(&SpectralMask::new(spectral_block_size).with_size(512))
+            .split();
 
     let (voice_event_sender, voice_event_receiver) = mpsc::channel();
     let (note_channel_sender, note_channel_receiver) = mpsc::channel();
@@ -132,13 +123,10 @@ pub fn build_gui_elements(
         pt2(contour_size_fl, 50.0 + upper_size),
     );
 
-    let spectrum_rect =
-        Rect::from_corners(pt2(-540.0, -310.0), pt2(128.0, -40.0));
+    let spectrum_rect = Rect::from_corners(pt2(-540.0, -310.0), pt2(128.0, -40.0));
 
-    let pre_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
-    let post_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
+    let pre_spectrum_analyzer = RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
+    let post_spectrum_analyzer = RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
 
     GuiElements {
         bank_rect,

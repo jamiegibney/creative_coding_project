@@ -26,8 +26,7 @@ impl Label {
         Self {
             text: if text.is_empty() {
                 String::from(Self::DEFAULT_TEXT)
-            }
-            else {
+            } else {
                 String::from(text)
             },
             ..self
@@ -41,7 +40,10 @@ impl Label {
 
     /// Provides a text layout for the label text.
     pub fn with_text_layout(self, text_layout: Layout) -> Self {
-        Self { text_layout, ..self }
+        Self {
+            text_layout,
+            ..self
+        }
     }
 
     /// Sets the label text.

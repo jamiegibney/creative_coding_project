@@ -28,10 +28,7 @@ impl SmoothLifeGeneratorAsync {
                 let mut v = Vec::with_capacity(thread_buffers);
                 (0..thread_buffers).for_each(|_| {
                     v.push(Arc::new(Mutex::new(vec![
-                        vec![
-                            0.0;
-                            thread_buf_height
-                        ];
+                        vec![0.0; thread_buf_height];
                         size
                     ])));
                 });
@@ -54,7 +51,10 @@ impl SmoothLifeGeneratorAsync {
     }
 
     pub fn set_speed(&mut self, speed: f64) {
-        self.state = Arc::new(SLState { dt: speed, ..*self.state });
+        self.state = Arc::new(SLState {
+            dt: speed,
+            ..*self.state
+        });
     }
 
     pub fn set_outer_radius(&mut self, ra: f64) {
@@ -134,17 +134,15 @@ impl SmoothLifeGeneratorAsync {
 
         // interpolate through rows
         let r_1 = interp::cubic(
-            grid[x_1][y_1], grid[x0][y_1], grid[x1][y_1], grid[x2][y_1], xt,
+            grid[x_1][y_1],
+            grid[x0][y_1],
+            grid[x1][y_1],
+            grid[x2][y_1],
+            xt,
         );
-        let r0 = interp::cubic(
-            grid[x_1][y0], grid[x0][y0], grid[x1][y0], grid[x2][y0], xt,
-        );
-        let r1 = interp::cubic(
-            grid[x_1][y1], grid[x0][y1], grid[x1][y1], grid[x2][y1], xt,
-        );
-        let r2 = interp::cubic(
-            grid[x_1][y2], grid[x0][y2], grid[x1][y2], grid[x2][y2], xt,
-        );
+        let r0 = interp::cubic(grid[x_1][y0], grid[x0][y0], grid[x1][y0], grid[x2][y0], xt);
+        let r1 = interp::cubic(grid[x_1][y1], grid[x0][y1], grid[x1][y1], grid[x2][y1], xt);
+        let r2 = interp::cubic(grid[x_1][y2], grid[x0][y2], grid[x1][y2], grid[x2][y2], xt);
 
         drop(grid);
 
@@ -222,8 +220,7 @@ impl SmoothLifeGeneratorAsync {
                         let mut buf = buf.lock().unwrap();
                         let buf_y = cy - start_row;
 
-                        let (mut m, mut m_norm, mut n, mut n_norm) =
-                            (0.0, 0.0, 0.0, 0.0);
+                        let (mut m, mut m_norm, mut n, mut n_norm) = (0.0, 0.0, 0.0, 0.0);
                         let ra_1 = ra - 1.0;
                         let min = (-ra_1) as usize;
                         let max = ra_1 as usize;
@@ -241,8 +238,7 @@ impl SmoothLifeGeneratorAsync {
                                 if d <= ri * ri {
                                     m += grid[x][y];
                                     m_norm += 1.0;
-                                }
-                                else if d <= ra * ra {
+                                } else if d <= ra * ra {
                                     n += grid[x][y];
                                     n_norm += 1.0;
                                 }
@@ -307,8 +303,7 @@ pub fn lerp(a: f64, b: f64, mut t: f64) -> f64 {
     t = t.clamp(0.0, 1.0);
     if t <= f64::EPSILON {
         return a;
-    }
-    else if t >= 1.0 - f64::EPSILON {
+    } else if t >= 1.0 - f64::EPSILON {
         return b;
     }
 

@@ -4,6 +4,7 @@ use super::*;
 /// A menu UI component, which essentially exposes an `enum` as a menu.
 ///
 /// Requires that the `enum` implements the [`MenuEnum`] trait.
+#[allow(clippy::struct_excessive_bools)]
 pub struct Menu<E: MenuEnum> {
     rect: Rect,
 
@@ -178,6 +179,7 @@ impl<E: MenuEnum> Menu<E> {
 
     fn reset_to_default(&mut self) {
         self.variant = E::default();
+        self.update_current_name();
     }
 
     fn divide_rect(rect: &Rect, num_variants: usize) -> Vec<Rect> {
@@ -229,10 +231,8 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
     }
 
     fn update(&mut self, input: &InputData) {
-        // can the menu be opened?
-        // this essentially prevents the menu from opening if the mouse
-        // hovers over it while clicked, e.g. if, when dragging a slider
-        // the mouse passes over the menu.
+        // guard against the mouse already being clicked when entering the
+        // menu's bounding rect
         if !self.item_rects[0].contains(input.mouse_pos) {
             self.can_open = !input.is_left_clicked;
         }
@@ -266,6 +266,11 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
             && !self.was_just_closed
             && self.can_open
         {
+            if input.is_alt_down || input.is_os_mod_down {
+                self.reset_to_default();
+                return;
+            }
+
             self.can_update_state = false;
             self.is_open = true;
         }
@@ -334,24 +339,28 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
                 let is_selected = i == selected_idx;
                 let rect = rect.shift_y(shift);
 
-                /// background rect
-                draw.rect()
-                    .xy(rect.xy())
-                    .wh(rect.wh())
-                    .color(if is_selected {
-                        BG_SELECTED
+                let (text_color, rect_color) = self.hovered_idx.map_or(
+                    if is_selected {
+                        (SELECTED, BG_SELECTED)
                     }
                     else {
-                        BG_NON_SELECTED
-                    });
+                        (NON_SELECTED, BG_NON_SELECTED)
+                    },
+                    |idx| {
+                        if is_selected {
+                            (SELECTED, BG_SELECTED)
+                        }
+                        else if i == idx {
+                            (HOVERED, BG_HOVERED)
+                        }
+                        else {
+                            (NON_SELECTED, BG_NON_SELECTED)
+                        }
+                    },
+                );
 
-                if let Some(idx) = self.hovered_idx {
-                    if i == idx {
-                        draw.rect().xy(rect.xy()).wh(rect.wh()).color(
-                            if is_selected { BG_SELECTED } else { BG_HOVERED },
-                        );
-                    }
-                }
+                /// background rect
+                draw.rect().xy(rect.xy()).wh(rect.wh()).color(rect_color);
 
                 let text_rect =
                     rect.pad_left(rect.w() * 0.02).pad_bottom(rect.h() * 0.15);
@@ -368,7 +377,7 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
                     else {
                         &self.item_text_layout
                     })
-                    .color(if is_selected { SELECTED } else { NON_SELECTED });
+                    .color(text_color);
             }
         }
         else {
