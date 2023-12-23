@@ -92,12 +92,18 @@ pub struct UIComponents {
     dist_amount: TextSlider,
     dist_type: Menu<DistortionType>,
 
-    // // ### Compression
-    // comp_label: Label,
-    // comp_thresh: TextSlider,
-    // comp_ratio: TextSlider,
-    // comp_attack: TextSlider,
-    // comp_release: TextSlider,
+    // ### Compression
+    comp_label: Label,
+    // f64 (slider callback)
+    comp_thresh: TextSlider,
+    // f64 (slider callback)
+    comp_ratio: TextSlider,
+    // f64 (slider callback)
+    comp_attack: TextSlider,
+    // f64 (slider callback)
+    comp_release: TextSlider,
+
+    // ### Master gain
     master_gain: TextSlider,
 }
 
@@ -194,13 +200,15 @@ impl UIComponents {
                     scan_line_speed.lr(),
                     ui_layout.mask_general.scan_line_speed,
                 )
-                .with_output_range(0.01..=1.0)
+                .with_output_range(0.1..=10.0)
                 .with_value_chars(4)
                 .with_value_layout(small_value_layout())
                 .with_sensitivity(0.005)
                 .with_suffix(" x")
-                .with_default_value(0.1)
-                .with_callback(move |_, value| scan_line_speed.sr(value))
+                .with_default_value(1.0)
+                .with_callback(move |raw_val, _| {
+                    scan_line_speed.sr(scale(raw_val, 0.01, 1.0));
+                })
             },
             mask_is_post_fx: {
                 let mask_is_post_fx = Arc::clone(&params.mask_is_post_fx);
@@ -326,12 +334,17 @@ impl UIComponents {
                         *guard = selected;
                     })
                     .with_label("Resolution")
+                    .with_label_layout(main_label_layout())
+                    .with_item_text_layout(main_value_layout())
+                    .with_selected_item_text_layout(main_value_layout())
             },
             spectrogram_timing: {
                 let spectrogram_timing = Arc::clone(&params.spectrogram_timing);
                 TextSlider::new(0.0, ui_layout.spectrogram.timing)
                     .with_label("Speed")
                     .with_suffix(" x")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
                     .with_value_chars(3)
                     .with_output_range(0.2..=5.0)
                     .with_default_value(1.0)
@@ -345,6 +358,9 @@ impl UIComponents {
                         *guard = selected;
                     })
                     .with_label("View")
+                    .with_label_layout(main_label_layout())
+                    .with_item_text_layout(main_value_layout())
+                    .with_selected_item_text_layout(main_value_layout())
             },
 
             reso_bank_label: Label::new(ui_layout.reso_bank.label)
@@ -418,13 +434,13 @@ impl UIComponents {
                 .with_text("EFFECTS")
                 .with_text_layout(big_label_layout()),
 
-            low_pass_label: Label::new(ui_layout.low_pass.label)
+            low_pass_label: Label::new(ui_layout.low_filter.label)
                 .with_text("LOW FILTER")
                 // .with_text_color(Rgb::new(0.1, 0.3, 0.6))
                 .with_text_layout(big_label_layout()),
             low_pass_cutoff_hz: {
                 let low_pass_cutoff_hz = Arc::clone(&params.low_pass_cutoff_hz);
-                TextSlider::new(0.0, ui_layout.low_pass.cutoff_hz)
+                TextSlider::new(0.0, ui_layout.low_filter.cutoff_hz)
                     .with_label("Cutoff")
                     .with_suffix(" Hz")
                     .with_output_range(10.0..=20000.0)
@@ -436,7 +452,7 @@ impl UIComponents {
             },
             low_pass_q: {
                 let low_pass_q = Arc::clone(&params.low_pass_q);
-                TextSlider::new(0.0, ui_layout.low_pass.q)
+                TextSlider::new(0.0, ui_layout.low_filter.q)
                     .with_label("Q")
                     .with_value_chars(5)
                     .with_output_range(0.025..=10.0)
@@ -446,13 +462,13 @@ impl UIComponents {
                     })
             },
 
-            high_pass_label: Label::new(ui_layout.high_pass.label)
+            high_pass_label: Label::new(ui_layout.high_filter.label)
                 .with_text("HIGH FILTER")
                 // .with_text_color(Rgb::new(0.6, 0.3, 0.1))
                 .with_text_layout(big_label_layout()),
             high_pass_cutoff_hz: {
                 let hp_cutoff = Arc::clone(&params.high_pass_cutoff_hz);
-                TextSlider::new(0.0, ui_layout.high_pass.cutoff_hz)
+                TextSlider::new(0.0, ui_layout.high_filter.cutoff_hz)
                     .with_label("Cutoff")
                     .with_suffix(" Hz")
                     .with_output_range(10.0..=20000.0)
@@ -464,7 +480,7 @@ impl UIComponents {
             },
             high_pass_q: {
                 let high_pass_q = Arc::clone(&params.high_pass_q);
-                TextSlider::new(0.0, ui_layout.high_pass.q)
+                TextSlider::new(0.0, ui_layout.high_filter.q)
                     .with_label("Q")
                     .with_value_chars(5)
                     .with_output_range(0.025..=10.0)
@@ -541,11 +557,53 @@ impl UIComponents {
                     .with_label("Type")
             },
 
+            comp_label: Label::new(ui_layout.compression.label)
+                .with_text("COMPRESSION")
+                .with_text_layout(big_label_layout()),
+            comp_thresh: TextSlider::new(0.0, ui_layout.compression.threshold),
+            comp_ratio: TextSlider::new(0.0, ui_layout.compression.ratio),
+            comp_attack: TextSlider::new(0.0, ui_layout.compression.attack),
+            comp_release: TextSlider::new(0.0, ui_layout.compression.release),
+
             master_gain: TextSlider::new(0.0, ui_layout.other.master_gain)
                 .with_label("Master Gain")
+                .with_label_layout(main_label_layout())
+                .with_value_layout(main_value_layout())
                 .with_output_range(-100.0..=12.0)
-                .with_default_value(0.0), // .with_formatting_callback(|raw_value, output_value| todo!())
-                                          // .with_callback(move |_, output_value| todo!()),
+                .with_default_value(0.0)
+                .with_formatting_callback(|raw_value, val| {
+                    if val <= -99.9 {
+                        return String::from("-inf dB");
+                    }
+                    if (0.0..=0.01).contains(&val) {
+                        return String::from("0.0 dB");
+                    }
+
+                    let val_str = if val.is_sign_negative() {
+                        format!("{val:.10}")
+                    }
+                    else {
+                        format!("+{val:.10}")
+                    };
+
+                    let mut decimal_idx = val_str.find('.').unwrap();
+
+                    // 5
+                    let truncate_to = if decimal_idx == 4 {
+                        6
+                    }
+                    else if decimal_idx > 5 {
+                        decimal_idx
+                    }
+                    else {
+                        5
+                    };
+
+                    let mut out = val_str[..truncate_to].to_string();
+                    out.push_str(" dB");
+                    out
+                })
+                .with_callback(move |_, output_value| {}),
         }
     }
 
@@ -606,19 +664,33 @@ impl UIDraw for UIComponents {
         self.high_pass_cutoff_hz.update(input_data);
         self.high_pass_q.update(input_data);
 
+        self.dist_amount.update(input_data);
+        self.dist_type.update(input_data);
+
         self.pp_delay_time_ms.update(input_data);
         self.pp_delay_feedback.update(input_data);
         self.pp_delay_mix.update(input_data);
         self.pp_delay_tempo_sync.update(input_data);
 
-        self.dist_amount.update(input_data);
-        self.dist_type.update(input_data);
+        self.comp_thresh.update(input_data);
+        self.comp_ratio.update(input_data);
+        self.comp_attack.update(input_data);
+        self.comp_release.update(input_data);
 
         self.master_gain.update(input_data);
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
         self.mask_label.draw(app, draw, frame);
+        self.spectrogram_label.draw(app, draw, frame);
+        self.reso_bank_label.draw(app, draw, frame);
+        self.low_pass_label.draw(app, draw, frame);
+        self.high_pass_label.draw(app, draw, frame);
+        self.dist_label.draw(app, draw, frame);
+        self.delay_label.draw(app, draw, frame);
+        self.comp_label.draw(app, draw, frame);
+        self.effects_label.draw(app, draw, frame);
+
         self.mask_scan_line_speed.draw(app, draw, frame);
         self.mask_is_post_fx.draw(app, draw, frame);
         self.mask_resolution.draw(app, draw, frame);
@@ -638,12 +710,10 @@ impl UIDraw for UIComponents {
         }
         self.mask_algorithm.draw(app, draw, frame); // menu
 
-        self.spectrogram_label.draw(app, draw, frame);
         self.spectrogram_timing.draw(app, draw, frame);
         self.spectrogram_resolution.draw(app, draw, frame); // menu
         self.spectrogram_view.draw(app, draw, frame); // menu
 
-        self.reso_bank_label.draw(app, draw, frame);
         self.reso_bank_root_note.draw(app, draw, frame);
         self.reso_bank_spread.draw(app, draw, frame);
         self.reso_bank_shift.draw(app, draw, frame);
@@ -653,25 +723,25 @@ impl UIDraw for UIComponents {
         self.reso_bank_randomise.draw(app, draw, frame);
         self.reso_bank_scale.draw(app, draw, frame); // menu
 
-        self.low_pass_label.draw(app, draw, frame);
         self.low_pass_cutoff_hz.draw(app, draw, frame);
         self.low_pass_q.draw(app, draw, frame);
 
-        self.high_pass_label.draw(app, draw, frame);
         self.high_pass_cutoff_hz.draw(app, draw, frame);
         self.high_pass_q.draw(app, draw, frame);
 
-        self.delay_label.draw(app, draw, frame);
+        self.dist_amount.draw(app, draw, frame);
+        self.dist_type.draw(app, draw, frame); // menu
+
         self.pp_delay_time_ms.draw(app, draw, frame);
         self.pp_delay_feedback.draw(app, draw, frame);
         self.pp_delay_mix.draw(app, draw, frame);
         self.pp_delay_tempo_sync.draw(app, draw, frame);
 
-        self.dist_label.draw(app, draw, frame);
-        self.dist_amount.draw(app, draw, frame);
-        self.dist_type.draw(app, draw, frame); // menu
+        self.comp_thresh.draw(app, draw, frame);
+        self.comp_ratio.draw(app, draw, frame);
+        self.comp_attack.draw(app, draw, frame);
+        self.comp_release.draw(app, draw, frame);
 
-        self.effects_label.draw(app, draw, frame);
         self.master_gain.draw(app, draw, frame);
     }
 

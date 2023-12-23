@@ -146,13 +146,48 @@ pub struct SpectrogramUILayout {
     pub view: Rect,
 }
 
+// let spectrum_rect =
+//     Rect::from_corners(pt2(-540.0, -310.0), pt2(128.0, -40.0));
+//
+// let upper_size = 256.0;
+//
+// let bank_rect = Rect::from_corners(
+//     pt2(-540.0, 50.0),
+//     pt2(-540.0 + upper_size, 50.0 + upper_size),
+// );
+//
+// let contour_size_fl = upper_size / 2.0;
+// let mask_rect = Rect::from_corners(
+//     pt2(-contour_size_fl, 50.0),
+//     pt2(contour_size_fl, 50.0 + upper_size),
+// );
+
 impl Default for SpectrogramUILayout {
     fn default() -> Self {
+        let label_rect =
+            Rect::from_xy_wh(pt2(-206.0, -12.0), pt2(120.0, MAIN_HEIGHT));
+
+        let vw_w = main_width_chars(8);
+        let view_rect = Rect::from_xy_wh(
+            pt2(-206.0, -364.0 - MAIN_HEIGHT),
+            pt2(vw_w, MAIN_HEIGHT * 3.0),
+        );
+
+        let rs_w = main_width_chars(4);
+        let reso_rect = Rect::from_xy_wh(
+            pt2(-426.0, -364.0 - MAIN_HEIGHT * 1.5),
+            pt2(rs_w, MAIN_HEIGHT * 4.0),
+        );
+
+        let tm_w = main_width_chars(5);
+        let time_rect =
+            Rect::from_xy_wh(pt2(-16.0, -364.0), pt2(tm_w, MAIN_HEIGHT));
+
         Self {
-            label: def_rect(),
-            resolution: def_rect(),
-            timing: def_rect(),
-            view: def_rect(),
+            label: label_rect,
+            resolution: reso_rect,
+            timing: time_rect,
+            view: view_rect,
         }
     }
 }
@@ -171,8 +206,10 @@ pub struct ResoBankUILayout {
 
 impl Default for ResoBankUILayout {
     fn default() -> Self {
+        let label_rect =
+            Rect::from_xy_wh(pt2(-412.0, 366.0), pt2(120.0, MAIN_HEIGHT));
         Self {
-            label: def_rect(),
+            label: label_rect,
             scale: def_rect(),
             root_note: def_rect(),
             spread: def_rect(),
@@ -185,27 +222,31 @@ impl Default for ResoBankUILayout {
     }
 }
 
-pub struct LowpassUILayout {
+pub struct LowFilterUILayout {
     pub label: Rect,
     pub cutoff_hz: Rect,
     pub q: Rect,
 }
 
-impl Default for LowpassUILayout {
+impl Default for LowFilterUILayout {
     fn default() -> Self {
-        Self { label: def_rect(), cutoff_hz: def_rect(), q: def_rect() }
+        let label_rect =
+            Rect::from_xy_wh(pt2(-615.0, -45.0), pt2(120.0, MAIN_HEIGHT));
+        Self { label: label_rect, cutoff_hz: def_rect(), q: def_rect() }
     }
 }
 
-pub struct HighpassUILayout {
+pub struct HighFilterUILayout {
     pub label: Rect,
     pub cutoff_hz: Rect,
     pub q: Rect,
 }
 
-impl Default for HighpassUILayout {
+impl Default for HighFilterUILayout {
     fn default() -> Self {
-        Self { label: def_rect(), cutoff_hz: def_rect(), q: def_rect() }
+        let label_rect =
+            Rect::from_xy_wh(pt2(210.0, -45.0), pt2(120.0, MAIN_HEIGHT));
+        Self { label: label_rect, cutoff_hz: def_rect(), q: def_rect() }
     }
 }
 
@@ -219,8 +260,10 @@ pub struct DelayUILayout {
 
 impl Default for DelayUILayout {
     fn default() -> Self {
+        let label_rect =
+            Rect::from_xy_wh(pt2(500.0, 70.0), pt2(120.0, MAIN_HEIGHT));
         Self {
-            label: def_rect(),
+            label: label_rect,
             time_ms: def_rect(),
             feedback: def_rect(),
             mix: def_rect(),
@@ -237,7 +280,9 @@ pub struct DistortionUILayout {
 
 impl Default for DistortionUILayout {
     fn default() -> Self {
-        Self { label: def_rect(), amount: def_rect(), dist_type: def_rect() }
+        let label_rect =
+            Rect::from_xy_wh(pt2(500.0, 230.0), pt2(120.0, MAIN_HEIGHT));
+        Self { label: label_rect, amount: def_rect(), dist_type: def_rect() }
     }
 }
 
@@ -251,8 +296,10 @@ pub struct CompressionUILayout {
 
 impl Default for CompressionUILayout {
     fn default() -> Self {
+        let label_rect =
+            Rect::from_xy_wh(pt2(500.0, -180.0), pt2(120.0, MAIN_HEIGHT));
         Self {
-            label: def_rect(),
+            label: label_rect,
             threshold: def_rect(),
             ratio: def_rect(),
             attack: def_rect(),
@@ -268,7 +315,13 @@ pub struct OtherUILayout {
 
 impl Default for OtherUILayout {
     fn default() -> Self {
-        Self { effects_label: def_rect(), master_gain: def_rect() }
+        let mg_w = main_width_chars(8);
+        let m_gain_rect =
+            Rect::from_xy_wh(pt2(630.0, 350.0), pt2(mg_w, MAIN_HEIGHT));
+
+        let fx_rect =
+            Rect::from_xy_wh(pt2(500.0, 300.0), pt2(120.0, MAIN_HEIGHT));
+        Self { effects_label: fx_rect, master_gain: m_gain_rect }
     }
 }
 
@@ -279,8 +332,8 @@ pub struct UILayout {
     pub smooth_life: SmoothLifeUILayout,
     pub spectrogram: SpectrogramUILayout,
     pub reso_bank: ResoBankUILayout,
-    pub low_pass: LowpassUILayout,
-    pub high_pass: HighpassUILayout,
+    pub low_filter: LowFilterUILayout,
+    pub high_filter: HighFilterUILayout,
     pub delay: DelayUILayout,
     pub distortion: DistortionUILayout,
     pub compression: CompressionUILayout,

@@ -132,8 +132,6 @@ pub fn build_gui_elements(
         pt2(contour_size_fl, 50.0 + upper_size),
     );
 
-    // let spectrum_rect =
-    //     Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
     let spectrum_rect =
         Rect::from_corners(pt2(-540.0, -310.0), pt2(128.0, -40.0));
 

@@ -32,6 +32,7 @@ pub struct TextSlider {
     rect: Rect,
 
     is_active: bool,
+    can_update: bool,
     state: UIComponentState,
 
     prev_mouse_pos: Option<Vec2>,
@@ -74,6 +75,7 @@ impl TextSlider {
             value_text: String::with_capacity(16),
 
             is_active: false,
+            can_update: false,
             prev_mouse_pos: None,
             state: UIComponentState::Idle,
             drag_sensitivity: 0.004,
@@ -187,10 +189,13 @@ impl TextSlider {
     ///
     /// The first argument is the raw slider value, and the second is the output value.
     pub fn with_formatting_callback<F: Fn(f64, f64) -> String + 'static>(
-        self,
+        mut self,
         cb: F,
     ) -> Self {
-        Self { formatting_callback: Some(Box::new(cb)), ..self }
+        // self = Self { formatting_callback: Some(Box::new(cb)), ..self };
+        self.set_formatting_callback(cb);
+        self.update_output_value();
+        self
     }
 
     /// Sets the drag sensitivity of the `TextSlider`. The default value is `0.004`.
@@ -421,18 +426,27 @@ impl UIDraw for TextSlider {
         self.within_bounds(input_data.mouse_pos) || self.is_active
     }
 
-    fn update(&mut self, input_data: &InputData) {
+    fn update(&mut self, input: &InputData) {
+        // guard against the mouse already being clicked when entering the
+        // slider's bounding rect
+        if !self.within_bounds(input.mouse_pos) && !self.is_active {
+            self.can_update = !input.is_left_clicked;
+        }
+        else if (!self.can_update && !input.is_left_clicked) || self.is_active {
+            self.can_update = true;
+        }
+        
         // should the slider update?
-        if !self.should_update(input_data) {
+        if !self.should_update(input) || !self.can_update {
             return;
         }
 
-        let y_scr = -input_data.scroll_delta.y;
+        let y_scr = -input.scroll_delta.y;
 
         // should the value update based on mouse scrolling?
         if y_scr.abs() >= 1.0 {
             let sensitivity = self.drag_sensitivity
-                * if input_data.is_shift_down { 0.1 } else { 1.0 }
+                * if input.is_shift_down { 0.1 } else { 1.0 }
                 * 0.4;
 
             self.raw_value = (y_scr as f64)
@@ -443,7 +457,7 @@ impl UIDraw for TextSlider {
         }
 
         // should the slider return to an idle state?
-        if !input_data.is_left_clicked {
+        if !input.is_left_clicked {
             self.prev_mouse_pos = None;
             self.is_active = false;
 
@@ -451,8 +465,8 @@ impl UIDraw for TextSlider {
         }
 
         // should the value reset?
-        if !self.is_active && input_data.is_alt_down
-            || input_data.is_os_mod_down
+        if !self.is_active && input.is_alt_down
+            || input.is_os_mod_down
         {
             self.reset_to_default();
         }
@@ -461,17 +475,17 @@ impl UIDraw for TextSlider {
 
         // is the slider being dragged?
         if let Some(prev) = self.prev_mouse_pos {
-            let delta = (input_data.mouse_pos.y - prev.y) as f64;
+            let delta = (input.mouse_pos.y - prev.y) as f64;
 
             // is the drag delta large enough to update?
             if delta.abs() <= f64::EPSILON {
-                self.prev_mouse_pos = Some(input_data.mouse_pos);
+                self.prev_mouse_pos = Some(input.mouse_pos);
 
                 return;
             }
 
             let sensitivity = self.drag_sensitivity
-                * if input_data.is_shift_down { 0.1 } else { 1.0 };
+                * if input.is_shift_down { 0.1 } else { 1.0 };
 
             self.raw_value =
                 delta.mul_add(sensitivity, self.raw_value).clamp(0.0, 1.0);
@@ -479,7 +493,7 @@ impl UIDraw for TextSlider {
             self.update_output_value();
         }
 
-        self.prev_mouse_pos = Some(input_data.mouse_pos);
+        self.prev_mouse_pos = Some(input.mouse_pos);
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {

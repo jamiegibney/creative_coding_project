@@ -21,6 +21,8 @@ pub struct Menu<E: MenuEnum> {
     hovered_idx: Option<usize>,
 
     is_open: bool,
+    was_just_closed: bool,
+    can_open: bool,
     can_update_state: bool,
     state: UIComponentState,
 
@@ -51,6 +53,8 @@ impl<E: MenuEnum> Menu<E> {
             hovered_idx: None,
 
             is_open: false,
+            was_just_closed: false,
+            can_open: false,
             can_update_state: false,
             state: UIComponentState::Idle,
 
@@ -225,24 +229,42 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
     }
 
     fn update(&mut self, input: &InputData) {
+        // can the menu be opened?
+        // this essentially prevents the menu from opening if the mouse
+        // hovers over it while clicked, e.g. if, when dragging a slider
+        // the mouse passes over the menu.
+        if !self.item_rects[0].contains(input.mouse_pos) {
+            self.can_open = !input.is_left_clicked;
+        }
+        else if !self.can_open && !input.is_left_clicked {
+            self.can_open = true;
+        }
+
         // should the menu be updated?
         if !self.should_update(input) {
+            if !input.is_left_clicked && self.was_just_closed {
+                self.was_just_closed = false;
+            }
+
+            self.state = UIComponentState::Idle;
+
             return;
         }
 
         // should the menu close if it is open?
-        if !self.contains_mouse(input.mouse_pos) {
-            self.hovered_idx = None;
-
-            if input.is_left_clicked {
-                self.is_open = false;
-            }
+        if !self.contains_mouse(input.mouse_pos)
+            && self.hovered_idx.is_none()
+            && input.is_left_clicked
+        {
+            self.is_open = false;
         }
 
         // should the menu open if it is closed?
         if !self.is_open
             && self.item_rects[0].contains(input.mouse_pos)
             && input.is_left_clicked
+            && !self.was_just_closed
+            && self.can_open
         {
             self.can_update_state = false;
             self.is_open = true;
@@ -250,22 +272,31 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
 
         // should the selected item change?
         if self.is_open {
+            let btm = self.rect().bottom();
+            let win_btm = (-WINDOW_SIZE.y / 2.0) as f32;
+            let shift = if btm < win_btm { win_btm - btm } else { 0.0 };
+
             for (i, rect) in self.item_rects.iter().enumerate() {
+                let rect = rect.shift_y(shift);
                 let contains = rect.contains(input.mouse_pos);
+
                 if input.is_left_clicked {
                     if contains && self.can_update_state {
                         self.variant = E::from_idx(i).unwrap();
 
                         self.update_current_name();
-                        
+
                         if let Some(cb) = &self.callback {
                             cb(self.variant);
                         }
 
                         self.can_update_state = false;
+                        self.is_open = false;
+                        self.was_just_closed = true;
 
                         break;
                     }
+
                     self.hovered_idx = None;
                 }
                 else if contains {
@@ -280,11 +311,28 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        let top_rect = &self.item_rects[0];
+        let label_rect =
+            top_rect.shift(pt2(0.0, top_rect.h() + top_rect.h() * 0.1));
+
+        // label
+        if let Some(label) = &self.label {
+            draw.text(label)
+                .xy(label_rect.xy())
+                .wh(label_rect.wh())
+                .layout(&self.label_layout)
+                .color(LABEL);
+        }
+
         if self.is_open {
             let selected_idx = self.variant.idx();
+            let btm = self.rect().bottom();
+            let win_btm = (-WINDOW_SIZE.y / 2.0) as f32;
+            let shift = if btm < win_btm { win_btm - btm } else { 0.0 };
 
             for (i, rect) in self.item_rects.iter().enumerate() {
                 let is_selected = i == selected_idx;
+                let rect = rect.shift_y(shift);
 
                 /// background rect
                 draw.rect()
@@ -344,19 +392,6 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
                         .unwrap_or(&self.item_text_layout),
                 )
                 .color(VALUE);
-        }
-
-        let top_rect = &self.item_rects[0];
-        let label_rect =
-            top_rect.shift(pt2(0.0, top_rect.h() + top_rect.h() * 0.1));
-
-        // label
-        if let Some(label) = &self.label {
-            draw.text(label)
-                .xy(label_rect.xy())
-                .wh(label_rect.wh())
-                .layout(&self.label_layout)
-                .color(LABEL);
         }
     }
 
