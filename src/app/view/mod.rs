@@ -1,4 +1,5 @@
 use nannou::geom::{path, Path};
+use crate::gui::colors::*;
 
 use super::*;
 
@@ -8,6 +9,12 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     draw.background().color(BLACK);
 
     let V2 { x: _width, y: _height } = WINDOW_SIZE;
+
+    let bank_rect = &model.bank_rect;
+    draw.rect()
+        .xy(bank_rect.xy())
+        .wh(bank_rect.wh())
+        .color(GREEN);
 
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
@@ -55,7 +62,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     }
     model.draw_mask_scan_line(draw);
 
-    outline_rect(&model.mask_rect(), draw, 2.0);
+    // outline_rect(&model.mask_rect(), draw, 2.0);
 
     model.ui_components.draw(app, draw, &frame);
 
@@ -65,13 +72,20 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 }
 
 fn outline_rect(rect: &Rect, draw: &Draw, width: f32) {
-    let bl = rect.bottom_left();
-    let br = rect.bottom_right();
-    let tl = rect.top_left();
-    let tr = rect.top_right();
+    draw.rect()
+        .xy(rect.xy())
+        .wh(rect.wh())
+        .stroke(BG_NON_SELECTED)
+        .stroke_weight(width)
+        .no_fill();
 
-    draw.line().points(bl, br).weight(width).color(GREY);
-    draw.line().points(br, tr).weight(width).color(GREY);
-    draw.line().points(tr, tl).weight(width).color(GREY);
-    draw.line().points(tl, bl).weight(width).color(GREY);
+    // let bl = rect.bottom_left();
+    // let br = rect.bottom_right();
+    // let tl = rect.top_left();
+    // let tr = rect.top_right();
+    //
+    // draw.line().points(bl, br).weight(width).color(GREY);
+    // draw.line().points(br, tr).weight(width).color(GREY);
+    // draw.line().points(tr, tl).weight(width).color(GREY);
+    // draw.line().points(tl, bl).weight(width).color(GREY);
 }

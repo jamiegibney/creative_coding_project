@@ -16,8 +16,8 @@ impl Display for Scale {
         match self {
             Self::Major => write!(f, "Major"),
             Self::Minor => write!(f, "Minor"),
-            Self::MajPentatonic => write!(f, "Major Pentatonic"),
-            Self::MinPentatonic => write!(f, "Minor Pentatonic"),
+            Self::MajPentatonic => write!(f, "Maj Pent."),
+            Self::MinPentatonic => write!(f, "Min Pent."),
             Self::Chromatic => write!(f, "Chromatic"),
         }
     }

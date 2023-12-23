@@ -306,7 +306,7 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
                 }
 
                 let text_rect =
-                    rect.pad_left(rect.w() * 0.02).pad_bottom(rect.h() * 0.09);
+                    rect.pad_left(rect.w() * 0.02).pad_bottom(rect.h() * 0.15);
 
                 /// item label
                 draw.text(&self.item_names[i])
@@ -327,7 +327,7 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
             let rect = &self.item_rects[0];
 
             let text_rect =
-                rect.pad_left(rect.w() * 0.02).pad_bottom(rect.h() * 0.09);
+                rect.pad_left(rect.w() * 0.02).pad_bottom(rect.h() * 0.15);
 
             draw.rect()
                 .xy(rect.xy())

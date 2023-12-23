@@ -74,6 +74,8 @@ pub struct Model {
 
     pub ui_components: UIComponents,
 
+    pub bank_rect: Rect,
+
     /// A Perlin noise contour generator.
     pub contours: Option<Arc<RwLock<Contours>>>,
     /// A SmoothLife simulation.
@@ -116,6 +118,7 @@ impl Model {
             build_window(app, WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32);
 
         let GuiElements {
+            bank_rect,
             contours,
             smooth_life,
             pre_spectrum_analyzer,
@@ -195,6 +198,8 @@ impl Model {
             voice_event_sender,
 
             spectral_mask: Arc::new(Mutex::new(spectral_mask)),
+
+            bank_rect,
 
             contours: Some(contours),
             smooth_life: Some(smooth_life),

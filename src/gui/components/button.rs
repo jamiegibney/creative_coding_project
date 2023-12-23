@@ -234,7 +234,7 @@ impl UIDraw for Button {
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
         let (x, y, w, h) = self.rect.x_y_w_h();
         let padding = w * 0.05;
-        let padded = self.rect.pad(padding);
+        let rect = self.rect;
 
         if !self.is_toggle {
             let label = self.label.as_deref().unwrap_or("Button");
@@ -242,21 +242,21 @@ impl UIDraw for Button {
 
             // background rect
             draw.rect()
-                .xy(padded.xy())
-                .wh(padded.wh())
+                .xy(rect.xy())
+                .wh(rect.wh())
                 .color(if is_clicked { BG_HOVERED } else { BG_NON_SELECTED });
 
-            let label_rect = padded.pad_bottom(3.5);
+            let label_rect = rect.pad_bottom(3.5);
 
             // label
             draw.text(label)
-                .xy(padded.xy())
-                .wh(padded.wh())
-                .color(if is_clicked { VALUE } else { LABEL })
+                .xy(label_rect.xy())
+                .wh(label_rect.wh())
+                .color(VALUE)
                 .layout(&self.label_layout);
         }
         else if let Some(label) = self.label.as_ref() {
-            let label_rect = padded.pad_bottom(h * 0.5);
+            let label_rect = rect.pad_bottom(h * 0.5);
 
             // label
             draw.text(label)
@@ -268,10 +268,10 @@ impl UIDraw for Button {
 
         if self.is_toggle {
             let value_rect = if self.label.is_some() {
-                padded.pad_top(h * 0.5)
+                rect.pad_top(h * 0.5)
             }
             else {
-                padded
+                rect
             };
 
             // background rect

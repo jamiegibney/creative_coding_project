@@ -69,7 +69,9 @@ impl Octave {
             84..=95 => C6,
             96..=107 => C7,
             108..=119 => C8,
-            _ => panic!("value provided ({note}) is outside of the acceptable range"),
+            _ => panic!(
+                "value provided ({note}) is outside of the acceptable range"
+            ),
         }
     }
 
@@ -224,8 +226,7 @@ impl Note {
             9 => A,
             10 => As,
             11 => B,
-            // this will never happen but might as well panic!
-            _ => panic!("unknown note value: {value}"),
+            _ => unreachable!(),
         }
     }
 }

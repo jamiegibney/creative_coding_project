@@ -3,7 +3,6 @@ use std::ops::RangeInclusive;
 use super::*;
 use nannou::prelude::*;
 use nannou::text::Layout;
-use nannou_audio::stream::input;
 use std::fmt::Debug;
 
 /// A simple slider with a text readout.
@@ -42,7 +41,8 @@ pub struct TextSlider {
 
     drag_sensitivity: f64,
 
-    callback: Option<Box<dyn FnMut(f64, f64)>>,
+    callback: Option<Box<dyn Fn(f64, f64)>>,
+    formatting_callback: Option<Box<dyn Fn(f64, f64) -> String>>,
 
     value_text: String,
 }
@@ -76,9 +76,10 @@ impl TextSlider {
             is_active: false,
             prev_mouse_pos: None,
             state: UIComponentState::Idle,
-            drag_sensitivity: 0.001,
+            drag_sensitivity: 0.004,
 
             callback: None,
+            formatting_callback: None,
         }
     }
 
@@ -86,10 +87,7 @@ impl TextSlider {
 
     /// Provides the `TextSlider` with a label.
     pub fn with_label(self, label: &str) -> Self {
-        Self {
-            label: str_to_option(label),
-            ..self
-        }
+        Self { label: str_to_option(label), ..self }
     }
 
     /// Sets the font size for both the label and value readout.
@@ -100,18 +98,12 @@ impl TextSlider {
 
     /// Sets the text layout of the label.
     pub fn with_label_layout(self, layout: Layout) -> Self {
-        Self {
-            label_layout: layout,
-            ..self
-        }
+        Self { label_layout: layout, ..self }
     }
 
     /// Sets the text layout of the value readout.
     pub fn with_value_layout(self, layout: Layout) -> Self {
-        Self {
-            value_layout: layout,
-            ..self
-        }
+        Self { value_layout: layout, ..self }
     }
 
     /// Sets the number of chars used to show the value read out. The default value
@@ -143,10 +135,7 @@ impl TextSlider {
 
     /// Sets the output range of the `TextSlider`. The default is `0.0..=1.0`.
     pub fn with_output_range(mut self, range: RangeInclusive<f64>) -> Self {
-        let mut s = Self {
-            output_range: range,
-            ..self
-        };
+        let mut s = Self { output_range: range, ..self };
         s.update_output_value();
 
         s
@@ -154,10 +143,14 @@ impl TextSlider {
 
     /// Provides a default value to the `TextSlider`.
     pub fn with_default_value(mut self, value: f64) -> Self {
-        let mut s = Self {
-            default_value: Some(value.clamp(*self.output_range.start(), *self.output_range.end())),
-            ..self
-        };
+        let mut s =
+            Self {
+                default_value: Some(value.clamp(
+                    *self.output_range.start(),
+                    *self.output_range.end(),
+                )),
+                ..self
+            };
         s.reset_to_default();
 
         s
@@ -166,26 +159,17 @@ impl TextSlider {
     /// Enables logarithmic output value scaling for the `TextSlider`.
     pub fn with_log_scaling(self) -> Self {
         unimplemented!();
-        Self {
-            log_scaling: true,
-            ..self
-        }
+        Self { log_scaling: true, ..self }
     }
 
     /// Provides a text prefix for the value readout.
     pub fn with_prefix(self, prefix: &str) -> Self {
-        Self {
-            value_prefix: str_to_option(prefix),
-            ..self
-        }
+        Self { value_prefix: str_to_option(prefix), ..self }
     }
 
     /// Provides a text suffix for the value readout.
     pub fn with_suffix(self, suffix: &str) -> Self {
-        Self {
-            value_suffix: str_to_option(suffix),
-            ..self
-        }
+        Self { value_suffix: str_to_option(suffix), ..self }
     }
 
     /// Provides a callback which is called whenever the `TextSlider`'s value is updated.
@@ -193,20 +177,25 @@ impl TextSlider {
     /// The first argument is the raw slider value, and the second is the output value.
     pub fn with_callback<F>(self, cb: F) -> Self
     where
-        F: FnMut(f64, f64) + 'static,
+        F: Fn(f64, f64) + 'static,
     {
-        Self {
-            callback: Some(Box::new(cb)),
-            ..self
-        }
+        Self { callback: Some(Box::new(cb)), ..self }
     }
 
-    /// Sets the drag sensitivity of the `TextSlider`. The default value is `0.001`.
+    /// Provides a callback to format the value text. Overrides any text-formatting
+    /// options passed to the `TextSlider` when provided.
+    ///
+    /// The first argument is the raw slider value, and the second is the output value.
+    pub fn with_formatting_callback<F: Fn(f64, f64) -> String + 'static>(
+        self,
+        cb: F,
+    ) -> Self {
+        Self { formatting_callback: Some(Box::new(cb)), ..self }
+    }
+
+    /// Sets the drag sensitivity of the `TextSlider`. The default value is `0.004`.
     pub fn with_sensitivity(self, sensitivity: f64) -> Self {
-        Self {
-            drag_sensitivity: sensitivity,
-            ..self
-        }
+        Self { drag_sensitivity: sensitivity, ..self }
     }
 
     /// Uses integer rounding for the output value.
@@ -290,10 +279,7 @@ impl TextSlider {
     /// Provides a callback which is called whenever the `TextSlider`'s value is updated.
     ///
     /// The first argument is the raw slider value, and the second is the output value.
-    pub fn set_callback<F>(&mut self, cb: F)
-    where
-        F: FnMut(f64, f64) + 'static,
-    {
+    pub fn set_callback<F: Fn(f64, f64) + 'static>(&mut self, cb: F) {
         self.callback = Some(Box::new(cb));
     }
 
@@ -302,6 +288,23 @@ impl TextSlider {
     /// See [`set_callback()`](Self::set_callback) for more information.
     pub fn detach_callback(&mut self) {
         self.callback = None;
+    }
+
+    /// Provides a callback to format the value text. Overrides any text-formatting
+    /// options passed to the `TextSlider` when provided.
+    pub fn set_formatting_callback<F: Fn(f64, f64) -> String + 'static>(
+        &mut self,
+        cb: F,
+    ) {
+        self.formatting_callback = Some(Box::new(cb));
+    }
+
+    /// Detaches any attached formatting callback from the `TextSlider`.
+    ///
+    /// See [`set_formatting_callback()`](Self::set_formatting_callback) for more
+    /// information.
+    pub fn detach_formatting_callback(&mut self) {
+        self.formatting_callback = None;
     }
 
     /// Uses integer rounding for the output value.
@@ -387,6 +390,10 @@ impl TextSlider {
     fn format_output_value(&self) -> String {
         let val = self.output_value;
 
+        if let Some(cb) = &self.formatting_callback {
+            return cb(self.raw_value, self.output_value);
+        }
+
         if self.integer_rounding {
             return format!("{val:.0}");
         }
@@ -397,9 +404,11 @@ impl TextSlider {
 
         let truncate_to = if decimal_idx == self.value_num_chars - 1 {
             self.value_num_chars + 1
-        } else if decimal_idx > self.value_num_chars {
+        }
+        else if decimal_idx > self.value_num_chars {
             decimal_idx
-        } else {
+        }
+        else {
             self.value_num_chars
         };
 
@@ -422,8 +431,9 @@ impl UIDraw for TextSlider {
 
         // should the value update based on mouse scrolling?
         if y_scr.abs() >= 1.0 {
-            let sensitivity =
-                self.drag_sensitivity * if input_data.is_shift_down { 0.1 } else { 1.0 } * 0.4;
+            let sensitivity = self.drag_sensitivity
+                * if input_data.is_shift_down { 0.1 } else { 1.0 }
+                * 0.4;
 
             self.raw_value = (y_scr as f64)
                 .mul_add(sensitivity, self.raw_value)
@@ -441,7 +451,9 @@ impl UIDraw for TextSlider {
         }
 
         // should the value reset?
-        if !self.is_active && input_data.is_alt_down || input_data.is_os_mod_down {
+        if !self.is_active && input_data.is_alt_down
+            || input_data.is_os_mod_down
+        {
             self.reset_to_default();
         }
 
@@ -458,10 +470,11 @@ impl UIDraw for TextSlider {
                 return;
             }
 
-            let sensitivity =
-                self.drag_sensitivity * if input_data.is_shift_down { 0.1 } else { 1.0 };
+            let sensitivity = self.drag_sensitivity
+                * if input_data.is_shift_down { 0.1 } else { 1.0 };
 
-            self.raw_value = delta.mul_add(sensitivity, self.raw_value).clamp(0.0, 1.0);
+            self.raw_value =
+                delta.mul_add(sensitivity, self.raw_value).clamp(0.0, 1.0);
 
             self.update_output_value();
         }
@@ -474,11 +487,10 @@ impl UIDraw for TextSlider {
         let bl = pt2(x, y);
         let (w2, h2) = (w * 0.5, h * 0.5);
         let mid = vec2(x + w2, y + h2);
-        let padding = w * 0.05;
-        let label_rect = self.rect.pad(padding).pad_bottom(h2);
+        let label_rect = self.rect.shift(pt2(0.0, h + h * 0.1));
 
         let value_rect = self.label.as_ref().map_or_else(
-            || self.rect.pad(padding),
+            || self.rect,
             |label| {
                 draw.text(label)
                     .xy(label_rect.xy())
@@ -486,13 +498,13 @@ impl UIDraw for TextSlider {
                     .color(LABEL)
                     .layout(&self.label_layout);
 
-                self.rect.pad(padding).pad_top(h2)
+                self.rect
             },
         );
 
         draw.rect()
-            .xy(value_rect.xy())
-            .wh(value_rect.wh())
+            .xy(self.rect.xy())
+            .wh(self.rect.wh())
             .color(BG_NON_SELECTED);
 
         let value_rect = value_rect.pad_bottom(2.5);

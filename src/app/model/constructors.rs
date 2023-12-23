@@ -102,6 +102,8 @@ pub fn build_audio_system(
 }
 
 pub struct GuiElements {
+    pub(super) bank_rect: Rect,
+
     pub(super) contours: Contours,
     pub(super) smooth_life: SmoothLife,
 
@@ -117,24 +119,33 @@ pub fn build_gui_elements(
     post_spectrum: SpectrumOutput,
     params: &UIParams,
 ) -> GuiElements {
-    let contour_size = 256;
-    let contour_size_fl = (contour_size / 2) as f32;
-    let contour_rect = Rect::from_corners(
-        pt2(-contour_size_fl - 230.0, -contour_size_fl),
-        pt2(contour_size_fl - 230.0, contour_size_fl),
+    let upper_size = 256.0;
+
+    let bank_rect = Rect::from_corners(
+        pt2(-540.0, 50.0),
+        pt2(-540.0 + upper_size, 50.0 + upper_size),
+    );
+
+    let contour_size_fl = upper_size / 2.0;
+    let mask_rect = Rect::from_corners(
+        pt2(-contour_size_fl, 50.0),
+        pt2(contour_size_fl, 50.0 + upper_size),
     );
 
     // let spectrum_rect =
     //     Rect::from_corners(pt2(178.0, -128.0), pt2(650.0, 128.0));
     let spectrum_rect =
-        Rect::from_corners(pt2(-80.0, -128.0), pt2(360.0, 128.0));
+        Rect::from_corners(pt2(-540.0, -310.0), pt2(128.0, -40.0));
+
     let pre_spectrum_analyzer =
         RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
     let post_spectrum_analyzer =
         RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
 
     GuiElements {
-        contours: Contours::new(app.main_window().device(), contour_rect)
+        bank_rect,
+
+        contours: Contours::new(app.main_window().device(), mask_rect)
             .with_num_threads(8)
             .expect("failed to allocate threads to contour generator")
             .with_feathering(false)
@@ -143,7 +154,7 @@ pub fn build_gui_elements(
             .with_contour_range(0.0..=params.contour_thickness.lr()),
         smooth_life: SmoothLife::new(
             app.main_window().device(),
-            contour_rect,
+            mask_rect,
             params
                 .smoothlife_resolution
                 .try_read()
