@@ -87,7 +87,7 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// Stops the `Smoother` in-place, holding its current value. Any calls
     /// to the [`next()`][Self::next()] method (or its variants) will have
     /// no effect, and will return the current value.
-    pub fn stop_in_place(&mut self) {
+    pub fn stop_in_place(&self) {
         T::atomic_store(&self.target_value, T::from_f64(self.current_value.lr()));
         self.finish();
     }
@@ -120,12 +120,12 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
 
     /// Sets the starting value of the `Smoother` (the value it is
     /// interpolating from).
-    pub fn set_start_value(&mut self, start_value: T) {
+    pub fn set_start_value(&self, start_value: T) {
         self.start_value.sr(start_value.to_f64());
     }
 
     /// Resets the `Smoother` to its default settings.
-    pub fn reset(&mut self) {
+    pub fn reset(&self) {
         self.ramp.reset();
 
         self.start_value.sr(0.0);
@@ -133,12 +133,12 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
         T::atomic_store(&self.target_value, T::from_f64(0.0));
     }
 
-    pub fn reset_to(&mut self, value: T) {
+    pub fn reset_to(&self, value: T) {
         self.ramp.reset_to(value.to_f64());
     }
 
     /// Resets the smoothing period of the `Smoother` in milliseconds.
-    pub fn set_smoothing_period(&mut self, duration_ms: f64) {
+    pub fn set_smoothing_period(&self, duration_ms: f64) {
         self.ramp.set_duration(duration_ms);
     }
 
