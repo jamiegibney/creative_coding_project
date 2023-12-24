@@ -1,4 +1,7 @@
+use crate::app::params::*;
+use atomic::Atomic;
 use atomic_float::AtomicF64;
+use bytemuck::NoUninit;
 use std::sync::atomic::{
     AtomicBool, AtomicI32, AtomicU32, AtomicU8, AtomicUsize, Ordering::Relaxed,
 };
@@ -75,6 +78,30 @@ impl AtomicLoad for AtomicBool {
 
 impl AtomicLoad for AtomicF64 {
     type NonAtomic = f64;
+
+    fn lr(&self) -> Self::NonAtomic {
+        self.load(Relaxed)
+    }
+
+    fn sr(&self, value: Self::NonAtomic) {
+        self.store(value, Relaxed);
+    }
+}
+
+// impl AtomicLoad for Atomic<GenerativeAlgo> {
+//     type NonAtomic = GenerativeAlgo;
+//
+//     fn lr(&self) -> Self::NonAtomic {
+//         // self.Arc::new
+//     }
+//
+//     fn sr(&self, value: Self::NonAtomic) {
+//         todo!()
+//     }
+// }
+
+impl<T: Default + Copy + NoUninit> AtomicLoad for Atomic<T> {
+    type NonAtomic = T;
 
     fn lr(&self) -> Self::NonAtomic {
         self.load(Relaxed)

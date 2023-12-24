@@ -10,6 +10,7 @@ doctest = false
 
 [dependencies]
 anyhow = "1.0.75" # Error handling
+atomic = "0.6.0"
 atomic_float = "0.1.0" # Atomic floating-point types
 bytemuck = "1.14.0"
 crossbeam-channel = "0.5.8"

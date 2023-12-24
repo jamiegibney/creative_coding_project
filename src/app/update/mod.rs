@@ -11,34 +11,32 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
 
     let input_data = model.input_data;
 
-    if let Ok(algo) = model.ui_params.mask_algorithm.read() {
-        match *algo {
-            GenerativeAlgo::Contours => {
-                let ctr = Arc::clone(model.contours.as_mut().unwrap());
+    match model.ui_params.mask_algorithm.lr() {
+        GenerativeAlgo::Contours => {
+            let ctr = Arc::clone(model.contours.as_mut().unwrap());
 
-                model.mask_thread_pool.execute(move || {
-                    let mut mask = mask.lock().unwrap();
-                    let mut ctr = ctr.write().unwrap();
+            model.mask_thread_pool.execute(move || {
+                let mut mask = mask.lock().unwrap();
+                let mut ctr = ctr.write().unwrap();
 
-                    ctr.update(&input_data);
-                    ctr.column_to_mask(mask.input_buffer(), pos);
-                    drop(ctr);
-                    mask.publish();
-                });
-            }
-            GenerativeAlgo::SmoothLife => {
-                let sml = Arc::clone(model.smooth_life.as_mut().unwrap());
+                ctr.update(&input_data);
+                ctr.column_to_mask(mask.input_buffer(), pos);
+                drop(ctr);
+                mask.publish();
+            });
+        }
+        GenerativeAlgo::SmoothLife => {
+            let sml = Arc::clone(model.smooth_life.as_mut().unwrap());
 
-                model.mask_thread_pool.execute(move || {
-                    let mut mask = mask.lock().unwrap();
-                    let mut sml = sml.write().unwrap();
+            model.mask_thread_pool.execute(move || {
+                let mut mask = mask.lock().unwrap();
+                let mut sml = sml.write().unwrap();
 
-                    sml.update(&input_data);
-                    sml.column_to_mask(mask.input_buffer(), pos);
-                    drop(sml);
-                    mask.publish();
-                });
-            }
+                sml.update(&input_data);
+                sml.column_to_mask(mask.input_buffer(), pos);
+                drop(sml);
+                mask.publish();
+            });
         }
     }
 

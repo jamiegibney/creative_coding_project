@@ -8,10 +8,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let window = app.main_window();
     draw.background().color(BLACK);
 
-    let V2 {
-        x: _width,
-        y: _height,
-    } = WINDOW_SIZE;
+    let V2 { x: _width, y: _height } = WINDOW_SIZE;
 
     let bank_rect = &model.bank_rect;
     draw.rect()
@@ -22,47 +19,63 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
     // let post_spectrum_line_color = Rgba::new(1.0, 1.0, 1.0, 1.0);
-    let post_spectrum_mesh_color = Rgba::new(0.0, 1.0, 0.0, 0.3);
+    let post_spectrum_mesh_color = Rgba::new(0.9, 0.4, 0.0, 0.3);
     let line_weight = 2.0;
 
-    let mut pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
-    let spectrum_rect = pre_spectrum.rect();
-    draw.rect()
-        .wh(spectrum_rect.wh())
-        .xy(spectrum_rect.xy())
-        .color(BLACK);
+    let spectrogram_view = model.ui_params.spectrogram_view.lr();
 
-    pre_spectrum.draw(draw, Some(pre_spectrum_mesh_color), line_weight, None);
+    if matches!(
+        spectrogram_view,
+        SpectrogramView::PrePost | SpectrogramView::PreOnly
+    ) {
+        let mut pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
+        let spectrum_rect = pre_spectrum.rect();
+        draw.rect()
+            .wh(spectrum_rect.wh())
+            .xy(spectrum_rect.xy())
+            .color(BLACK);
 
-    drop(pre_spectrum);
+        pre_spectrum.draw(
+            draw,
+            Some(pre_spectrum_mesh_color),
+            line_weight,
+            None,
+        );
 
-    model.post_spectrum_analyzer.borrow_mut().draw(
-        draw,
-        None,
-        line_weight,
-        Some(post_spectrum_mesh_color),
-    );
+        drop(pre_spectrum);
+    }
+
+    if matches!(
+        spectrogram_view,
+        SpectrogramView::PrePost | SpectrogramView::PostOnly
+    ) {
+        model.post_spectrum_analyzer.borrow_mut().draw(
+            draw,
+            None,
+            line_weight,
+            Some(post_spectrum_mesh_color),
+        );
+    }
 
     outline_rect(model.pre_spectrum_analyzer.borrow().rect(), draw, 2.0);
 
-    if let Ok(algo) = model.ui_params.mask_algorithm.read() {
-        match *algo {
-            GenerativeAlgo::Contours => model
-                .contours
-                .as_ref()
-                .unwrap()
-                .read()
-                .unwrap()
-                .draw(app, draw, &frame),
-            GenerativeAlgo::SmoothLife => model
-                .smooth_life
-                .as_ref()
-                .unwrap()
-                .read()
-                .unwrap()
-                .draw(app, draw, &frame),
-        }
+    match model.ui_params.mask_algorithm.lr() {
+        GenerativeAlgo::Contours => model
+            .contours
+            .as_ref()
+            .unwrap()
+            .read()
+            .unwrap()
+            .draw(app, draw, &frame),
+        GenerativeAlgo::SmoothLife => model
+            .smooth_life
+            .as_ref()
+            .unwrap()
+            .read()
+            .unwrap()
+            .draw(app, draw, &frame),
     }
+
     model.draw_mask_scan_line(draw);
 
     // outline_rect(&model.mask_rect(), draw, 2.0);

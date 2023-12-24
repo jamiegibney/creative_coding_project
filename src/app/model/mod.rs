@@ -114,7 +114,8 @@ impl Model {
 
         let (_w, _h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
 
-        let window = build_window(app, WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32);
+        let window =
+            build_window(app, WINDOW_SIZE.x as u32, WINDOW_SIZE.y as u32);
 
         let GuiElements {
             bank_rect,
@@ -125,9 +126,14 @@ impl Model {
             dsp_load,
         } = build_gui_elements(app, pre_spectrum, post_spectrum, &params);
 
-        let sequencer = Sequencer::new(sample_rate_ref.lr(), audio_senders.note_event.clone());
+        let sequencer = Sequencer::new(
+            sample_rate_ref.lr(),
+            audio_senders.note_event.clone(),
+        );
 
-        let egui = Egui::from_window(&app.window(window).expect("expected a valid window id"));
+        let egui = Egui::from_window(
+            &app.window(window).expect("expected a valid window id"),
+        );
 
         let audio_senders = Arc::new(audio_senders);
         let cl = Arc::clone(&audio_senders);
@@ -142,19 +148,15 @@ impl Model {
             .attach_reso_bank_randomise_callback(move |_| {
                 cl.resonator_bank_reset_pitch.send(());
             })
-            .attach_mask_reset_callback(move |_| {
-                if let Ok(guard) = gen_algo.read() {
-                    match *guard {
-                        GenerativeAlgo::Contours => {
-                            if let Ok(mut guard) = ctr.write() {
-                                guard.reset_seed();
-                            }
-                        }
-                        GenerativeAlgo::SmoothLife => {
-                            if let Ok(mut guard) = sml.write() {
-                                guard.reset();
-                            }
-                        }
+            .attach_mask_reset_callback(move |_| match gen_algo.lr() {
+                GenerativeAlgo::Contours => {
+                    if let Ok(mut guard) = ctr.write() {
+                        guard.reset_seed();
+                    }
+                }
+                GenerativeAlgo::SmoothLife => {
+                    if let Ok(mut guard) = sml.write() {
+                        guard.reset();
                     }
                 }
             });
@@ -205,7 +207,8 @@ impl Model {
 
             sequencer,
 
-            mask_thread_pool: ThreadPool::build(1).expect("failed to build mask thread pool"),
+            mask_thread_pool: ThreadPool::build(1)
+                .expect("failed to build mask thread pool"),
 
             dsp_load,
             sample_rate_ref,
@@ -222,7 +225,8 @@ impl Model {
     /// handled quite quickly in the audio thread.
     pub fn current_sample_idx(&self) -> u32 {
         self.audio_callback_timer.lock().map_or(0, |guard| {
-            let samples_exact = guard.elapsed().as_secs_f64() * unsafe { SAMPLE_RATE };
+            let samples_exact =
+                guard.elapsed().as_secs_f64() * unsafe { SAMPLE_RATE };
             samples_exact.round() as u32 % BUFFER_SIZE as u32
         })
     }
@@ -234,7 +238,8 @@ impl Model {
 
         if self.mask_scan_line_pos > 1.0 {
             self.mask_scan_line_pos -= 1.0;
-        } else if self.mask_scan_line_pos < 0.0 {
+        }
+        else if self.mask_scan_line_pos < 0.0 {
             self.mask_scan_line_pos += 1.0;
         }
     }
@@ -254,6 +259,7 @@ impl Model {
         )
     }
 
+    /// Draws the spectral mask scan line.
     pub fn draw_mask_scan_line(&self, draw: &Draw) {
         let rect = self.mask_rect();
         let y_bot = rect.bottom();
@@ -270,7 +276,7 @@ impl Model {
         draw.line()
             .points(pt2(x, y_bot), pt2(x, y_top))
             .weight(4.0)
-            .color(rgba::<u8>(0, 200, 0, 100));
+            .color(Rgba::new(0.9, 0.4, 0.0, 0.5));
     }
 
     /// Updates the model's input data.

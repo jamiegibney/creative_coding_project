@@ -1,4 +1,5 @@
 use nannou::prelude::*;
+use std::fmt::Display;
 
 // this is OK - there is no intention of changing the variants of these enums.
 use Note::*;
@@ -6,6 +7,13 @@ use Octave::*;
 
 pub fn midi_note_value_from(octave: Octave, note: Note) -> f64 {
     octave.starting_midi_note() + note.note_value()
+}
+
+pub fn midi_note_to_string(value: u8) -> String {
+    let oct = Octave::from_note(value);
+    let note = Note::from_value(value as i32);
+
+    format!("{note}{oct}")
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -31,6 +39,26 @@ pub enum Octave {
     C7,
     /// Octave covering C8 - B8 (MIDI note range 108 - 119)
     C8,
+    /// Octave covering C9 - B9 (MIDI note range 120 - 131)
+    C9,
+}
+
+impl Display for Octave {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cneg1 => write!(f, "-1"),
+            C0 => write!(f, "0"),
+            C1 => write!(f, "1"),
+            C2 => write!(f, "2"),
+            C3 => write!(f, "3"),
+            C4 => write!(f, "4"),
+            C5 => write!(f, "5"),
+            C6 => write!(f, "6"),
+            C7 => write!(f, "7"),
+            C8 => write!(f, "8"),
+            C9 => write!(f, "9"),
+        }
+    }
 }
 
 impl Octave {
@@ -48,6 +76,7 @@ impl Octave {
             C6 => 84.0,
             C7 => 96.0,
             C8 => 108.0,
+            C9 => 120.0,
         }
     }
 
@@ -69,7 +98,10 @@ impl Octave {
             84..=95 => C6,
             96..=107 => C7,
             108..=119 => C8,
-            _ => panic!("value provided ({note}) is outside of the acceptable range"),
+            120..=131 => C9,
+            _ => panic!(
+                "value provided ({note}) is outside of the acceptable range"
+            ),
         }
     }
 
@@ -84,7 +116,8 @@ impl Octave {
             C4 => C5,
             C5 => C6,
             C6 => C7,
-            C7 | C8 => C8,
+            C7 => C8,
+            C8 | C9 => C9,
         };
     }
 
@@ -107,6 +140,7 @@ impl Octave {
             C6 => C5,
             C7 => C6,
             C8 => C7,
+            C9 => C8,
         };
     }
 
@@ -140,6 +174,25 @@ pub enum Note {
     A,
     As,
     B,
+}
+
+impl Display for Note {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            C => write!(f, "C"),
+            Cs => write!(f, "C#"),
+            D => write!(f, "D"),
+            Ds => write!(f, "D#"),
+            E => write!(f, "E"),
+            F => write!(f, "F"),
+            Fs => write!(f, "F#"),
+            G => write!(f, "G"),
+            Gs => write!(f, "G#"),
+            A => write!(f, "A"),
+            As => write!(f, "A#"),
+            B => write!(f, "B"),
+        }
+    }
 }
 
 impl Note {

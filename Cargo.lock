@@ -139,6 +139,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomic"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d818003e740b63afc82337e3160717f4f63078720a810b7b903e70a5d1d2994"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "atomic_float"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -498,6 +507,7 @@ name = "creative_coding_project"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "atomic",
  "atomic_float",
  "bytemuck",
  "crossbeam-channel",

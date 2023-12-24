@@ -15,6 +15,7 @@ use std::fmt::Debug;
 /// **TODO**: implement logarithmic scaling.
 /// **TODO**: implement coloring.
 /// **TODO**: implement the ability to manually type and parse a value. (yikes)
+#[allow(clippy::struct_excessive_bools)]
 pub struct TextSlider {
     raw_value: f64,
     output_value: f64,
@@ -28,6 +29,7 @@ pub struct TextSlider {
     label_layout: Layout,
     value_layout: Layout,
     value_num_chars: usize,
+    positive_prefix: bool,
 
     rect: Rect,
 
@@ -69,6 +71,7 @@ impl TextSlider {
 
             value_layout: default_text_layout(),
             value_num_chars: 5,
+            positive_prefix: false,
 
             value_prefix: None,
             value_suffix: None,
@@ -177,6 +180,11 @@ impl TextSlider {
         Self { value_suffix: str_to_option(suffix), ..self }
     }
 
+    /// Prefixes positive values with "+".
+    pub fn with_positive_value_prefix(self) -> Self {
+        Self { positive_prefix: true, ..self }
+    }
+
     /// Provides a callback which is called whenever the `TextSlider`'s value is updated.
     ///
     /// The first argument is the raw slider value, and the second is the output value.
@@ -263,6 +271,11 @@ impl TextSlider {
     /// Sets the suffix for the value readout.
     pub fn set_suffix(&mut self, suffix: &str) {
         self.value_suffix = str_to_option(suffix);
+    }
+
+    /// Sets whether to prefix positive values with "+".
+    pub fn set_positive_prefix(&mut self, prefix: bool) {
+        self.positive_prefix = prefix;
     }
 
     /// Sets the number of chars used to represent the value read out. The default value is `5`.
@@ -403,10 +416,20 @@ impl TextSlider {
         }
 
         if self.integer_rounding {
-            return format!("{val:.0}");
+            return if self.positive_prefix && val.is_sign_positive() {
+                format!("+{val:.0}")
+            }
+            else {
+                format!("{val:.0}")
+            };
         }
 
-        let val_str = format!("{val:.10}");
+        let val_str = if self.positive_prefix && val.is_sign_positive() {
+            format!("+{val:.10}")
+        }
+        else {
+            format!("{val:.10}")
+        };
 
         let mut decimal_idx = val_str.find('.').unwrap();
 

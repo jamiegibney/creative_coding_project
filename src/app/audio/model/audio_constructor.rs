@@ -76,7 +76,7 @@ fn audio_processors(sample_rate: f64, upsampled_rate: f64) -> AudioProcessors {
     let mut resonator_bank = ResonatorBank::new(upsampled_rate, 256);
     resonator_bank.set_num_resonators(16);
     resonator_bank.set_scale(Scale::MajPentatonic);
-    resonator_bank.set_root_note(39.0);
+    resonator_bank.set_root_note(70.0);
     resonator_bank.set_inharm(0.3);
     resonator_bank.set_freq_spread(0.6);
     resonator_bank.set_freq_shift(-8.0);

@@ -58,6 +58,15 @@ pub struct UIComponents {
     /// trigger
     reso_bank_randomise: Button,
 
+    // f64
+    reso_bank_cell_jitter: TextSlider,
+    // u32
+    reso_bank_cell_count: TextSlider,
+    // u32
+    reso_bank_resonator_count: TextSlider,
+    // f64
+    reso_bank_cell_scatter: TextSlider,
+
     // ### POST EFFECTS ###
     effects_label: Label,
 
@@ -183,9 +192,8 @@ impl UIComponents {
             mask_algorithm: {
                 let mask_algo = Arc::clone(&params.mask_algorithm);
                 Menu::new(ui_layout.mask_general.algorithm)
-                    .with_callback(move |variant| {
-                        let mut guard = mask_algo.write().unwrap();
-                        *guard = variant;
+                    .with_callback(move |selected| {
+                        mask_algo.sr(selected);
                     })
                     .with_label("Algorithm")
                     .with_label_layout(Layout {
@@ -200,7 +208,13 @@ impl UIComponents {
                     // .with_callback(callback)
                     .with_label_layout(small_label_layout())
                     .with_item_text_layout(small_value_layout())
-                    .with_selected_item_text_layout(small_value_layout())
+                    .with_selected_item_text_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
             },
             mask_scan_line_speed: {
                 let scan_line_speed = Arc::clone(&params.mask_scan_line_speed);
@@ -210,7 +224,13 @@ impl UIComponents {
                 )
                 .with_output_range(0.1..=10.0)
                 .with_value_chars(4)
-                .with_value_layout(small_value_layout())
+                .with_value_layout(Layout {
+                    font: Some(
+                        Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                            .expect("failed to load font bytes"),
+                    ),
+                    ..small_value_layout()
+                })
                 .with_sensitivity(0.005)
                 .with_suffix(" x")
                 .with_default_value(1.0)
@@ -222,19 +242,26 @@ impl UIComponents {
                 let mask_is_post_fx = Arc::clone(&params.mask_is_post_fx);
                 Button::new(ui_layout.mask_general.is_post_fx)
                     .with_callback(move |state| mask_is_post_fx.sr(state))
-                    .with_enabled_layout(small_value_layout())
-                    .with_disabled_layout(small_value_layout())
+                    .with_enabled_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
+                    .with_disabled_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
                     .with_enabled_text("Post FX")
                     .with_disabled_text("Pre FX")
             },
-            // mask_uses_gpu: {
-            //     let mask_uses_gpu = Arc::clone(&params.mask_uses_gpu);
-            //     Button::new(ui_layout.mask_general.uses_gpu)
-            //         .with_callback(move |state| mask_uses_gpu.sr(state))
-            // },
             mask_reset: Button::new(ui_layout.mask_general.reset)
                 .with_label_layout(main_value_layout())
-                .with_label("Reset!")
+                .with_label("Regenerate")
                 .toggleable(false),
 
             contour_count: {
@@ -288,8 +315,7 @@ impl UIComponents {
                     Arc::clone(&params.smoothlife_resolution);
                 Menu::new(ui_layout.smooth_life.resolution)
                     .with_callback(move |selected| {
-                        let mut guard = smoothlife_resolution.write().unwrap();
-                        *guard = selected;
+                        smoothlife_resolution.sr(selected);
                     })
                     .with_label("Resolution")
                     .with_label_layout(Layout {
@@ -318,8 +344,7 @@ impl UIComponents {
                 let smoothlife_preset = Arc::clone(&params.smoothlife_preset);
                 Menu::new(ui_layout.smooth_life.preset)
                     .with_callback(move |selected| {
-                        let mut guard = smoothlife_preset.write().unwrap();
-                        *guard = selected;
+                        smoothlife_preset.sr(selected);
                     })
                     .with_label("Preset")
                     .with_label_layout(Layout {
@@ -338,8 +363,7 @@ impl UIComponents {
                     Arc::clone(&params.spectrogram_resolution);
                 Menu::new(ui_layout.spectrogram.resolution)
                     .with_callback(move |selected| {
-                        let mut guard = spectrogram_resolution.write().unwrap();
-                        *guard = selected;
+                        spectrogram_resolution.sr(selected);
                     })
                     .with_label("Resolution")
                     .with_label_layout(main_label_layout())
@@ -362,8 +386,7 @@ impl UIComponents {
                 let spectrogram_view = Arc::clone(&params.spectrogram_view);
                 Menu::new(ui_layout.spectrogram.view)
                     .with_callback(move |selected| {
-                        let mut guard = spectrogram_view.write().unwrap();
-                        *guard = selected;
+                        spectrogram_view.sr(selected);
                     })
                     .with_label("View")
                     .with_label_layout(main_label_layout())
@@ -378,24 +401,38 @@ impl UIComponents {
                 let reso_bank_scale = Arc::clone(&params.reso_bank_scale);
                 Menu::new(ui_layout.reso_bank.scale)
                     .with_callback(move |selected| {
-                        let mut guard = reso_bank_scale.write().unwrap();
-                        *guard = selected;
+                        reso_bank_scale.sr(selected);
                     })
                     .with_item_text_layout(small_value_layout())
-                    .with_selected_item_text_layout(small_value_layout())
+                    .with_selected_item_text_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
             },
             reso_bank_root_note: {
                 let reso_bank_root_note =
                     Arc::clone(&params.reso_bank_root_note);
                 TextSlider::new(0.0, ui_layout.reso_bank.root_note)
-                    .with_output_range(1.0..=127.0)
-                    .with_value_layout(small_value_layout())
+                    .with_output_range(12.0..=83.0)
+                    .with_sensitivity(0.001)
+                    .with_value_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
                     .with_default_value(69.0) // A4
                     .with_integer_rounding()
                     .with_callback(move |_, value| {
                         reso_bank_root_note.sr(value as u8);
                     })
-                    .with_formatting_callback(|raw, val| String::from("A#4"))
+                    .with_formatting_callback(|raw, val| {
+                        midi_note_to_string(val as u8)
+                    })
             },
             reso_bank_spread: {
                 let reso_bank_spread = Arc::clone(&params.reso_bank_spread);
@@ -413,14 +450,16 @@ impl UIComponents {
             reso_bank_shift: {
                 let reso_bank_shift = Arc::clone(&params.reso_bank_shift);
                 TextSlider::new(0.0, ui_layout.reso_bank.shift)
+                    .with_sensitivity(0.001)
                     .with_label("Freq. shift")
                     .with_suffix(" st")
+                    .with_positive_value_prefix()
                     .with_label_layout(Layout {
                         justify: Justify::Right,
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    .with_value_chars(4)
+                    .with_value_chars(5)
                     .with_output_range(-24.0..=24.0)
                     .with_default_value(reso_bank_shift.lr())
                     .with_callback(move |_, value| reso_bank_shift.sr(value))
@@ -456,15 +495,76 @@ impl UIComponents {
                 Button::new(ui_layout.reso_bank.quantise)
                     .with_callback(move |state| reso_bank_quantise.sr(state))
                     .with_state(true)
-                    .with_enabled_layout(small_value_layout())
-                    .with_disabled_layout(small_value_layout())
+                    .with_enabled_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
+                    .with_disabled_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
                     .with_enabled_text("Quantise On")
                     .with_disabled_text("Quantise Off")
             },
             reso_bank_randomise: Button::new(ui_layout.reso_bank.randomise)
-                .with_label("Reset!")
+                .with_label("Randomise pitch")
                 .with_label_layout(main_value_layout())
                 .toggleable(false),
+
+            reso_bank_resonator_count: {
+                let reso_count = Arc::clone(&params.reso_bank_resonator_count);
+                TextSlider::new(8.0, ui_layout.reso_bank.reso_count)
+                    .with_label("Resonators")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_integer_rounding()
+                    .with_output_range(1.0..=32.0)
+                    .with_default_value(8.0)
+                    .with_callback(move |_, value| {
+                        reso_count.sr(value as u32);
+                    })
+            },
+            reso_bank_cell_count: {
+                let cell_count = Arc::clone(&params.reso_bank_cell_count);
+                TextSlider::new(12.0, ui_layout.reso_bank.cell_count)
+                    .with_label("Cells")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_integer_rounding()
+                    .with_output_range(8.0..=16.0)
+                    .with_default_value(12.0)
+                    .with_callback(move |_, value| {
+                        cell_count.sr(value as u32);
+                    })
+            },
+            reso_bank_cell_jitter: {
+                let cell_jitter = Arc::clone(&params.reso_bank_cell_jitter);
+                TextSlider::new(0.1, ui_layout.reso_bank.cell_jitter)
+                    .with_label("Jitter")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_default_value(0.1)
+                    .with_callback(move |_, value| {
+                        cell_jitter.sr(value);
+                    })
+            },
+            reso_bank_cell_scatter: {
+                let cell_scatter = Arc::clone(&params.reso_bank_cell_scatter);
+                TextSlider::new(0.5, ui_layout.reso_bank.cell_scatter)
+                    .with_label("Scatter")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_default_value(0.5)
+                    .with_callback(move |_, value| {
+                        cell_scatter.sr(value);
+                    })
+            },
 
             effects_label: Label::new(ui_layout.other.effects_label)
                 .with_text("EFFECTS")
@@ -472,7 +572,6 @@ impl UIComponents {
 
             low_filter_label: Label::new(ui_layout.low_filter.label)
                 .with_text("LOW FILTER")
-                // .with_text_color(Rgb::new(0.1, 0.3, 0.6))
                 .with_text_layout(big_label_layout()),
             low_filter_type: {
                 let low_filter_type = Arc::clone(&params.low_filter_is_shelf);
@@ -491,6 +590,7 @@ impl UIComponents {
             low_filter_cutoff: {
                 let low_filter_cutoff = Arc::clone(&params.low_filter_cutoff);
                 TextSlider::new(0.0, ui_layout.low_filter.cutoff_hz)
+                    .with_sensitivity(0.0015)
                     .with_label("Cutoff")
                     .with_label_layout(Layout {
                         justify: Justify::Right,
@@ -525,6 +625,7 @@ impl UIComponents {
             low_filter_q: {
                 let low_filter_q = Arc::clone(&params.low_filter_q);
                 TextSlider::new(0.0, ui_layout.low_filter.q)
+                    .with_sensitivity(0.002)
                     .with_label("Q")
                     .with_label_layout(Layout {
                         justify: Justify::Right,
@@ -541,7 +642,9 @@ impl UIComponents {
             low_filter_gain: {
                 let low_filter_gain = Arc::clone(&params.low_filter_gain_db);
                 TextSlider::new(0.0, ui_layout.low_filter.gain)
+                    .with_sensitivity(0.002)
                     .with_label("Gain")
+                    .with_positive_value_prefix()
                     .with_label_layout(Layout {
                         justify: Justify::Right,
                         ..main_label_layout()
@@ -576,6 +679,7 @@ impl UIComponents {
             high_filter_cutoff: {
                 let high_filter_cutoff = Arc::clone(&params.high_filter_cutoff);
                 TextSlider::new(0.0, ui_layout.high_filter.cutoff_hz)
+                    .with_sensitivity(0.0015)
                     .with_label("Cutoff")
                     .with_label_layout(Layout {
                         justify: Justify::Left,
@@ -611,6 +715,7 @@ impl UIComponents {
             high_filter_q: {
                 let high_filter_q = Arc::clone(&params.high_filter_q);
                 TextSlider::new(0.0, ui_layout.high_filter.q)
+                    .with_sensitivity(0.002)
                     .with_label("Q")
                     .with_label_layout(Layout {
                         justify: Justify::Left,
@@ -627,7 +732,9 @@ impl UIComponents {
             high_filter_gain: {
                 let high_filter_gain = Arc::clone(&params.high_filter_gain_db);
                 TextSlider::new(0.0, ui_layout.high_filter.gain)
+                    .with_sensitivity(0.002)
                     .with_label("Gain")
+                    .with_positive_value_prefix()
                     .with_label_layout(Layout {
                         justify: Justify::Left,
                         ..main_label_layout()
@@ -703,8 +810,7 @@ impl UIComponents {
                 let dist_type = Arc::clone(&params.dist_type);
                 Menu::new(ui_layout.distortion.dist_type)
                     .with_callback(move |selected| {
-                        let mut guard = dist_type.write().unwrap();
-                        *guard = selected;
+                        dist_type.sr(selected);
                     })
                     .with_label("Type")
             },
@@ -712,52 +818,83 @@ impl UIComponents {
             comp_label: Label::new(ui_layout.compression.label)
                 .with_text("COMPRESSION")
                 .with_text_layout(big_label_layout()),
-            comp_thresh: TextSlider::new(0.0, ui_layout.compression.threshold),
-            comp_ratio: TextSlider::new(0.0, ui_layout.compression.ratio),
-            comp_attack: TextSlider::new(0.0, ui_layout.compression.attack),
-            comp_release: TextSlider::new(0.0, ui_layout.compression.release),
+            comp_thresh: {
+                let comp_thresh = Arc::clone(&params.comp_thresh);
+                TextSlider::new(0.0, ui_layout.compression.threshold)
+                    .with_callback(move |_, value| {
+                        comp_thresh.set_target_value(value);
+                    })
+            },
+            comp_ratio: {
+                let comp_ratio = Arc::clone(&params.comp_ratio);
+                TextSlider::new(0.0, ui_layout.compression.ratio).with_callback(
+                    move |_, value| {
+                        comp_ratio.set_target_value(value);
+                    },
+                )
+            },
+            comp_attack: {
+                let comp_attack = Arc::clone(&params.comp_attack_ms);
+                TextSlider::new(0.0, ui_layout.compression.attack)
+                    .with_callback(move |_, value| {
+                        comp_attack.set_target_value(value);
+                    })
+            },
+            comp_release: {
+                let comp_release = Arc::clone(&params.comp_release_ms);
+                TextSlider::new(0.0, ui_layout.compression.release)
+                    .with_callback(move |_, value| {
+                        comp_release.set_target_value(value);
+                    })
+            },
 
-            master_gain: TextSlider::new(0.0, ui_layout.other.master_gain)
-                .with_label("Master Gain")
-                .with_label_layout(main_label_layout())
-                .with_value_layout(main_value_layout())
-                .with_output_range(0.0..=3.9811) // -inf to +12
-                .with_default_value(1.00001)
-                .with_formatting_callback(|_, val| {
-                    let val = level_to_db(val);
+            master_gain: {
+                let master_gain = Arc::clone(&params.master_gain);
+                TextSlider::new(0.0, ui_layout.other.master_gain)
+                    .with_sensitivity(0.001)
+                    .with_label("Master Gain")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(0.0..=3.9811) // -inf to +12
+                    .with_default_value(1.00001)
+                    .with_formatting_callback(|_, val| {
+                        let val = level_to_db(val);
 
-                    if val <= -99.9 {
-                        return String::from("-inf dB");
-                    }
-                    if (0.0..=0.01).contains(&val) {
-                        return String::from("0.0 dB");
-                    }
+                        if val <= -99.9 {
+                            return String::from("-inf dB");
+                        }
+                        if (0.0..=0.01).contains(&val) {
+                            return String::from("0.0 dB");
+                        }
 
-                    let val_str = if val.is_sign_negative() {
-                        format!("{val:.10}")
-                    }
-                    else {
-                        format!("+{val:.10}")
-                    };
+                        let val_str = if val.is_sign_negative() {
+                            format!("{val:.10}")
+                        }
+                        else {
+                            format!("+{val:.10}")
+                        };
 
-                    let mut decimal_idx = val_str.find('.').unwrap();
+                        let mut decimal_idx = val_str.find('.').unwrap();
 
-                    // 5
-                    let truncate_to = if decimal_idx == 4 {
-                        6
-                    }
-                    else if decimal_idx > 5 {
-                        decimal_idx
-                    }
-                    else {
-                        5
-                    };
+                        // 5
+                        let truncate_to = if decimal_idx == 4 {
+                            6
+                        }
+                        else if decimal_idx > 5 {
+                            decimal_idx
+                        }
+                        else {
+                            5
+                        };
 
-                    let mut out = val_str[..truncate_to].to_string();
-                    out.push_str(" dB");
-                    out
-                })
-                .with_callback(move |_, output_value| {}),
+                        let mut out = val_str[..truncate_to].to_string();
+                        out.push_str(" dB");
+                        out
+                    })
+                    .with_callback(move |_, output_value| {
+                        master_gain.set_target_value(output_value);
+                    })
+            },
         }
     }
 
@@ -812,6 +949,11 @@ impl UIDraw for UIComponents {
         self.reso_bank_quantise.update(input_data);
         self.reso_bank_randomise.update(input_data);
 
+        self.reso_bank_resonator_count.update(input_data);
+        self.reso_bank_cell_count.update(input_data);
+        self.reso_bank_cell_jitter.update(input_data);
+        self.reso_bank_cell_scatter.update(input_data);
+
         self.low_filter_type.update(input_data);
         self.low_filter_cutoff.update(input_data);
 
@@ -859,6 +1001,23 @@ impl UIDraw for UIComponents {
         self.comp_label.draw(app, draw, frame);
         self.effects_label.draw(app, draw, frame);
 
+        if self.low_filter_type.enabled() {
+            self.low_filter_gain.draw(app, draw, frame);
+        }
+        else {
+            self.low_filter_q.draw(app, draw, frame);
+        }
+
+        self.high_filter_type.draw(app, draw, frame);
+        self.high_filter_cutoff.draw(app, draw, frame);
+
+        if self.high_filter_type.enabled() {
+            self.high_filter_gain.draw(app, draw, frame);
+        }
+        else {
+            self.high_filter_q.draw(app, draw, frame);
+        }
+
         self.mask_scan_line_speed.draw(app, draw, frame);
         self.mask_is_post_fx.draw(app, draw, frame);
         self.mask_resolution.draw(app, draw, frame);
@@ -891,25 +1050,13 @@ impl UIDraw for UIComponents {
         self.reso_bank_randomise.draw(app, draw, frame);
         self.reso_bank_scale.draw(app, draw, frame); // menu
 
+        self.reso_bank_resonator_count.draw(app, draw, frame);
+        self.reso_bank_cell_count.draw(app, draw, frame);
+        self.reso_bank_cell_jitter.draw(app, draw, frame);
+        self.reso_bank_cell_scatter.draw(app, draw, frame);
+
         self.low_filter_type.draw(app, draw, frame);
         self.low_filter_cutoff.draw(app, draw, frame);
-
-        if self.low_filter_type.enabled() {
-            self.low_filter_gain.draw(app, draw, frame);
-        }
-        else {
-            self.low_filter_q.draw(app, draw, frame);
-        }
-
-        self.high_filter_type.draw(app, draw, frame);
-        self.high_filter_cutoff.draw(app, draw, frame);
-
-        if self.high_filter_type.enabled() {
-            self.high_filter_gain.draw(app, draw, frame);
-        }
-        else {
-            self.high_filter_q.draw(app, draw, frame);
-        }
 
         self.dist_amount.draw(app, draw, frame);
         self.dist_type.draw(app, draw, frame); // menu

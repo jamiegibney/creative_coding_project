@@ -33,7 +33,7 @@ impl Default for MaskUILayout {
     fn default() -> Self {
         let reset_rect = Rect::from_xy_wh(
             pt2(0.0, 28.0),
-            pt2(main_width_chars(6), MAIN_HEIGHT),
+            pt2(main_width_chars(10), MAIN_HEIGHT),
         );
         let upper_size = 256.0;
 
@@ -202,6 +202,11 @@ pub struct ResoBankUILayout {
     pub pan: Rect,
     pub quantise: Rect,
     pub randomise: Rect,
+
+    pub reso_count: Rect,
+    pub cell_jitter: Rect,
+    pub cell_count: Rect,
+    pub cell_scatter: Rect,
 }
 
 impl Default for ResoBankUILayout {
@@ -216,7 +221,7 @@ impl Default for ResoBankUILayout {
 
         let reset_rect = Rect::from_xy_wh(
             pt2(-412.0, 28.0),
-            pt2(main_width_chars(6), MAIN_HEIGHT),
+            pt2(main_width_chars(15), MAIN_HEIGHT),
         );
 
         let sh_w = main_width_chars(8);
@@ -274,6 +279,11 @@ impl Default for ResoBankUILayout {
             pan: pan_rect,
 
             randomise: reset_rect,
+
+            reso_count: def_rect(),
+            cell_count: def_rect(),
+            cell_jitter: def_rect(),
+            cell_scatter: def_rect(),
         }
     }
 }

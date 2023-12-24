@@ -179,7 +179,12 @@ impl<E: MenuEnum> Menu<E> {
 
     fn reset_to_default(&mut self) {
         self.variant = E::default();
+
         self.update_current_name();
+
+        if let Some(cb) = &self.callback {
+            cb(self.variant);
+        }
     }
 
     fn divide_rect(rect: &Rect, num_variants: usize) -> Vec<Rect> {
