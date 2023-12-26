@@ -39,11 +39,36 @@ impl SmoothLife {
                 .mip_level_count(4)
                 .sample_count(1)
                 .format(wgpu::TextureFormat::Rgba8Unorm)
-                .usage(wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING)
+                .usage(
+                    wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
+                )
                 .build(device),
-            image_buffer: ImageBuffer::from_fn(w, h, |_, _| Rgba([0, 0, 0, u8::MAX])),
+            image_buffer: ImageBuffer::from_fn(w, h, |_, _| {
+                Rgba([0, 0, 0, u8::MAX])
+            }),
             use_bilinear: false,
         }
+    }
+
+    /// This function may allocate, and may be an expensive operation.
+    pub fn set_resolution(&mut self, device: &wgpu::Device, resolution: usize) {
+        let w = self.rect.w() as u32;
+        let h = self.rect.h() as u32;
+
+        self.texture = wgpu::TextureBuilder::new()
+            .size([w, h])
+            .mip_level_count(4)
+            .sample_count(1)
+            .format(wgpu::TextureFormat::Rgba8Unorm)
+            .usage(
+                wgpu::TextureUsages::COPY_DST
+                    | wgpu::TextureUsages::TEXTURE_BINDING,
+            )
+            .build(device);
+
+        self.image_buffer =
+            ImageBuffer::from_fn(w, h, |_, _| Rgba([0, 0, 0, u8::MAX]));
     }
 
     pub fn set_speed(&mut self, speed: f64) {
@@ -78,7 +103,8 @@ impl SmoothLife {
 
                 let br = if self.use_bilinear {
                     (self.generator.get_value_bilinear(xn, yn) * 255.0) as u8
-                } else {
+                }
+                else {
                     (self.generator.get_value_nn(xn, yn) * 255.0) as u8
                 };
 

@@ -144,7 +144,7 @@ pub fn build_gui_elements(
         bank_rect,
 
         contours: Contours::new(app.main_window().device(), mask_rect)
-            .with_num_threads(8)
+            .with_num_threads(16)
             .expect("failed to allocate threads to contour generator")
             .with_feathering(false)
             .with_z_increment(params.contour_speed.lr())

@@ -24,10 +24,10 @@
 
 vec2 hash2(vec2 p) {
     // texture based white noise
-    return textureLod(iChannel0, (p + 0.5) / 256.0, 0.0).xy;
+    // return textureLod(iChannel0, (p + 0.5) / 256.0, 0.0).xy;
 
     // procedural white noise
-    // return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
+    return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
 }
 
 vec3 voronoi(in vec2 x) {
@@ -35,69 +35,83 @@ vec3 voronoi(in vec2 x) {
     vec2 fractionalPart = fract(x);
 
     // first pass: regular voronoi
-    vec2 mg, mr;
-    float md = 8.0;
+    vec2 minGrid, minRemainder;
+    float minDistance = 8.0;
 
+    // iterate 3x3 grid
     for (int j = -1; j <= 1; j++) {
         for (int i = -1; i <= 1; i++) {
-            vec2 g = vec2(float(i), float(j));
-            vec2 o = hash2(integerPart + g);
+            // offset for this iteration
+            vec2 cellOffset = vec2(float(i), float(j));
+            // get noise value for cell
+            vec2 offset = hash2(integerPart + cellOffset);
 
             #ifdef ANIMATE
-            o = 0.5 + 0.5 * sin(iTime + 6.2831 * o);
+            offset = 0.5 + 0.5 * sin(iTime + 6.2831 * offset);
             #endif
 
-            vec2 r = g + o - fractionalPart;
-            float d = dot(r, r);
+            vec2 remainder = cellOffset + offset - fractionalPart;
+            float dist = dot(remainder, remainder);
 
-            if (d < md) {
-                md = d;
-                mr = r;
-                mg = g;
+            if (dist < minDistance) {
+                minDistance = dist;
+                minRemainder = remainder;
+                minGrid = cellOffset;
             }
         }
     }
 
     // second pass: distance to borders
-    md = 8.0;
+    minDistance = 8.0;
 
     for (int j = -2; j <= 2; j++) {
         for (int i = -2; i <= 2; i++) {
-            vec2 g = mg + vec2(float(i), float(j));
-            vec2 o = hash2(integerPart + g);
+            vec2 cellOffset = minGrid + vec2(float(i), float(j));
+            vec2 offset = hash2(integerPart + cellOffset);
 
             #ifdef ANIMATE
-            o = 0.5 + 0.5 * sin(iTime + 6.2831 * o);
+            offset = 0.5 + 0.5 * sin(iTime + 6.2831 * offset);
             #endif
 
-            vec2 r = g + o - fractionalPart;
+            vec2 remainder = cellOffset + offset - fractionalPart;
 
-            if (dot(mr - r, mr - r) > 0.00001) {
-                md = min(md, dot(0.5 * (mr + r), normalize(r - mr)));
+            if (dot(
+                    minRemainder - remainder,
+                    minRemainder - remainder
+                ) > 0.00001)
+            {
+                minDistance =
+                    min(
+                        minDistance,
+                        dot(
+                            0.5 * (minRemainder + remainder),
+                            normalize(remainder - minRemainder)
+                        )
+                    );
             }
         }
     }
 
-    return vec3(md, mr);
+    return vec3(minDistance, minRemainder);
 }
 
 vec2 voronoi2(in vec2 x) {
-    ivec2 p = floor(x);
-    vec2 f = fract(x);
+    ivec2 integerPart = floor(x);
+    vec2 fractionalPart = fract(x);
     vec2 res = vec2(8.0);
 
     for (int j = -1; j <= 1; j++) {
         for (int i = -1; i <= 1; i++) {
-            ivec2 b = ivec2(i, j);
-            vec2 r = vec2(b) - f + random2f(p + b);
-            float d = dot(r, r);
+            ivec2 offset = ivec2(i, j);
+            vec2 r = pvec2(offset) - fractionalPart + random2f(integerPart + offset);
+            float distance = dot(r, r);
 
             if (d < res.x) {
                 res.y = res.x;
-                res.x = d;
+                res.x = distance;
             }
             else if (d < res.y) {
-                res.y = d;
+                res.y = distance;
             }
         }
     }

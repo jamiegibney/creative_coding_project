@@ -100,10 +100,10 @@ unsafe impl NoUninit for DistortionType {}
 #[derive(Clone, Copy, Debug, Default)]
 pub enum SmoothLifeSize {
     S16,
-    #[default]
     S32,
     S64,
     S128,
+    #[default]
     S256,
     S512,
 }

@@ -36,7 +36,7 @@ impl SmoothLifeGeneratorAsync {
             },
             grid,
 
-            pool: ThreadPool::build(4)
+            pool: ThreadPool::build(16)
                 .expect("failed to build thread pool for SmoothLifeGenerator"),
         }
     }

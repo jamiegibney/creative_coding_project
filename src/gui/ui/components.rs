@@ -111,13 +111,13 @@ pub struct UIComponents {
 
     // ### Compression
     comp_label: Label,
-    // f64 (slider callback)
+    /// f64 (slider callback)
     comp_thresh: TextSlider,
-    // f64 (slider callback)
+    /// f64 (slider callback)
     comp_ratio: TextSlider,
-    // f64 (slider callback)
+    /// f64 (slider callback)
     comp_attack: TextSlider,
-    // f64 (slider callback)
+    /// f64 (slider callback)
     comp_release: TextSlider,
 
     // ### Master gain
