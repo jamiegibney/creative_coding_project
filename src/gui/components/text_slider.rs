@@ -452,7 +452,7 @@ impl UIDraw for TextSlider {
         self.within_bounds(input_data.mouse_pos) || self.is_active
     }
 
-    fn update(&mut self, input: &InputData) {
+    fn update(&mut self, _: &App, input: &InputData) {
         // guard against the mouse already being clicked when entering the
         // slider's bounding rect
         if !self.within_bounds(input.mouse_pos) && !self.is_active {

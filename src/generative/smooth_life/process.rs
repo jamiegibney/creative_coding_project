@@ -1,3 +1,4 @@
+//! Single-threaded SmoothLife generator.
 use super::*;
 
 pub struct SmoothLifeGenerator {
@@ -78,7 +79,6 @@ impl SmoothLifeGenerator {
         let ri = self.state.radius_inner;
         let ra = self.state.radius_outer;
 
-        // TODO refactor into more idiomatic rust
         for cx in 0..w {
             for cy in 0..h {
                 let (mut m, mut m_norm, mut n, mut n_norm) = (0.0, 0.0, 0.0, 0.0);

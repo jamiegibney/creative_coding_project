@@ -15,30 +15,57 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
         GenerativeAlgo::Contours => {
             let ctr = Arc::clone(model.contours.as_mut().unwrap());
 
-            model.mask_thread_pool.execute(move || {
-                let mut mask = mask.lock().unwrap();
-                let mut ctr = ctr.write().unwrap();
+            let mut ctr = ctr.write().unwrap();
+            let mut mask = mask.lock().unwrap();
 
-                ctr.update(&input_data);
-                ctr.column_to_mask(mask.input_buffer(), pos);
-                drop(ctr);
-                mask.publish();
-            });
+            ctr.update(app, &input_data);
+            ctr.column_to_mask(mask.input_buffer(), pos);
+
+            drop(ctr);
+            mask.publish();
         }
         GenerativeAlgo::SmoothLife => {
-            let sml = Arc::clone(model.smooth_life.as_mut().unwrap());
+            let sml = Arc::clone(&model.smooth_life.as_mut().unwrap());
 
-            model.mask_thread_pool.execute(move || {
-                let mut mask = mask.lock().unwrap();
-                let mut sml = sml.write().unwrap();
+            let mut sml = sml.write().unwrap();
+            let mut mask = mask.lock().unwrap();
 
-                sml.update(&input_data);
-                sml.column_to_mask(mask.input_buffer(), pos);
-                drop(sml);
-                mask.publish();
-            });
+            sml.update(app, &input_data);
+            sml.column_to_mask(mask.input_buffer(), pos);
+
+            drop(sml);
+            mask.publish();
         }
     }
 
-    model.ui_components.update(&input_data);
+    // match model.ui_params.mask_algorithm.lr() {
+    // GenerativeAlgo::Contours => {
+    //     let ctr = Arc::clone(model.contours.as_mut().unwrap());
+    //
+    //     model.mask_thread_pool.execute(move || {
+    //         let mut mask = mask.lock().unwrap();
+    //         let mut ctr = ctr.write().unwrap();
+    //
+    //         ctr.update(app, &input_data);
+    //         ctr.column_to_mask(mask.input_buffer(), pos);
+    //         drop(ctr);
+    //         mask.publish();
+    //     });
+    // }
+    // GenerativeAlgo::SmoothLife => {
+    //     let sml = Arc::clone(model.smooth_life.as_mut().unwrap());
+    //
+    //     model.mask_thread_pool.execute(move || {
+    //         let mut mask = mask.lock().unwrap();
+    //         let mut sml = sml.write().unwrap();
+    //
+    //         sml.update(app, &input_data);
+    //         sml.column_to_mask(mask.input_buffer(), pos);
+    //         drop(sml);
+    //         mask.publish();
+    //     });
+    // }
+    // }
+
+    model.ui_components.update(app, &input_data);
 }

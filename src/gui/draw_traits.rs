@@ -1,5 +1,6 @@
 use crate::dsp::SpectralMask;
 use nannou::prelude::*;
+use std::sync::Arc;
 
 /// Commonly-accessed mouse data:
 ///
@@ -44,7 +45,7 @@ pub trait UIDraw {
     ///
     /// This method should update any internal state based on the time and
     /// input events.
-    fn update(&mut self, input_data: &InputData);
+    fn update(&mut self, app: &App, input_data: &InputData);
 
     /// The component's draw loop, to be called in the app's
     /// [`view()`](crate::app::view::view) callback.

@@ -145,7 +145,7 @@ impl Default for UIParams {
             smoothlife_resolution: Arc::new(Atomic::new(
                 SmoothLifeSize::default(),
             )),
-            smoothlife_speed: Arc::new(AtomicF64::new(2.0)),
+            smoothlife_speed: Arc::new(AtomicF64::new(0.2)),
             smoothlife_preset: Arc::new(Atomic::new(
                 SmoothLifePreset::default(),
             )),

@@ -28,14 +28,14 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             GenerativeAlgo::Contours => {
                 let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
 
-                ctr.reset_seed();
+                ctr.randomize();
                 drop(ctr);
             }
             GenerativeAlgo::SmoothLife => {
                 let mut sml =
                     model.smooth_life.as_mut().unwrap().write().unwrap();
 
-                sml.reset();
+                sml.randomize();
                 drop(sml);
             }
         },
@@ -46,11 +46,6 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                     GenerativeAlgo::SmoothLife => GenerativeAlgo::Contours,
                 },
             );
-        }
-        Key::N => {
-            let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
-            let new_opt = !sml.is_using_bilinear();
-            sml.use_bilinear(new_opt);
         }
 
         _ => (),

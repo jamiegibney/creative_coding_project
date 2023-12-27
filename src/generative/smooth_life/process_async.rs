@@ -1,3 +1,4 @@
+//! Multi-threaded SmoothLife generator.
 use super::*;
 use std::{
     io::Write,

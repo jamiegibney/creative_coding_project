@@ -104,8 +104,8 @@ pub fn build_audio_system(
 pub struct GuiElements {
     pub(super) bank_rect: Rect,
 
-    pub(super) contours: Contours,
-    pub(super) smooth_life: SmoothLife,
+    pub(super) contours: ContoursGPU,
+    pub(super) smooth_life: SmoothLifeGPU,
 
     pub(super) pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
     pub(super) post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
@@ -143,18 +143,18 @@ pub fn build_gui_elements(
     GuiElements {
         bank_rect,
 
-        contours: Contours::new(app.main_window().device(), mask_rect)
-            .with_num_threads(16)
-            .expect("failed to allocate threads to contour generator")
-            .with_feathering(false)
-            .with_z_increment(params.contour_speed.lr())
+        // contours: Contours::new(app.main_window().device(), mask_rect)
+        //     .with_num_threads(16)
+        //     .expect("failed to allocate threads to contour generator")
+        //     .with_feathering(false)
+        //     .with_z_increment(params.contour_speed.lr())
+        //     .with_num_contours(params.contour_count.lr())
+        //     .with_contour_range(0.0..=params.contour_thickness.lr()),
+        contours: ContoursGPU::new(app, mask_rect)
+            .with_z_increment(params.contour_speed.lr() as f32)
             .with_num_contours(params.contour_count.lr())
-            .with_contour_range(0.0..=params.contour_thickness.lr()),
-        smooth_life: SmoothLife::new(
-            app.main_window().device(),
-            mask_rect,
-            params.smoothlife_resolution.lr().value(),
-        ),
+            .with_contour_range(0.0..=(params.contour_thickness.lr() as f32)),
+        smooth_life: SmoothLifeGPU::new(app, mask_rect),
 
         pre_spectrum_analyzer,
         post_spectrum_analyzer,

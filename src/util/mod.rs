@@ -5,7 +5,7 @@ use nannou::prelude::{DVec2, Vec2};
 use std::f64::consts::PI;
 use std::sync::atomic::Ordering::Relaxed;
 
-pub mod atomic_load;
+pub mod atomic_ops;
 pub mod general;
 pub mod interp;
 pub mod smoothing;
@@ -15,7 +15,7 @@ pub mod xfer;
 
 pub use interp::InterpolationType as InterpType;
 
-pub use atomic_load::AtomicLoad;
+pub use atomic_ops::AtomicOps;
 pub use general::*;
 pub use interp::{ilerp, lerp};
 pub use smoothing::*;

@@ -5,9 +5,9 @@ use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum GenerativeAlgo {
-    #[default]
     /// A perlin noise contour-line generator.
     Contours,
+    #[default]
     /// A [SmoothLife](https://arxiv.org/abs/1111.1567) simulation.
     SmoothLife,
 }

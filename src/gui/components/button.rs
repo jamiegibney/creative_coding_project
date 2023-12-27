@@ -185,7 +185,7 @@ impl UIDraw for Button {
         self.rect.contains(input_data.mouse_pos)
     }
 
-    fn update(&mut self, input_data: &InputData) {
+    fn update(&mut self, _: &App, input_data: &InputData) {
         // should the button be updated?
         if !self.should_update(input_data) {
             self.can_be_clicked = false;

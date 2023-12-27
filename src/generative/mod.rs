@@ -4,7 +4,7 @@ pub mod smooth_life;
 pub mod voronoi;
 // pub mod space_colonization;
 
-pub use contours::Contours;
-pub use smooth_life::SmoothLife;
+pub use contours::{Contours, ContoursGPU};
+pub use smooth_life::{SmoothLife, SmoothLifeGPU};
 
 // Note: perlin noise is already supported in Nannou

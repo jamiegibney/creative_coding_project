@@ -221,7 +221,7 @@ impl Default for ResoBankUILayout {
 
         let reset_rect = Rect::from_xy_wh(
             pt2(-412.0, 28.0),
-            pt2(main_width_chars(15), MAIN_HEIGHT),
+            pt2(main_width_chars(14), MAIN_HEIGHT),
         );
 
         let sh_w = main_width_chars(8);

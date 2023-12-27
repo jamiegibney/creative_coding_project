@@ -7,11 +7,13 @@ mod grid;
 mod process;
 mod process_async;
 mod state;
+mod gpu;
 
 pub use grid::{random_f64, Grid};
 pub use process::SmoothLifeGenerator;
 pub use process_async::SmoothLifeGeneratorAsync;
 pub use state::SLState;
+pub use gpu::SmoothLifeGPU;
 
 pub struct SmoothLife {
     generator: SmoothLifeGeneratorAsync,
@@ -114,7 +116,7 @@ impl SmoothLife {
 }
 
 impl UIDraw for SmoothLife {
-    fn update(&mut self, input_data: &InputData) {
+    fn update(&mut self, _: &App, input_data: &InputData) {
         self.generator.update(input_data.delta_time);
         self.update_image_buffer();
     }

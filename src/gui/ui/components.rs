@@ -1,9 +1,11 @@
 use super::*;
+use crate::generative::{ContoursGPU, SmoothLifeGPU};
 use crate::{app::*, fonts::*};
+use atomic::Atomic;
 use nannou::prelude::*;
 use nannou::text::{Font, Justify, Layout};
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 pub struct UIComponents {
     // ### SPECTRAL FILTER ###
@@ -913,81 +915,115 @@ impl UIComponents {
         self.mask_reset.set_callback(cb);
         self
     }
+
+    #[allow(clippy::missing_panics_doc, clippy::significant_drop_tightening)]
+    pub fn setup_mask_callbacks(
+        mut self,
+        contours: Arc<RwLock<ContoursGPU>>,
+        smooth_life: Arc<RwLock<SmoothLifeGPU>>,
+        algo: Arc<Atomic<GenerativeAlgo>>,
+    ) -> Self {
+        let ctr = contours.read().unwrap();
+        let ctr_speed = ctr.z_increment_arc();
+        let ctr_upper = ctr.upper_arc();
+        let ctr_count = ctr.num_contours_arc();
+
+        let algo_1 = Arc::clone(&algo);
+        self.contour_speed.set_callback(move |_, val| {
+            if matches!(algo_1.lr(), GenerativeAlgo::Contours) {
+                ctr_speed.sr(val as f32);
+            }
+        });
+        let algo_2 = Arc::clone(&algo);
+        self.contour_count.set_callback(move |_, val| {
+            if matches!(algo_2.lr(), GenerativeAlgo::Contours) {
+                ctr_count.sr(val as u32);
+            }
+        });
+        let algo_3 = Arc::clone(&algo);
+        self.contour_thickness.set_callback(move |_, val| {
+            if matches!(algo_3.lr(), GenerativeAlgo::Contours) {
+                ctr_upper.sr(val as f32);
+            }
+        });
+
+        self
+    }
 }
 
 impl UIDraw for UIComponents {
-    fn update(&mut self, input_data: &InputData) {
-        self.mask_algorithm.update(input_data);
-        self.mask_scan_line_speed.update(input_data);
-        self.mask_is_post_fx.update(input_data);
-        self.mask_resolution.update(input_data);
-        self.mask_reset.update(input_data);
+    fn update(&mut self, app: &App, input_data: &InputData) {
+        self.mask_algorithm.update(app, input_data);
+        self.mask_scan_line_speed.update(app, input_data);
+        self.mask_is_post_fx.update(app, input_data);
+        self.mask_resolution.update(app, input_data);
+        self.mask_reset.update(app, input_data);
 
         match self.mask_algorithm.output() {
             GenerativeAlgo::Contours => {
-                self.contour_count.update(input_data);
-                self.contour_thickness.update(input_data);
-                self.contour_speed.update(input_data);
+                self.contour_count.update(app, input_data);
+                self.contour_thickness.update(app, input_data);
+                self.contour_speed.update(app, input_data);
             }
             GenerativeAlgo::SmoothLife => {
-                self.smoothlife_resolution.update(input_data);
-                self.smoothlife_speed.update(input_data);
-                self.smoothlife_preset.update(input_data);
+                self.smoothlife_resolution.update(app, input_data);
+                self.smoothlife_speed.update(app, input_data);
+                self.smoothlife_preset.update(app, input_data);
             }
         }
 
-        self.spectrogram_resolution.update(input_data);
-        self.spectrogram_timing.update(input_data);
-        self.spectrogram_view.update(input_data);
+        self.spectrogram_resolution.update(app, input_data);
+        self.spectrogram_timing.update(app, input_data);
+        self.spectrogram_view.update(app, input_data);
 
-        self.reso_bank_scale.update(input_data);
-        self.reso_bank_root_note.update(input_data);
-        self.reso_bank_spread.update(input_data);
-        self.reso_bank_shift.update(input_data);
-        self.reso_bank_inharm.update(input_data);
-        self.reso_bank_pan.update(input_data);
-        self.reso_bank_quantise.update(input_data);
-        self.reso_bank_randomise.update(input_data);
+        self.reso_bank_scale.update(app, input_data);
+        self.reso_bank_root_note.update(app, input_data);
+        self.reso_bank_spread.update(app, input_data);
+        self.reso_bank_shift.update(app, input_data);
+        self.reso_bank_inharm.update(app, input_data);
+        self.reso_bank_pan.update(app, input_data);
+        self.reso_bank_quantise.update(app, input_data);
+        self.reso_bank_randomise.update(app, input_data);
 
-        self.reso_bank_resonator_count.update(input_data);
-        self.reso_bank_cell_count.update(input_data);
-        self.reso_bank_cell_jitter.update(input_data);
-        self.reso_bank_cell_scatter.update(input_data);
+        self.reso_bank_resonator_count.update(app, input_data);
+        self.reso_bank_cell_count.update(app, input_data);
+        self.reso_bank_cell_jitter.update(app, input_data);
+        self.reso_bank_cell_scatter.update(app, input_data);
 
-        self.low_filter_type.update(input_data);
-        self.low_filter_cutoff.update(input_data);
+        self.low_filter_type.update(app, input_data);
+        self.low_filter_cutoff.update(app, input_data);
 
         if self.low_filter_type.enabled() {
-            self.low_filter_gain.update(input_data);
+            self.low_filter_gain.update(app, input_data);
         }
         else {
-            self.low_filter_q.update(input_data);
+            self.low_filter_q.update(app, input_data);
         }
 
-        self.high_filter_type.update(input_data);
-        self.high_filter_cutoff.update(input_data);
+        self.high_filter_type.update(app, input_data);
+        self.high_filter_cutoff.update(app, input_data);
 
         if self.high_filter_type.enabled() {
-            self.high_filter_gain.update(input_data);
+            self.high_filter_gain.update(app, input_data);
         }
         else {
-            self.high_filter_q.update(input_data);
+            self.high_filter_q.update(app, input_data);
         }
 
-        self.dist_amount.update(input_data);
-        self.dist_type.update(input_data);
+        self.dist_amount.update(app, input_data);
+        self.dist_type.update(app, input_data);
 
-        self.pp_delay_time_ms.update(input_data);
-        self.pp_delay_feedback.update(input_data);
-        self.pp_delay_mix.update(input_data);
-        self.pp_delay_tempo_sync.update(input_data);
+        self.pp_delay_time_ms.update(app, input_data);
+        self.pp_delay_feedback.update(app, input_data);
+        self.pp_delay_mix.update(app, input_data);
+        self.pp_delay_tempo_sync.update(app, input_data);
 
-        self.comp_thresh.update(input_data);
-        self.comp_ratio.update(input_data);
-        self.comp_attack.update(input_data);
-        self.comp_release.update(input_data);
+        self.comp_thresh.update(app, input_data);
+        self.comp_ratio.update(app, input_data);
+        self.comp_attack.update(app, input_data);
+        self.comp_release.update(app, input_data);
 
-        self.master_gain.update(input_data);
+        self.master_gain.update(app, input_data);
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {

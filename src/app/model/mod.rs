@@ -77,9 +77,9 @@ pub struct Model {
     pub bank_rect: Rect,
 
     /// A Perlin noise contour generator.
-    pub contours: Option<Arc<RwLock<Contours>>>,
+    pub contours: Option<Arc<RwLock<ContoursGPU>>>,
     /// A SmoothLife simulation.
-    pub smooth_life: Option<Arc<RwLock<SmoothLife>>>,
+    pub smooth_life: Option<Arc<RwLock<SmoothLifeGPU>>>,
     /// The line which shows which column is being used as a spectral mask.
     pub mask_scan_line_pos: f64,
     /// The amount to increment the position of the mask scan line each frame.
@@ -140,7 +140,7 @@ impl Model {
 
         let contours = Arc::new(RwLock::new(contours));
         let smooth_life = Arc::new(RwLock::new(smooth_life));
-        let ctr = Arc::clone(&contours);
+        let ctr_1 = Arc::clone(&contours);
         let sml = Arc::clone(&smooth_life);
         let gen_algo = Arc::clone(&params.mask_algorithm);
 
@@ -150,16 +150,21 @@ impl Model {
             })
             .attach_mask_reset_callback(move |_| match gen_algo.lr() {
                 GenerativeAlgo::Contours => {
-                    if let Ok(mut guard) = ctr.write() {
-                        guard.reset_seed();
+                    if let Ok(guard) = ctr_1.read() {
+                        guard.randomize();
                     }
                 }
                 GenerativeAlgo::SmoothLife => {
                     if let Ok(mut guard) = sml.write() {
-                        guard.reset();
+                        guard.randomize();
                     }
                 }
-            });
+            })
+            .setup_mask_callbacks(
+                Arc::clone(&contours),
+                Arc::clone(&smooth_life),
+                Arc::clone(&params.mask_algorithm),
+            );
 
         Self {
             window,

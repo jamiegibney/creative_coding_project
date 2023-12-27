@@ -235,7 +235,7 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
             || self.is_open
     }
 
-    fn update(&mut self, input: &InputData) {
+    fn update(&mut self, _: &App, input: &InputData) {
         // guard against the mouse already being clicked when entering the
         // menu's bounding rect
         if !self.item_rects[0].contains(input.mouse_pos) {

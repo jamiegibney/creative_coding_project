@@ -78,8 +78,6 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     model.draw_mask_scan_line(draw);
 
-    // outline_rect(&model.mask_rect(), draw, 2.0);
-
     model.ui_components.draw(app, draw, &frame);
 
     // if the frame fails to draw, we'll just ignore it

@@ -73,6 +73,7 @@ pub fn s_curve_linear_centre(input: f64, tension: f64) -> f64 {
 /// whereas positive values produce curves which "skew outwards", like an s-curve.
 ///
 /// `input` and `tension` are clamped between `-1.0` and `1.0`.
+// TODO: this does not work properly, and is essentially x^2.
 pub fn s_curve_round(input: f64, tension: f64) -> f64 {
     let x = input.clamp(-1.0, 1.0);
 

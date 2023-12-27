@@ -10,6 +10,10 @@ use std::cell::RefCell;
 use std::ops::RangeInclusive;
 use std::sync::{Arc, Mutex};
 
+pub mod contours_gpu;
+
+pub use contours_gpu::ContoursGPU;
+
 /// Perlin noise contour line generator. Supports multi-threading.
 pub struct Contours {
     /// Noise generator.
@@ -77,9 +81,10 @@ impl Contours {
         }
     }
 
-    /// Sets the internal noise seed to a random value.
-    pub fn reset_seed(&mut self) {
-        self.noise = Arc::new(self.noise.set_seed(random()));
+    /// Randomizes the internal `z` value.
+    pub fn randomize(&mut self) {
+        // self.noise = Arc::new(self.noise.set_seed(random()));
+        self.z = random_range(-1000.0, 1000.0);
     }
 
     /// Adds the provided range to `self`.
@@ -324,7 +329,6 @@ impl Contours {
     ) -> f64 {
         let mapped = ((noise_value + 1.0) / 2.0) * num_contours as f64;
         let px = mod1(mapped);
-        let alpha = u8::MAX;
 
         let min = *range.start();
         let max = *range.end();
@@ -349,7 +353,7 @@ impl Contours {
 }
 
 impl UIDraw for Contours {
-    fn update(&mut self, input_data: &InputData) {
+    fn update(&mut self, _: &App, input_data: &InputData) {
         // important to update this first, as it ensures the generated image
         // matches what is sampled from the noise generator before this method
         // is called again
