@@ -87,6 +87,7 @@ fn grad(pos: vec2<f32>, t: f32) -> vec2<f32> {
 }
 
 // Perlin noise approximation
+// Source: https://www.shadertoy.com/view/MtcGRl
 fn pseudo_noise3(pos: vec3<f32>) -> f32 {
     let i: vec2<f32> = floor(pos.xy);
     let f: vec2<f32> = pos.xy - i;
