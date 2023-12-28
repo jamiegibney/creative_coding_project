@@ -96,16 +96,16 @@ pub struct UIComponents {
     // f64 (smoother callback)
     high_filter_gain: TextSlider,
 
-    // ### Ping-pong delay
+    // ### Stereo delay
     delay_label: Label,
     /// f64 (smoother callback)
-    pp_delay_time_ms: TextSlider,
+    delay_time_ms: TextSlider,
     /// f64 (smoother callback)
-    pp_delay_feedback: TextSlider,
+    delay_feedback: TextSlider,
     /// f64 (smoother callback)
-    pp_delay_mix: TextSlider,
+    delay_mix: TextSlider,
     /// toggle
-    pp_delay_tempo_sync: Button,
+    delay_is_ping_pong: Button,
 
     // ### Distortion
     dist_label: Label,
@@ -756,8 +756,8 @@ impl UIComponents {
             delay_label: Label::new(ui_layout.delay.label)
                 .with_text("DELAY")
                 .with_text_layout(big_label_layout()),
-            pp_delay_time_ms: {
-                let pp_delay_time_ms = Arc::clone(&params.pp_delay_time_ms);
+            delay_time_ms: {
+                let pp_delay_time_ms = Arc::clone(&params.delay_time_ms);
                 TextSlider::new(0.0, ui_layout.delay.time_ms)
                     .with_label("Time")
                     .with_suffix(" ms")
@@ -767,8 +767,8 @@ impl UIComponents {
                         pp_delay_time_ms.set_target_value(value);
                     })
             },
-            pp_delay_feedback: {
-                let pp_delay_feedback = Arc::clone(&params.pp_delay_feedback);
+            delay_feedback: {
+                let pp_delay_feedback = Arc::clone(&params.delay_feedback);
                 TextSlider::new(0.0, ui_layout.delay.feedback)
                     .with_label("Feedback")
                     .with_suffix(" %")
@@ -777,8 +777,8 @@ impl UIComponents {
                         pp_delay_feedback.set_target_value(value);
                     })
             },
-            pp_delay_mix: {
-                let pp_delay_mix = Arc::clone(&params.pp_delay_mix);
+            delay_mix: {
+                let pp_delay_mix = Arc::clone(&params.delay_mix);
                 TextSlider::new(0.0, ui_layout.delay.mix)
                     .with_label("Mix")
                     .with_default_value(pp_delay_mix.current_value())
@@ -789,12 +789,13 @@ impl UIComponents {
                         format!("{:.0} %", value * 100.0)
                     })
             },
-            pp_delay_tempo_sync: {
-                let pp_delay_tempo_sync =
-                    Arc::clone(&params.pp_delay_tempo_sync);
-                Button::new(ui_layout.delay.tempo_sync)
-                    .with_label("Sync")
-                    .with_callback(move |state| pp_delay_tempo_sync.sr(state))
+            delay_is_ping_pong: {
+                let use_ping_pong =
+                    Arc::clone(&params.use_ping_pong);
+                Button::new(ui_layout.delay.use_ping_pong)
+                    .with_label("Ping-pong")
+                    .with_state(true)
+                    .with_callback(move |state| use_ping_pong.sr(state))
             },
 
             dist_label: Label::new(ui_layout.distortion.label)
@@ -962,9 +963,9 @@ impl UIComponents {
         audio_senders: Arc<AudioMessageSenders>,
     ) -> Self {
         let as_1 = Arc::clone(&audio_senders);
-        self.mask_is_post_fx.set_callback(move |state| {
-            as_1.spectral_mask_post_fx.send(()).unwrap();
-        });
+        // self.mask_is_post_fx.set_callback(move |state| {
+        //     as_1.spectral_mask_post_fx.send(()).unwrap();
+        // });
         let rbp = Arc::new(Mutex::new(ResonatorBankParams::default()));
 
         let rbp_1 = Arc::clone(&rbp);
@@ -995,14 +996,16 @@ impl UIDraw for UIComponents {
                 self.contour_speed.update(app, input_data);
             }
             GenerativeAlgo::SmoothLife => {
+                // unused components
                 // self.smoothlife_resolution.update(app, input_data);
                 // self.smoothlife_speed.update(app, input_data);
                 self.smoothlife_preset.update(app, input_data);
             }
         }
 
-        self.spectrogram_resolution.update(app, input_data);
-        self.spectrogram_timing.update(app, input_data);
+        // unused components
+        // self.spectrogram_resolution.update(app, input_data);
+        // self.spectrogram_timing.update(app, input_data);
         self.spectrogram_view.update(app, input_data);
 
         self.reso_bank_scale.update(app, input_data);
@@ -1042,10 +1045,10 @@ impl UIDraw for UIComponents {
         self.dist_amount.update(app, input_data);
         self.dist_type.update(app, input_data);
 
-        self.pp_delay_time_ms.update(app, input_data);
-        self.pp_delay_feedback.update(app, input_data);
-        self.pp_delay_mix.update(app, input_data);
-        self.pp_delay_tempo_sync.update(app, input_data);
+        self.delay_time_ms.update(app, input_data);
+        self.delay_feedback.update(app, input_data);
+        self.delay_mix.update(app, input_data);
+        self.delay_is_ping_pong.update(app, input_data);
 
         self.comp_thresh.update(app, input_data);
         self.comp_ratio.update(app, input_data);
@@ -1095,6 +1098,7 @@ impl UIDraw for UIComponents {
                 self.contour_speed.draw(app, draw, frame);
             }
             GenerativeAlgo::SmoothLife => {
+                // unused components
                 // self.smoothlife_resolution.draw(app, draw, frame);
                 // self.smoothlife_speed.draw(app, draw, frame);
                 self.smoothlife_preset.draw(app, draw, frame);
@@ -1102,8 +1106,9 @@ impl UIDraw for UIComponents {
         }
         self.mask_algorithm.draw(app, draw, frame); // menu
 
-        self.spectrogram_timing.draw(app, draw, frame);
-        self.spectrogram_resolution.draw(app, draw, frame); // menu
+        // unused components
+        // self.spectrogram_timing.draw(app, draw, frame);
+        // self.spectrogram_resolution.draw(app, draw, frame); // menu
         self.spectrogram_view.draw(app, draw, frame); // menu
 
         self.reso_bank_root_note.draw(app, draw, frame);
@@ -1126,10 +1131,10 @@ impl UIDraw for UIComponents {
         self.dist_amount.draw(app, draw, frame);
         self.dist_type.draw(app, draw, frame); // menu
 
-        self.pp_delay_time_ms.draw(app, draw, frame);
-        self.pp_delay_feedback.draw(app, draw, frame);
-        self.pp_delay_mix.draw(app, draw, frame);
-        self.pp_delay_tempo_sync.draw(app, draw, frame);
+        self.delay_time_ms.draw(app, draw, frame);
+        self.delay_feedback.draw(app, draw, frame);
+        self.delay_mix.draw(app, draw, frame);
+        self.delay_is_ping_pong.draw(app, draw, frame);
 
         self.comp_thresh.draw(app, draw, frame);
         self.comp_ratio.draw(app, draw, frame);

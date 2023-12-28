@@ -71,7 +71,7 @@ pub fn build_audio_system(
         callback_timer_ref,
         sample_rate_ref,
         message_channels: senders,
-    } = build_audio_model(audio_context);
+    } = build_audio_model(audio_context, params);
 
     // setup audio stream
     let audio_host = nannou_audio::Host::new();

@@ -191,6 +191,7 @@ impl RampAtomic {
         self.setup();
     }
 
+    /// Resets the ramp's internal sample rate.
     pub fn reset_sample_rate(&mut self, sample_rate: f64) {
         self.sample_rate = sample_rate;
     }

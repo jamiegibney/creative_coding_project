@@ -21,13 +21,13 @@ pub use eq::*;
 #[allow(clippy::struct_excessive_bools)]
 pub struct UIParams {
     // ### SPECTRAL FILTER ###
-    /// The algorithm to use for the spectral mask.
+    /// The algorithm to use for the spectral filter.
     pub mask_algorithm: Arc<Atomic<GenerativeAlgo>>,
-    /// The speed of the spectral mask scan line.
+    /// The speed of the spectral filter scan line.
     pub mask_scan_line_speed: Arc<AtomicF64>,
     /// Whether the spectral filter is pre- or post-FX.
     pub mask_is_post_fx: Arc<AtomicBool>,
-    /// Whether to use the GPU to compute the generative algorithms.
+    /// The block size of the spectral filter.
     pub mask_resolution: Arc<Atomic<SpectralFilterSize>>,
 
     // CONTOURS ALGORITHMS
@@ -102,15 +102,15 @@ pub struct UIParams {
     /// Whether the high filter is a shelf filter or not.
     pub high_filter_is_shelf: Arc<AtomicBool>,
 
-    // PING-PONG DELAY
-    /// The time between ping-pong delay taps in milliseconds.
-    pub pp_delay_time_ms: Arc<SmootherAtomic<f64>>,
-    /// The ping-pong delay feedback.
-    pub pp_delay_feedback: Arc<SmootherAtomic<f64>>,
-    /// The dry/wet mix for the ping-pong delay.
-    pub pp_delay_mix: Arc<SmootherAtomic<f64>>,
-    /// Whether the ping-pong delay's timing should be tempo-synced.
-    pub pp_delay_tempo_sync: Arc<AtomicBool>,
+    // STEREO DELAY
+    /// The time between delay taps in milliseconds.
+    pub delay_time_ms: Arc<SmootherAtomic<f64>>,
+    /// The delay feedback.
+    pub delay_feedback: Arc<SmootherAtomic<f64>>,
+    /// The dry/wet mix for the delay.
+    pub delay_mix: Arc<SmootherAtomic<f64>>,
+    /// Whether to use ping-pong delay or not.
+    pub use_ping_pong: Arc<AtomicBool>,
 
     // DISTORTION
     pub dist_amount: Arc<SmootherAtomic<f64>>,
@@ -179,10 +179,10 @@ impl Default for UIParams {
             high_filter_gain_db: smoother(0.0),
             high_filter_is_shelf: Arc::new(AtomicBool::new(true)),
 
-            pp_delay_time_ms: smoother(0.35),
-            pp_delay_feedback: smoother(0.75),
-            pp_delay_mix: smoother(0.5),
-            pp_delay_tempo_sync: Arc::new(AtomicBool::new(false)),
+            delay_time_ms: smoother(0.35),
+            delay_feedback: smoother(0.75),
+            delay_mix: smoother(0.5),
+            use_ping_pong: Arc::new(AtomicBool::new(false)),
 
             dist_amount: smoother(0.0),
             dist_type: Arc::new(Atomic::new(DistortionType::default())),
@@ -200,7 +200,7 @@ impl Default for UIParams {
 
 fn smoother(val: f64) -> Arc<SmootherAtomic<f64>> {
     Arc::new(
-        SmootherAtomic::new(0.03, val, unsafe { SAMPLE_RATE })
+        SmootherAtomic::new(70.0, val, unsafe { SAMPLE_RATE })
             .with_smoothing_type(SmoothingType::Linear),
     )
 }

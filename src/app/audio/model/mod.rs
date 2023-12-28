@@ -5,8 +5,10 @@ use std::sync::atomic::Ordering::Relaxed;
 pub mod audio_constructor;
 pub mod builder;
 pub mod components;
+pub mod params;
 pub use builder::*;
 pub use components::*;
+pub use params::AudioParams;
 
 /// When the DSP stops , it will continue to process for this length of time to
 /// allow the audio spectrums to fully relax. After this time has passed, the DSP
@@ -34,6 +36,9 @@ pub struct AudioModel {
 
     /// Message receiving channels.
     pub message_channels: RefCell<AudioMessageReceivers>,
+
+    /// All audio-related parameters linked to the UI.
+    pub params: AudioParams,
 
     /// The audio thread pool, intended for processing the spectrograms
     /// asynchronously.
@@ -93,10 +98,13 @@ impl AudioModel {
 
     pub fn set_idle_timer(&mut self, is_processing: bool) {
         self.data.idle_timer_samples = if is_processing {
-            (self.data.sample_rate.load(Relaxed) * DSP_IDLE_HOLD_TIME_SECS) as u64
-        } else if self.data.idle_timer_samples > 0 {
+            (self.data.sample_rate.load(Relaxed) * DSP_IDLE_HOLD_TIME_SECS)
+                as u64
+        }
+        else if self.data.idle_timer_samples > 0 {
             self.data.idle_timer_samples - 1
-        } else {
+        }
+        else {
             0
         };
     }
@@ -111,7 +119,8 @@ impl AudioModel {
     pub fn current_sample_idx(&self) -> u32 {
         let guard = self.data.callback_time_elapsed.lock().unwrap();
 
-        let samples_exact = guard.elapsed().as_secs_f64() * self.data.sample_rate.load(Relaxed);
+        let samples_exact =
+            guard.elapsed().as_secs_f64() * self.data.sample_rate.load(Relaxed);
 
         drop(guard);
 
@@ -159,12 +168,13 @@ impl AudioModel {
             }
         }
 
-        if let Some(mask_order) = &receivers.spectral_mask_post_fx {
-            if mask_order.try_recv().is_ok() {
-                self.processors.spectral_filter.clear();
-                self.data.spectral_mask_post_fx = !self.data.spectral_mask_post_fx;
-            }
-        }
+        // if let Some(mask_order) = &receivers.spectral_mask_post_fx {
+        //     if mask_order.try_recv().is_ok() {
+        //         self.processors.spectral_filter.clear();
+        //         self.data.spectral_mask_post_fx =
+        //             !self.data.spectral_mask_post_fx;
+        //     }
+        // }
     }
 
     pub fn increment_sample_count(&mut self, buffer_size: u32) {

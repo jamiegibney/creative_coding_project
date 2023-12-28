@@ -175,12 +175,14 @@ impl Default for SpectrogramUILayout {
             pt2(vw_w, MAIN_HEIGHT * 3.0),
         );
 
+        // unused
         let rs_w = main_width_chars(4);
         let reso_rect = Rect::from_xy_wh(
             pt2(-426.0, -364.0 - MAIN_HEIGHT * 1.5),
             pt2(rs_w, MAIN_HEIGHT * 4.0),
         );
 
+        // unused
         let tm_w = main_width_chars(5);
         let time_rect =
             Rect::from_xy_wh(pt2(-16.0, -364.0), pt2(tm_w, MAIN_HEIGHT));
@@ -392,19 +394,28 @@ pub struct DelayUILayout {
     pub time_ms: Rect,
     pub feedback: Rect,
     pub mix: Rect,
-    pub tempo_sync: Rect,
+    pub use_ping_pong: Rect,
 }
 
 impl Default for DelayUILayout {
     fn default() -> Self {
         let label_rect =
             Rect::from_xy_wh(pt2(500.0, 70.0), pt2(120.0, MAIN_HEIGHT));
+
+        let tm_w = main_width_chars(4);
+
+        let mx_w = main_width_chars(3);
+
+        let fb_w = main_width_chars(8);
+
+        let pp_w = main_width_chars(9);
+
         Self {
             label: label_rect,
             time_ms: def_rect(),
             feedback: def_rect(),
             mix: def_rect(),
-            tempo_sync: def_rect(),
+            use_ping_pong: def_rect(),
         }
     }
 }

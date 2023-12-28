@@ -16,7 +16,7 @@ pub struct AudioProcessors {
 
     pub filter_comb: Box<[IirCombFilter; NUM_CHANNELS]>,
     pub delay: Box<[DryWet<Delay>]>,
-    pub ping_pong_delay: Box<DryWet<PingPongDelay>>,
+    pub stereo_delay: Box<DryWet<StereoDelay>>,
 
     pub pre_fx_dc_filter: Box<[DCFilter; NUM_CHANNELS]>,
     pub post_fx_dc_filter: Box<[DCFilter; NUM_CHANNELS]>,
@@ -41,8 +41,7 @@ pub struct AudioGeneration {
 
 pub struct AudioData {
     pub voice_gain: Smoother<f64>,
-    pub master_gain: Smoother<f64>,
-
+    // pub master_gain: Arc<SmootherAtomic<f64>>,
     pub sample_rate: Arc<AtomicF64>,
     pub upsampled_rate: Arc<AtomicF64>,
 
@@ -53,8 +52,7 @@ pub struct AudioData {
     pub is_processing: bool,
     pub idle_timer_samples: u64,
 
-    pub spectral_mask_post_fx: bool,
-
+    // pub spectral_mask_post_fx: bool,
     pub average_load: Vec<f64>,
     pub average_pos: usize,
 
@@ -67,8 +65,7 @@ impl Default for AudioData {
     fn default() -> Self {
         Self {
             voice_gain: Smoother::default(),
-            master_gain: Smoother::default(),
-
+            // master_gain: Arc::new(SmootherAtomic::default()),
             sample_rate: Arc::default(),
             upsampled_rate: Arc::default(),
 
@@ -79,8 +76,7 @@ impl Default for AudioData {
             is_processing: Default::default(),
             idle_timer_samples: Default::default(),
 
-            spectral_mask_post_fx: false,
-
+            // spectral_mask_post_fx: false,
             average_load: Vec::default(),
             average_pos: Default::default(),
 
