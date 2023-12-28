@@ -123,12 +123,14 @@ impl Default for SmoothLifeUILayout {
             pt2(pr_w, MAIN_HEIGHT * 3.0),
         );
 
+        // unused
         let sp_w = main_width_chars(6);
         let speed_rect = Rect::from_xy_wh(
             pt2(128.0 + sp_w / 2.0 + 10.0, 190.0 + MAIN_HEIGHT / 2.0),
             pt2(sp_w, MAIN_HEIGHT),
         );
 
+        // unused
         let rs_w = main_width_chars(3);
         let reso_rect = Rect::from_xy_wh(
             pt2(128.0 + rs_w / 2.0 + 10.0, 50.0 - MAIN_HEIGHT * 2.0),

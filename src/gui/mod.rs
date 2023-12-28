@@ -1,7 +1,6 @@
 pub mod colors;
 pub mod components;
 pub mod draw_traits;
-pub mod mesh;
 mod rdp;
 pub mod spectrum;
 pub mod ui;
