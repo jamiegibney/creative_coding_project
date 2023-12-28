@@ -48,20 +48,22 @@ impl MenuEnum for GenerativeAlgo {
 
 impl MenuEnum for SmoothLifePreset {
     fn num_variants() -> usize {
-        2
+        3
     }
 
     fn idx(&self) -> usize {
         match self {
-            Self::Fluid => 0,
-            Self::Swirl => 1,
+            Self::Jitter => 0,
+            Self::Slime => 1,
+            Self::Corrupt => 2,
         }
     }
 
     fn from_idx(idx: usize) -> Option<Self> {
         match idx {
-            0 => Some(Self::Fluid),
-            1 => Some(Self::Swirl),
+            0 => Some(Self::Jitter),
+            1 => Some(Self::Slime),
+            2 => Some(Self::Corrupt),
             _ => None,
         }
     }

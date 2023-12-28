@@ -1,11 +1,13 @@
 use super::*;
+use crate::app::audio::AudioMessageSenders;
+use crate::dsp::ResonatorBankParams;
 use crate::generative::{ContoursGPU, SmoothLifeGPU};
 use crate::{app::*, fonts::*};
 use atomic::Atomic;
 use nannou::prelude::*;
 use nannou::text::{Font, Justify, Layout};
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 pub struct UIComponents {
     // ### SPECTRAL FILTER ###
@@ -336,7 +338,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    .with_output_range(0.1..=0.9)
+                    .with_output_range(1.0..=10.0)
                     .with_value_chars(4)
                     .with_suffix(" x")
                     .with_default_value(smoothlife_speed.lr())
@@ -928,22 +930,49 @@ impl UIComponents {
         let ctr_upper = ctr.upper_arc();
         let ctr_count = ctr.num_contours_arc();
 
-        let algo_1 = Arc::clone(&algo);
         self.contour_speed.set_callback(move |_, val| {
-            if matches!(algo_1.lr(), GenerativeAlgo::Contours) {
-                ctr_speed.sr(val as f32);
-            }
+            ctr_speed.sr(val as f32);
         });
-        let algo_2 = Arc::clone(&algo);
+
         self.contour_count.set_callback(move |_, val| {
-            if matches!(algo_2.lr(), GenerativeAlgo::Contours) {
-                ctr_count.sr(val as u32);
-            }
+            ctr_count.sr(val as u32);
         });
-        let algo_3 = Arc::clone(&algo);
+
         self.contour_thickness.set_callback(move |_, val| {
-            if matches!(algo_3.lr(), GenerativeAlgo::Contours) {
-                ctr_upper.sr(val as f32);
+            ctr_upper.sr(val as f32);
+        });
+
+        let sml = smooth_life.read().unwrap();
+        let sml_speed = sml.speed_arc();
+        let sml_preset = sml.preset_arc();
+
+        self.smoothlife_speed.set_callback(move |_, val| {
+            sml_speed.sr(val as f32);
+        });
+
+        self.smoothlife_preset.set_callback(move |selected| {
+            sml_preset.sr(selected);
+        });
+
+        self
+    }
+
+    pub fn setup_audio_channels(
+        mut self,
+        audio_senders: Arc<AudioMessageSenders>,
+    ) -> Self {
+        let as_1 = Arc::clone(&audio_senders);
+        self.mask_is_post_fx.set_callback(move |state| {
+            as_1.spectral_mask_post_fx.send(()).unwrap();
+        });
+        let rbp = Arc::new(Mutex::new(ResonatorBankParams::default()));
+
+        let rbp_1 = Arc::clone(&rbp);
+        let as_2 = Arc::clone(&audio_senders);
+        self.reso_bank_root_note.set_callback(move |_, val| {
+            if let Ok(mut guard) = rbp_1.lock() {
+                guard.root_note = val;
+                as_2.resonator_bank_params.send(guard.clone()).unwrap();
             }
         });
 
@@ -966,8 +995,8 @@ impl UIDraw for UIComponents {
                 self.contour_speed.update(app, input_data);
             }
             GenerativeAlgo::SmoothLife => {
-                self.smoothlife_resolution.update(app, input_data);
-                self.smoothlife_speed.update(app, input_data);
+                // self.smoothlife_resolution.update(app, input_data);
+                // self.smoothlife_speed.update(app, input_data);
                 self.smoothlife_preset.update(app, input_data);
             }
         }
@@ -1066,8 +1095,8 @@ impl UIDraw for UIComponents {
                 self.contour_speed.draw(app, draw, frame);
             }
             GenerativeAlgo::SmoothLife => {
-                self.smoothlife_resolution.draw(app, draw, frame);
-                self.smoothlife_speed.draw(app, draw, frame);
+                // self.smoothlife_resolution.draw(app, draw, frame);
+                // self.smoothlife_speed.draw(app, draw, frame);
                 self.smoothlife_preset.draw(app, draw, frame);
             }
         }

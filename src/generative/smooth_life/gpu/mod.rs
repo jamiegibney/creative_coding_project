@@ -2,6 +2,7 @@
 
 use crate::app::SmoothLifePreset;
 use crate::prelude::*;
+use atomic::Atomic;
 use atomic_float::AtomicF32;
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::prelude::*;
@@ -12,6 +13,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicU32},
     Arc, Mutex,
 };
+use std::time::Duration;
 
 mod state;
 use state::*;
@@ -50,7 +52,7 @@ impl Compute {
         });
 
         // state buffer
-        let sml_state = SmoothLifeState::default(w, h);
+        let sml_state = SmoothLifeState::slime(w, h);
         let sml_state_bytes = sml_state.as_bytes();
         let state_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("smoothlife data buffer"),
@@ -123,7 +125,7 @@ impl SmoothLifeGPU {
         let cs_mod = device.create_shader_module(&cs_desc);
 
         Self {
-            state_gpu: SmoothLifeState::default(w, h),
+            state_gpu: SmoothLifeState::slime(w, h),
             state_atomic: SmoothLifeStateAtomic::default(),
             compute: Compute::new(w, h, device, &cs_mod),
             rect,
@@ -163,27 +165,51 @@ impl SmoothLifeGPU {
         self.state_atomic.preset.sr(preset);
     }
 
+    pub fn preset_arc(&self) -> Arc<Atomic<SmoothLifePreset>> {
+        Arc::clone(&self.state_atomic.preset)
+    }
+
+    pub fn speed_arc(&self) -> Arc<AtomicF32> {
+        Arc::clone(&self.state_atomic.speed)
+    }
+
     fn update_gpu_state(&mut self, delta_time: f32) {
         let w = self.rect.w() as u32;
         let h = self.rect.h() as u32;
 
         if self.state_atomic.should_update_preset.lr() {
             self.state_gpu = match self.state_atomic.preset.lr() {
-                SmoothLifePreset::Fluid => SmoothLifeState::fluid(w, h),
-                SmoothLifePreset::Swirl => SmoothLifeState::default(w, h),
+                SmoothLifePreset::Jitter => {
+                    self.state_atomic.ra.sr(15.0);
+                    self.state_atomic.speed.sr(9.0);
+                    SmoothLifeState::flow(w, h) 
+                },
+                SmoothLifePreset::Slime => {
+                    self.state_atomic.ra.sr(26.0);
+                    self.state_atomic.speed.sr(5.0);
+                    SmoothLifeState::slime(w, h) 
+                },
+                SmoothLifePreset::Corrupt => {
+                    self.state_atomic.ra.sr(40.0);
+                    self.state_atomic.speed.sr(12.0);
+                    SmoothLifeState::corrupt(w, h)
+                }
             }
         }
 
-        // if self.state_atomic.should_reset.lr() {
-        //     self.state_gpu.should_randomize = 1;
-        //     self.state_atomic.should_reset.sr(false);
-        // }
+        self.state_gpu.should_randomize = 0;
 
+        if self.state_atomic.should_reset.lr() {
+            self.state_gpu.should_randomize = 1;
+            self.state_atomic.should_reset.sr(false);
+        }
+
+        let ra = self.state_atomic.ra.lr();
         self.state_gpu = SmoothLifeState {
-            ra: self.state_atomic.ra.lr(),
+            ra,
+            ri: ra / 3.0,
             dt: self.state_atomic.speed.lr(),
             delta_time,
-            should_randomize: 1,
             ..self.state_gpu
         };
     }

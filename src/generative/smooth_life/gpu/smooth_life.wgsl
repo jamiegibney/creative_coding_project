@@ -65,14 +65,16 @@ var<workgroup> grid_main: Grid;
 fn set_grid_main_at(x: u32, y: u32, value: f32) {
     let h = u32(256);
 
-    grid_main.data[y * h + x] = value;
+    // grid_main.data[y * h + x] = value;
+    output.data[y * h + x] = value;
 
     return;
 }
 
 fn get_grid_main_at(x: u32, y: u32) -> f32 {
     let h = u32(256);
-    return grid_main.data[y * h + x];
+    // return grid_main.data[y * h + x];
+    return output.data[y * h + x];
 }
 
 fn set_grid_diff_at(x: u32, y: u32, value: f32) {
@@ -107,7 +109,7 @@ fn sigmoid_m(x: f32, y: f32, m: f32) -> f32 {
 
 // Source: https://arxiv.org/abs/1111.1567
 fn transition(n: f32, m: f32) -> f32 {
-    return sigmoid_n(n, sigmoid_m(state.b1, state.d1, m), sigmoid_m(state.b2, state.d2, n));
+    return sigmoid_n(n, sigmoid_m(state.b1, state.d1, m), sigmoid_m(state.b2, state.d2, m));
 }
 
 fn compute_diff(x: u32, y: u32) {
@@ -129,7 +131,7 @@ fn compute_diff(x: u32, y: u32) {
             let rx = emod(x + u32(dx), w);
             let ry = emod(y + u32(dy), h);
 
-            let d = dx + dx + dy * dy;
+            let d = dx * dx + dy * dy;
 
             if (d <= ri * ri) {
                 m = m + get_grid_main_at(rx, ry);
@@ -152,16 +154,11 @@ fn compute_diff(x: u32, y: u32) {
 }
 
 fn apply_diff(x: u32, y: u32, dt: f32) {
-    set_grid_main_at(x, y, clamp(dt * get_grid_diff_at(x, y) + get_grid_main_at(x, y) + 0.002, 0.0, 1.0));
-    return;
-}
+    let diff = get_grid_diff_at(x, y);
+    let main = get_grid_main_at(x, y);
+    let val = dt * diff + main + 0.002;
 
-fn randomize(x: u32, y: u32) {
-    let rand = hash2(vec2<f32>(f32(x), f32(y)));
-
-    set_grid_main_at(x, y, rand);
-    set_grid_diff_at(x, y, rand);
-
+    set_grid_main_at(x, y, clamp(val, 0.0, 1.0));
     return;
 }
 
@@ -173,16 +170,21 @@ fn main([[builtin(global_invocation_id)]] id: vec3<u32>) {
     let y = u32(id.y);
 
     let dt = state.dt * state.delta_time;
+    // var foo = 32432.0;
 
-    if (state.should_randomize >= u32(1)) {
-        randomize(x, y);
-    } 
-    // else {
-    //     compute_diff(x, y);
-    //     apply_diff(x, y, dt);
+    // for (var n = 0.0; n < scale_to(hash2(uv), 1.0, 20.0); n = n + 0.001) {
+    //     foo = sqrt(foo);
     // }
 
-    output.data[id.y * state.width + id.x] = get_grid_main_at(x, y);
+    // let bar = exp(foo);
+
+    var pxl: f32;
+    if (state.should_randomize >= u32(1)) {
+        set_grid_main_at(x, y, hash2(uv * 256.0));
+    } else {
+        compute_diff(x, y);
+        apply_diff(x, y, dt);
+    }
 
     return;
 }

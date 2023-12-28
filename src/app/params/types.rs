@@ -5,9 +5,9 @@ use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum GenerativeAlgo {
+#[default]
     /// A perlin noise contour-line generator.
     Contours,
-    #[default]
     /// A [SmoothLife](https://arxiv.org/abs/1111.1567) simulation.
     SmoothLife,
 }
@@ -26,17 +26,17 @@ unsafe impl NoUninit for GenerativeAlgo {}
 #[derive(Clone, Copy, Debug, Default)]
 pub enum SmoothLifePreset {
     #[default]
-    /// A simulation which quickly stabilises and smoothly scrolls like flowing fluid.
-    Fluid,
-    /// A simulation which stabilises into a turbulent, flowing state.
-    Swirl,
+    Jitter,
+    Slime,
+    Corrupt,
 }
 
 impl Display for SmoothLifePreset {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Fluid => write!(f, "Fluid"),
-            Self::Swirl => write!(f, "Swirl"),
+            Self::Jitter => write!(f, "Jitter"),
+            Self::Slime => write!(f, "Slime"),
+            Self::Corrupt => write!(f, "Corrupt"),
         }
     }
 }

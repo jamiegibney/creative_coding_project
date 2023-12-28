@@ -26,18 +26,18 @@ pub struct SmoothLifeState {
 }
 
 impl SmoothLifeState {
-    pub fn fluid(w: u32, h: u32) -> Self {
+    pub fn flow(w: u32, h: u32) -> Self {
         Self {
             ri: 10.0 / 3.0,
             ra: 10.0,
 
-            alpha_n: 0.028,
-            alpha_m: 0.147,
+            alpha_n: 0.033,
+            alpha_m: -7.947,
 
-            b1: 0.238,
-            b2: 0.465,
+            b1: -0.138,
+            b2: 0.265,
 
-            d1: 0.267,
+            d1: 0.167,
             d2: 0.445,
 
             dt: 2.0,
@@ -49,7 +49,29 @@ impl SmoothLifeState {
         }
     }
 
-    pub fn default(w: u32, h: u32) -> Self {
+    pub fn slime(w: u32, h: u32) -> Self {
+        Self {
+            ri: 3.667,
+            ra: 11.0,
+
+            alpha_n: 0.198,
+            alpha_m: 0.347,
+
+            b1: 0.078,
+            b2: 0.265,
+            d2: 0.845,
+            d1: 0.167,
+
+            dt: 2.0,
+            delta_time: 0.0,
+
+            width: w,
+            height: h,
+            should_randomize: 1,
+        }
+    }
+
+    pub fn corrupt(w: u32, h: u32) -> Self {
         Self {
             ri: 3.667,
             ra: 11.0,
@@ -87,8 +109,8 @@ pub struct SmoothLifeStateAtomic {
 impl Default for SmoothLifeStateAtomic {
     fn default() -> Self {
         Self {
-            speed: Arc::new(AtomicF32::new(0.0)),
-            ra: Arc::new(AtomicF32::new(11.0)),
+            speed: Arc::new(AtomicF32::new(8.0)),
+            ra: Arc::new(AtomicF32::new(32.0)),
             preset: Arc::new(Atomic::new(SmoothLifePreset::default())),
             should_reset: Arc::new(AtomicBool::new(true)),
             should_update_preset: AtomicBool::new(true),

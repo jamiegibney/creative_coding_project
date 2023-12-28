@@ -164,7 +164,8 @@ impl Model {
                 Arc::clone(&contours),
                 Arc::clone(&smooth_life),
                 Arc::clone(&params.mask_algorithm),
-            );
+            )
+            .setup_audio_channels(Arc::clone(&audio_senders));
 
         Self {
             window,

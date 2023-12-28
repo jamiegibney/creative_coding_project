@@ -117,10 +117,10 @@ pub struct SmoothLifeUILayout {
 
 impl Default for SmoothLifeUILayout {
     fn default() -> Self {
-        let pr_w = main_width_chars(5);
+        let pr_w = main_width_chars(7);
         let preset_rect = Rect::from_xy_wh(
-            pt2(128.0 + pr_w / 2.0 + 10.0, 120.0),
-            pt2(pr_w, MAIN_HEIGHT * 2.0),
+            pt2(128.0 + pr_w / 2.0 + 10.0, 190.0 - MAIN_HEIGHT / 2.0),
+            pt2(pr_w, MAIN_HEIGHT * 3.0),
         );
 
         let sp_w = main_width_chars(6);
@@ -221,7 +221,7 @@ impl Default for ResoBankUILayout {
 
         let reset_rect = Rect::from_xy_wh(
             pt2(-412.0, 28.0),
-            pt2(main_width_chars(14), MAIN_HEIGHT),
+            pt2(main_width_chars(15), MAIN_HEIGHT),
         );
 
         let sh_w = main_width_chars(8);
