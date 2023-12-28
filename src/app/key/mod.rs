@@ -10,14 +10,6 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             .unwrap(),
         Key::Z => model.octave.decrease(),
         Key::X => model.octave.increase(),
-        Key::C => model
-            .audio_senders
-            .resonator_bank_params
-            .send(crate::dsp::ResonatorBankParams {
-                root_note: scale(random_f64(), 40.0, 70.0).round(),
-                ..model.reso_bank_params
-            })
-            .unwrap(),
         Key::B => model
             .audio_senders
             .resonator_bank_reset_pitch

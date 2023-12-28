@@ -402,20 +402,28 @@ impl Default for DelayUILayout {
         let label_rect =
             Rect::from_xy_wh(pt2(500.0, 70.0), pt2(120.0, MAIN_HEIGHT));
 
-        let tm_w = main_width_chars(4);
+        let tm_w = main_width_chars(8);
+        let time_rect =
+            Rect::from_xy_wh(pt2(440.0, 8.0), pt2(tm_w, MAIN_HEIGHT));
 
-        let mx_w = main_width_chars(3);
+        let pp_w = main_width_chars(3);
+        let ping_rect =
+            Rect::from_xy_wh(pt2(440.0, -70.0), pt2(pp_w, MAIN_HEIGHT));
 
-        let fb_w = main_width_chars(8);
+        let fb_w = main_width_chars(7);
+        let feed_rect =
+            Rect::from_xy_wh(pt2(570.0, 8.0), pt2(fb_w, MAIN_HEIGHT));
 
-        let pp_w = main_width_chars(9);
+        let mx_w = main_width_chars(7);
+        let mix_rect =
+            Rect::from_xy_wh(pt2(570.0, -70.0), pt2(mx_w, MAIN_HEIGHT));
 
         Self {
             label: label_rect,
-            time_ms: def_rect(),
-            feedback: def_rect(),
-            mix: def_rect(),
-            use_ping_pong: def_rect(),
+            time_ms: time_rect,
+            feedback: feed_rect,
+            mix: mix_rect,
+            use_ping_pong: ping_rect,
         }
     }
 }
@@ -430,7 +438,18 @@ impl Default for DistortionUILayout {
     fn default() -> Self {
         let label_rect =
             Rect::from_xy_wh(pt2(500.0, 230.0), pt2(120.0, MAIN_HEIGHT));
-        Self { label: label_rect, amount: def_rect(), dist_type: def_rect() }
+
+        let am_w = main_width_chars(7);
+        let amount_rect =
+            Rect::from_xy_wh(pt2(442.0, 165.0), pt2(am_w, MAIN_HEIGHT));
+
+        let ty_w = main_width_chars(5);
+        let type_rect = Rect::from_xy_wh(
+            pt2(572.0, 165.0 - MAIN_HEIGHT * 2.0),
+            pt2(ty_w, MAIN_HEIGHT * 5.0),
+        );
+
+        Self { label: label_rect, amount: amount_rect, dist_type: type_rect }
     }
 }
 
@@ -446,12 +465,29 @@ impl Default for CompressionUILayout {
     fn default() -> Self {
         let label_rect =
             Rect::from_xy_wh(pt2(500.0, -180.0), pt2(120.0, MAIN_HEIGHT));
+
+        let th_w = main_width_chars(8);
+        let thrs_rect =
+            Rect::from_xy_wh(pt2(435.0, -250.0), pt2(th_w, MAIN_HEIGHT));
+
+        let rt_w = main_width_chars(6);
+        let ratio_rect =
+            Rect::from_xy_wh(pt2(565.0, -250.0), pt2(rt_w, MAIN_HEIGHT));
+
+        let at_w = main_width_chars(8);
+        let att_rect =
+            Rect::from_xy_wh(pt2(435.0, -320.0), pt2(at_w, MAIN_HEIGHT));
+
+        let rl_w = main_width_chars(8);
+        let rel_rect =
+            Rect::from_xy_wh(pt2(565.0, -320.0), pt2(rl_w, MAIN_HEIGHT));
+
         Self {
             label: label_rect,
-            threshold: def_rect(),
-            ratio: def_rect(),
-            attack: def_rect(),
-            release: def_rect(),
+            threshold: thrs_rect,
+            ratio: ratio_rect,
+            attack: att_rect,
+            release: rel_rect,
         }
     }
 }

@@ -1,6 +1,7 @@
 //! SmoothLife generator run on the GPU.
 
 use crate::app::SmoothLifePreset;
+use crate::dsp::SpectralMask;
 use crate::prelude::*;
 use atomic::Atomic;
 use atomic_float::AtomicF32;
@@ -182,13 +183,13 @@ impl SmoothLifeGPU {
                 SmoothLifePreset::Jitter => {
                     self.state_atomic.ra.sr(15.0);
                     self.state_atomic.speed.sr(9.0);
-                    SmoothLifeState::flow(w, h) 
-                },
+                    SmoothLifeState::flow(w, h)
+                }
                 SmoothLifePreset::Slime => {
                     self.state_atomic.ra.sr(26.0);
                     self.state_atomic.speed.sr(5.0);
-                    SmoothLifeState::slime(w, h) 
-                },
+                    SmoothLifeState::slime(w, h)
+                }
                 SmoothLifePreset::Corrupt => {
                     self.state_atomic.ra.sr(40.0);
                     self.state_atomic.speed.sr(12.0);
@@ -317,17 +318,21 @@ impl UIDraw for SmoothLifeGPU {
 }
 
 impl DrawMask for SmoothLifeGPU {
-    fn column_to_mask(&self, mask: &mut crate::dsp::SpectralMask, x: f64) {
+    fn column_to_mask(
+        &self,
+        mask: &mut crate::dsp::SpectralMask,
+        mask_len: usize,
+        x: f64,
+    ) {
         if !(0.0..=1.0).contains(&x) {
             return;
         }
 
         let sr = unsafe { SAMPLE_RATE };
-        let num_bins = mask.len();
 
         if let Ok(guard) = self.image_buf.lock() {
-            for i in 1..num_bins {
-                let bin_hz = mask.bin_freq(i, sr);
+            for i in 1..mask_len {
+                let bin_hz = SpectralMask::bin_freq(i, mask_len, sr);
                 let y = 1.0 - freq_log_norm(bin_hz, 20.0, sr);
                 let x_px = (x * 256.0) as u32;
                 let y_px = (y * 256.0) as u32;

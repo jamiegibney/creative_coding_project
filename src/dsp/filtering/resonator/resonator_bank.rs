@@ -10,6 +10,8 @@ pub struct ResonatorBankParams {
     pub root_note: f64,
     pub scale: Scale,
 
+    /// How much panning is applied to each resonator.
+    pub panning: f64,
     /// Whether each resonator's left and right filter should have the same pitch.
     // stereo_link: bool,
     /// Whether each resonator's pitch should be quantised to the musical scale.
@@ -43,15 +45,16 @@ impl ResonatorBank {
 
         let mut s = Self {
             resonators: vec![
-                AudioUtility::new(StereoWrapper::from_single(TwoPoleResonator::new(
-                    sample_rate
-                )));
+                AudioUtility::new(StereoWrapper::from_single(
+                    TwoPoleResonator::new(sample_rate)
+                ));
                 max_num_resonators
             ],
             original_pitches: vec![0.0; max_num_resonators],
             active_pitches: vec![smoother; max_num_resonators],
             // stereo_link: true,
             params: ResonatorBankParams {
+                panning: 1.0,
                 freq_shift: 0.0,
                 freq_spread: 0.0,
                 root_note: 69.0,
@@ -76,7 +79,9 @@ impl ResonatorBank {
     }
 
     pub fn set_num_resonators(&mut self, num_resonators: usize) {
-        assert!(num_resonators <= self.resonators.capacity() && num_resonators != 0);
+        assert!(
+            num_resonators <= self.resonators.capacity() && num_resonators != 0
+        );
         unsafe {
             self.resonators.set_len(num_resonators);
             self.active_pitches.set_len(num_resonators);
@@ -96,15 +101,22 @@ impl ResonatorBank {
         self.set_active_pitches();
     }
 
-    pub fn randomise_pan(&mut self, max_panning: f64) {
+    pub fn randomise_pan(&mut self) {
         self.resonators.iter_mut().for_each(|res| {
-            res.set_pan(2.0f64.mul_add(random_f64(), -1.0) * max_panning.clamp(0.0, 1.0));
+            res.set_pan(
+                2.0f64.mul_add(random_f64(), -1.0)
+                    * self.params.panning.clamp(0.0, 1.0),
+            );
         });
     }
 
     pub fn quantise_to_scale(&mut self, quantise_to_scale: bool) {
         self.params.quantise_to_scale = quantise_to_scale;
         self.set_active_pitches();
+    }
+
+    pub fn set_max_panning(&mut self, max_panning: f64) {
+        self.params.panning = max_panning.clamp(0.0, 1.0);
     }
 
     /// When `spread` is `0.0`, all notes are constrained to 1 octave of range.
@@ -176,8 +188,11 @@ impl ResonatorBank {
                         .scale
                         .quantise_to_scale(original, self.params.root_note);
 
-                    p.set_target_value(lerp(quantised, original, self.params.inharm));
-                } else {
+                    p.set_target_value(lerp(
+                        quantised, original, self.params.inharm,
+                    ));
+                }
+                else {
                     p.set_target_value(original);
                 }
             });

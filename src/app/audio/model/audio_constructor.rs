@@ -59,38 +59,50 @@ fn audio_processors(
     let mut waveshaper = [Waveshaper::new(), Waveshaper::new()];
 
     for ws in &mut waveshaper {
-        ws.set_curve(0.0);
-        ws.set_asymmetric(true);
-        ws.set_drive(0.3);
+        ws.set_curve(ui_params.dist_amount.current_value());
+        ws.set_asymmetric(false);
+        ws.set_drive(1.0);
+        ws.set_xfer_function(|input, _| input);
     }
 
-    let mut spectral_filter = SpectralFilter::new(NUM_CHANNELS, 1 << 14);
-    spectral_filter.set_block_size(DEFAULT_SPECTRAL_BLOCK_SIZE);
+    let mut spectral_filter =
+        SpectralFilter::new(NUM_CHANNELS, MAX_SPECTRAL_BLOCK_SIZE);
+    spectral_filter.set_block_size(ui_params.mask_resolution.lr().value());
 
     let mut filter_lp = st_bq();
-    for i in 0..2 {
-        filter_lp[i].set_type(FilterType::Lowpass);
-        filter_lp[i].set_freq(4000.0);
-        filter_lp[i].set_q(BUTTERWORTH_Q);
-    }
-
+    let mut filter_ls = st_bq();
     let mut filter_hp = st_bq();
-    for i in 0..2 {
-        filter_hp[i].set_type(FilterType::Highpass);
-        filter_hp[i].set_freq(500.0);
-        filter_hp[i].set_q(BUTTERWORTH_Q);
+    let mut filter_hs = st_bq();
+
+    for ch in 0..2 {
+        filter_lp[ch].set_type(FilterType::Lowpass);
+        filter_lp[ch].set_freq(ui_params.high_filter_cutoff.current_value());
+        filter_lp[ch].set_q(ui_params.high_filter_q.current_value());
+
+        filter_hp[ch].set_type(FilterType::Highpass);
+        filter_hp[ch].set_freq(ui_params.low_filter_cutoff.current_value());
+        filter_hp[ch].set_q(ui_params.low_filter_q.current_value());
+
+        filter_ls[ch].set_type(FilterType::Lowshelf);
+        filter_ls[ch].set_freq(ui_params.low_filter_cutoff.current_value());
+        filter_ls[ch].set_gain(ui_params.low_filter_gain_db.current_value());
+
+        filter_hs[ch].set_type(FilterType::Highshelf);
+        filter_hs[ch].set_freq(ui_params.high_filter_cutoff.current_value());
+        filter_hs[ch].set_gain(ui_params.high_filter_gain_db.current_value());
     }
 
-    let mut resonator_bank = ResonatorBank::new(upsampled_rate, 256);
-    resonator_bank.set_num_resonators(16);
-    resonator_bank.set_scale(Scale::MajPentatonic);
-    resonator_bank.set_root_note(70.0);
-    resonator_bank.set_inharm(0.3);
-    resonator_bank.set_freq_spread(0.6);
-    resonator_bank.set_freq_shift(-8.0);
-    resonator_bank.quantise_to_scale(true);
-    resonator_bank.randomise_pan(1.0);
+    let mut resonator_bank = ResonatorBank::new(upsampled_rate, 64);
+    resonator_bank
+        .set_num_resonators(ui_params.reso_bank_resonator_count.lr() as usize);
+    resonator_bank.set_scale(ui_params.reso_bank_scale.lr());
+    resonator_bank.set_root_note(ui_params.reso_bank_root_note.lr() as f64);
+    resonator_bank.set_inharm(ui_params.reso_bank_inharm.current_value());
+    resonator_bank.set_freq_spread(ui_params.reso_bank_spread.current_value());
+    resonator_bank.set_freq_shift(ui_params.reso_bank_shift.current_value());
+    resonator_bank.quantise_to_scale(ui_params.reso_bank_quantise.lr());
     resonator_bank.randomise_resonator_pitches();
+
     let mut resonator_bank = DryWet::new(resonator_bank);
     resonator_bank.set_mix_equal_power(0.99);
 
@@ -105,26 +117,18 @@ fn audio_processors(
     delay.set_mix_equal_power(0.1);
 
     let mut st_delay = StereoDelay::new(1.0, upsampled_rate)
-        .with_delay_time(0.35)
-        .with_ping_pong(true);
-    st_delay.set_feedback_amount(0.75);
+        .with_delay_time(ui_params.delay_time_ms.current_value() * 0.001)
+        .with_ping_pong(ui_params.use_ping_pong.lr());
+    st_delay.set_feedback_amount(ui_params.delay_feedback.current_value());
 
     let mut stereo_delay = DryWet::new(st_delay);
-    stereo_delay.set_mix_equal_power(0.5);
+    stereo_delay.set_mix_equal_power(ui_params.delay_mix.current_value());
 
-    let mut high_shelf = BiquadFilter::new(upsampled_rate);
-    high_shelf.set_q(BUTTERWORTH_Q);
-    high_shelf.set_params(&BiquadParams {
-        freq: 800.0,
-        gain: 6.0,
-        q: BUTTERWORTH_Q,
-        filter_type: FilterType::Highshelf,
-    });
-
-    let mut filter_hs = st_bq();
+    // tone-shaping filters
+    let mut filter_hs_2 = st_bq();
     let mut filter_peak = st_bq();
     for i in 0..2 {
-        filter_hs[i].set_params(&BiquadParams {
+        filter_hs_2[i].set_params(&BiquadParams {
             freq: 3200.0,
             gain: 2.0,
             q: BUTTERWORTH_Q,
@@ -138,10 +142,21 @@ fn audio_processors(
         });
     }
 
+    let mut compressor = Compressor::new(upsampled_rate);
+    compressor.set_threshold_level_db(ui_params.comp_thresh.current_value());
+    compressor.set_ratio(ui_params.comp_ratio.current_value());
+    compressor.set_attack_time_ms(ui_params.comp_attack_ms.current_value());
+    compressor.set_release_time_ms(ui_params.comp_release_ms.current_value());
+    compressor.set_knee_width(5.0);
+    compressor.use_rms(false);
+
     AudioProcessors {
         filter_lp,
+        filter_ls,
         filter_hp,
         filter_hs,
+
+        filter_hs_2,
         filter_peak: st_bq(),
         filter_peak_post: st_bq(),
         filter_comb: Box::new([comb.clone(), comb]),
@@ -161,6 +176,9 @@ fn audio_processors(
 
         spectral_filter,
         waveshaper: Box::new(waveshaper),
+
+        compressor: Box::new(compressor),
+
         oversamplers: vec![
             Oversampler::new(
                 MAX_BUFFER_SIZE, MAX_OVERSAMPLING_FACTOR, 3
@@ -197,9 +215,18 @@ fn audio_data(
         idle_timer_samples: 0,
         average_load: vec![0.0; DSP_LOAD_AVERAGING_SAMPLES],
         average_pos: 0,
+        distortion_algorithm: ui_params.dist_type.lr(),
         sample_timer: 0,
         callback_time_elapsed: Arc::new(Mutex::new(std::time::Instant::now())),
-        // spectral_mask_post_fx: false,
+
+        spectral_mask_post_fx: ui_params.mask_is_post_fx.lr(),
+        spectral_filter_size: ui_params.mask_resolution.lr().value(),
+
+        reso_bank_scale: ui_params.reso_bank_scale.lr(),
+        reso_bank_root_note: ui_params.reso_bank_root_note.lr() as f64,
+
+        high_filter_is_shelf: ui_params.high_filter_is_shelf.lr(),
+        low_filter_is_shelf: ui_params.low_filter_is_shelf.lr(),
     }
 }
 

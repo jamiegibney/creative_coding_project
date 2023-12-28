@@ -60,13 +60,13 @@ pub struct UIParams {
     /// The root note of the resonator bank.
     pub reso_bank_root_note: Arc<AtomicU8>,
     /// The frequency spread (range) of each resonator.
-    pub reso_bank_spread: Arc<AtomicF64>,
+    pub reso_bank_spread: Arc<SmootherAtomic<f64>>,
     /// The frequency shift of each resonator.
-    pub reso_bank_shift: Arc<AtomicF64>,
+    pub reso_bank_shift: Arc<SmootherAtomic<f64>>,
     /// How much each resonator's pitch skews towards its original pitch.
-    pub reso_bank_inharm: Arc<AtomicF64>,
+    pub reso_bank_inharm: Arc<SmootherAtomic<f64>>,
     /// How much panning may be applied to each resonator.
-    pub reso_bank_pan: Arc<AtomicF64>,
+    pub reso_bank_pan: Arc<SmootherAtomic<f64>>,
     /// Whether the resonators should quantise their pitch to a scale.
     pub reso_bank_quantise: Arc<AtomicBool>,
 
@@ -113,15 +113,22 @@ pub struct UIParams {
     pub use_ping_pong: Arc<AtomicBool>,
 
     // DISTORTION
+    /// The "amount" of distortion.
     pub dist_amount: Arc<SmootherAtomic<f64>>,
+    /// The distortion algorithm.
     pub dist_type: Arc<Atomic<DistortionType>>,
 
     // COMPRESSION
+    /// Compression threshold in decibels.
     pub comp_thresh: Arc<SmootherAtomic<f64>>,
+    /// Compression ratio.
     pub comp_ratio: Arc<SmootherAtomic<f64>>,
+    /// Compression attack time in milliseconds.
     pub comp_attack_ms: Arc<SmootherAtomic<f64>>,
+    /// Compression release time in milliseconds.
     pub comp_release_ms: Arc<SmootherAtomic<f64>>,
 
+    /// Master gain level in decibels.
     pub master_gain: Arc<SmootherAtomic<f64>>,
     // // EQ
     // /// The parameters for the three-band EQ.
@@ -158,10 +165,10 @@ impl Default for UIParams {
 
             reso_bank_scale: Arc::new(Atomic::new(Scale::default())),
             reso_bank_root_note: Arc::new(AtomicU8::new(69)), // A4 (440 Hz)
-            reso_bank_spread: Arc::new(AtomicF64::new(0.5)),
-            reso_bank_shift: Arc::new(AtomicF64::new(0.0)),
-            reso_bank_inharm: Arc::new(AtomicF64::new(0.3)),
-            reso_bank_pan: Arc::new(AtomicF64::new(1.0)),
+            reso_bank_spread: smoother(0.5),
+            reso_bank_shift: smoother(0.0),
+            reso_bank_inharm: smoother(0.3),
+            reso_bank_pan: smoother(1.0),
             reso_bank_quantise: Arc::new(AtomicBool::new(true)),
 
             reso_bank_resonator_count: Arc::new(AtomicU32::new(8)),
@@ -179,7 +186,12 @@ impl Default for UIParams {
             high_filter_gain_db: smoother(0.0),
             high_filter_is_shelf: Arc::new(AtomicBool::new(true)),
 
-            delay_time_ms: smoother(0.35),
+            delay_time_ms: Arc::new(
+                SmootherAtomic::new(10.0, 250.0, unsafe {
+                    OVERSAMPLED_SAMPLE_RATE
+                })
+                .with_smoothing_type(SmoothingType::Cosine),
+            ),
             delay_feedback: smoother(0.75),
             delay_mix: smoother(0.5),
             use_ping_pong: Arc::new(AtomicBool::new(false)),
@@ -200,7 +212,7 @@ impl Default for UIParams {
 
 fn smoother(val: f64) -> Arc<SmootherAtomic<f64>> {
     Arc::new(
-        SmootherAtomic::new(70.0, val, unsafe { SAMPLE_RATE })
+        SmootherAtomic::new(70.0, val, unsafe { OVERSAMPLED_SAMPLE_RATE })
             .with_smoothing_type(SmoothingType::Linear),
     )
 }

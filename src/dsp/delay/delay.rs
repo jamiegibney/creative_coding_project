@@ -8,7 +8,7 @@ pub const DEFAULT_DELAY_SMOOTHING: SmoothingType = SmoothingType::Cosine;
 ///
 /// This is essentially a wrapper around a [`RingBuffer`](super::RingBuffer)
 /// which abstracts away some parameters, such as interpolation and smoothing.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Delay {
     buffer: RingBuffer,
     feedback_amount: f64,

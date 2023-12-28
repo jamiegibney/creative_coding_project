@@ -9,9 +9,12 @@ use super::*;
 pub struct AudioProcessors {
     // FILTERS
     pub filter_lp: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_ls: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_hp: Box<[BiquadFilter; NUM_CHANNELS]>,
-    pub filter_peak: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_hs: Box<[BiquadFilter; NUM_CHANNELS]>,
+
+    pub filter_peak: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_hs_2: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_peak_post: Box<[BiquadFilter; NUM_CHANNELS]>,
 
     pub filter_comb: Box<[IirCombFilter; NUM_CHANNELS]>,
@@ -28,6 +31,7 @@ pub struct AudioProcessors {
     // FX
     pub waveshaper: Box<[Waveshaper; NUM_CHANNELS]>,
     // TODO: compression/limiting, delay, diopser, reverb
+    pub compressor: Box<Compressor>,
 
     // OVERSAMPLING
     pub oversamplers: Vec<Oversampler>,
@@ -52,9 +56,18 @@ pub struct AudioData {
     pub is_processing: bool,
     pub idle_timer_samples: u64,
 
-    // pub spectral_mask_post_fx: bool,
+    pub low_filter_is_shelf: bool,
+    pub high_filter_is_shelf: bool,
+
+    pub distortion_algorithm: DistortionType,
+
+    pub spectral_filter_size: usize,
+    pub spectral_mask_post_fx: bool,
     pub average_load: Vec<f64>,
     pub average_pos: usize,
+
+    pub reso_bank_scale: Scale,
+    pub reso_bank_root_note: f64,
 
     pub sample_timer: u32,
 
@@ -76,9 +89,18 @@ impl Default for AudioData {
             is_processing: Default::default(),
             idle_timer_samples: Default::default(),
 
-            // spectral_mask_post_fx: false,
+            low_filter_is_shelf: false,
+            high_filter_is_shelf: false,
+
+            spectral_mask_post_fx: false,
+            spectral_filter_size: 1024,
             average_load: Vec::default(),
             average_pos: Default::default(),
+
+            reso_bank_scale: Scale::default(),
+            reso_bank_root_note: 69.0,
+
+            distortion_algorithm: DistortionType::default(),
 
             sample_timer: 0,
 

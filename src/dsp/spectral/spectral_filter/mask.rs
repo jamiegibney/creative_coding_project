@@ -1,5 +1,6 @@
 //! Spectral frequency masking.
 
+use crate::prelude::*;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug, Default)]
@@ -32,9 +33,11 @@ impl SpectralMask {
     /// Panics if `max_size` is not a power-of-two value, or if it is greater
     /// than 2^14 (16,384).
     pub fn new(max_size: usize) -> Self {
-        assert!(max_size.is_power_of_two() && max_size <= 1 << 14);
+        assert!(
+            max_size.is_power_of_two() && max_size <= MAX_SPECTRAL_BLOCK_SIZE
+        );
         let mut points = Vec::with_capacity(max_size);
-        points.resize(max_size / 2, 0.0);
+        points.resize(max_size, 0.0);
 
         Self { points }
     }
@@ -69,14 +72,18 @@ impl SpectralMask {
         self.points.capacity()
     }
 
+    pub fn size(&self) -> usize {
+        self.len()
+    }
+
     /// Returns the frequency of bin with index `idx`.
     ///
     /// # Panics
     ///
-    /// Panics if idx is greater than the size of the mask.
-    pub fn bin_freq(&self, idx: usize, sample_rate: f64) -> f64 {
-        assert!(idx <= self.points.len());
-        let size = self.points.len() as f64;
+    /// Panics if `idx` is greater than `size`.
+    pub fn bin_freq(idx: usize, size: usize, sample_rate: f64) -> f64 {
+        assert!(idx <= size);
+        let size = size as f64;
         let k = idx as f64;
         let nyquist = sample_rate / 2.0;
 

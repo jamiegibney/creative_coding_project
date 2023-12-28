@@ -1,6 +1,6 @@
 use super::*;
 use crate::app::audio::AudioMessageSenders;
-use crate::dsp::ResonatorBankParams;
+use crate::dsp::{ResonatorBankParams, SpectralMask};
 use crate::generative::{ContoursGPU, SmoothLifeGPU};
 use crate::{app::*, fonts::*};
 use atomic::Atomic;
@@ -8,6 +8,7 @@ use nannou::prelude::*;
 use nannou::text::{Font, Justify, Layout};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
+use triple_buffer::Input;
 
 pub struct UIComponents {
     // ### SPECTRAL FILTER ###
@@ -208,8 +209,11 @@ impl UIComponents {
                     .with_selected_item_text_layout(main_value_layout())
             },
             mask_resolution: {
+                let mask_resolution = Arc::clone(&params.mask_resolution);
                 Menu::new(ui_layout.mask_general.resolution)
-                    // .with_callback(callback)
+                    .with_callback(move |selected| {
+                        mask_resolution.sr(selected);
+                    })
                     .with_label_layout(small_label_layout())
                     .with_item_text_layout(small_value_layout())
                     .with_selected_item_text_layout(Layout {
@@ -448,8 +452,10 @@ impl UIComponents {
                     })
                     .with_value_layout(main_value_layout())
                     .with_value_chars(4)
-                    .with_default_value(reso_bank_spread.lr())
-                    .with_callback(move |_, value| reso_bank_spread.sr(value))
+                    .with_default_value(reso_bank_spread.current_value())
+                    .with_callback(move |_, value| {
+                        reso_bank_spread.set_target_value(value)
+                    })
             },
             reso_bank_shift: {
                 let reso_bank_shift = Arc::clone(&params.reso_bank_shift);
@@ -465,8 +471,10 @@ impl UIComponents {
                     .with_value_layout(main_value_layout())
                     .with_value_chars(5)
                     .with_output_range(-24.0..=24.0)
-                    .with_default_value(reso_bank_shift.lr())
-                    .with_callback(move |_, value| reso_bank_shift.sr(value))
+                    .with_default_value(reso_bank_shift.current_value())
+                    .with_callback(move |_, value| {
+                        reso_bank_shift.set_target_value(value)
+                    })
             },
             reso_bank_inharm: {
                 let reso_bank_inharm = Arc::clone(&params.reso_bank_inharm);
@@ -478,8 +486,10 @@ impl UIComponents {
                     })
                     .with_value_layout(main_value_layout())
                     .with_value_chars(4)
-                    .with_default_value(reso_bank_inharm.lr())
-                    .with_callback(move |_, value| reso_bank_inharm.sr(value))
+                    .with_default_value(reso_bank_inharm.current_value())
+                    .with_callback(move |_, value| {
+                        reso_bank_inharm.set_target_value(value)
+                    })
             },
             reso_bank_pan: {
                 let reso_bank_pan = Arc::clone(&params.reso_bank_pan);
@@ -491,8 +501,10 @@ impl UIComponents {
                     })
                     .with_value_layout(main_value_layout())
                     .with_value_chars(4)
-                    .with_default_value(reso_bank_pan.lr())
-                    .with_callback(move |_, value| reso_bank_pan.sr(value))
+                    .with_default_value(reso_bank_pan.current_value())
+                    .with_callback(move |_, value| {
+                        reso_bank_pan.set_target_value(value)
+                    })
             },
             reso_bank_quantise: {
                 let reso_bank_quantise = Arc::clone(&params.reso_bank_quantise);
@@ -760,8 +772,11 @@ impl UIComponents {
                 let pp_delay_time_ms = Arc::clone(&params.delay_time_ms);
                 TextSlider::new(0.0, ui_layout.delay.time_ms)
                     .with_label("Time")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
                     .with_suffix(" ms")
-                    .with_output_range(0.1..=1.0)
+                    .with_output_range(10.0..=999.9)
+                    .with_value_chars(5)
                     .with_default_value(pp_delay_time_ms.current_value())
                     .with_callback(move |_, value| {
                         pp_delay_time_ms.set_target_value(value);
@@ -771,9 +786,15 @@ impl UIComponents {
                 let pp_delay_feedback = Arc::clone(&params.delay_feedback);
                 TextSlider::new(0.0, ui_layout.delay.feedback)
                     .with_label("Feedback")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
                     .with_suffix(" %")
-                    .with_default_value(pp_delay_feedback.current_value())
-                    .with_callback(move |_, value| {
+                    .with_value_chars(5)
+                    .with_output_range(0.0..=100.0)
+                    .with_default_value(
+                        pp_delay_feedback.current_value() * 100.0,
+                    )
+                    .with_callback(move |value, _| {
                         pp_delay_feedback.set_target_value(value);
                     })
             },
@@ -781,19 +802,23 @@ impl UIComponents {
                 let pp_delay_mix = Arc::clone(&params.delay_mix);
                 TextSlider::new(0.0, ui_layout.delay.mix)
                     .with_label("Mix")
-                    .with_default_value(pp_delay_mix.current_value())
+                    .with_suffix(" %")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(0.0..=100.0)
+                    .with_value_chars(5)
+                    .with_default_value(pp_delay_mix.current_value() * 100.0)
                     .with_callback(move |_, value| {
                         pp_delay_mix.set_target_value(value);
                     })
-                    .with_formatting_callback(|value, _| {
-                        format!("{:.0} %", value * 100.0)
-                    })
             },
             delay_is_ping_pong: {
-                let use_ping_pong =
-                    Arc::clone(&params.use_ping_pong);
+                let use_ping_pong = Arc::clone(&params.use_ping_pong);
                 Button::new(ui_layout.delay.use_ping_pong)
                     .with_label("Ping-pong")
+                    .with_label_layout(main_label_layout())
+                    .with_enabled_layout(main_value_layout())
+                    .with_disabled_layout(main_value_layout())
                     .with_state(true)
                     .with_callback(move |state| use_ping_pong.sr(state))
             },
@@ -805,15 +830,21 @@ impl UIComponents {
                 let dist_amount = Arc::clone(&params.dist_amount);
                 TextSlider::new(0.0, ui_layout.distortion.amount)
                     .with_label("Amount")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
                     .with_suffix(" %")
+                    .with_output_range(0.0..=100.0)
                     .with_default_value(dist_amount.current_value())
-                    .with_callback(move |_, value| {
-                        dist_amount.set_target_value(value);
+                    .with_callback(move |raw, _| {
+                        dist_amount.set_target_value(raw);
                     })
             },
             dist_type: {
                 let dist_type = Arc::clone(&params.dist_type);
                 Menu::new(ui_layout.distortion.dist_type)
+                    .with_label_layout(main_label_layout())
+                    .with_item_text_layout(main_value_layout())
+                    .with_selected_item_text_layout(main_value_layout())
                     .with_callback(move |selected| {
                         dist_type.sr(selected);
                     })
@@ -826,14 +857,58 @@ impl UIComponents {
             comp_thresh: {
                 let comp_thresh = Arc::clone(&params.comp_thresh);
                 TextSlider::new(0.0, ui_layout.compression.threshold)
+                    .with_label("Threshold")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(MINUS_INFINITY_DB..=0.0)
+                    .with_default_value(0.0)
                     .with_callback(move |_, value| {
                         comp_thresh.set_target_value(value);
+                    })
+                    .with_formatting_callback(|_, val| {
+                        if val <= -99.9 {
+                            return String::from("-inf dB");
+                        }
+                        if (0.0..=0.01).contains(&val) {
+                            return String::from("0.00 dB");
+                        }
+
+                        let val_str = if val.is_sign_negative() {
+                            format!("{val:.10}")
+                        }
+                        else {
+                            format!("+{val:.10}")
+                        };
+
+                        let mut decimal_idx = val_str.find('.').unwrap();
+
+                        // 5
+                        let truncate_to = if decimal_idx == 4 {
+                            6
+                        }
+                        else if decimal_idx > 5 {
+                            decimal_idx
+                        }
+                        else {
+                            5
+                        };
+
+                        let mut out = val_str[..truncate_to].to_string();
+                        out.push_str(" dB");
+                        out
                     })
             },
             comp_ratio: {
                 let comp_ratio = Arc::clone(&params.comp_ratio);
-                TextSlider::new(0.0, ui_layout.compression.ratio).with_callback(
-                    move |_, value| {
+                TextSlider::new(0.0, ui_layout.compression.ratio)
+                    .with_label("Ratio")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_suffix(":1")
+                    .with_output_range(1.0..=99.9)
+                    .with_default_value(1.0)
+                    .with_value_chars(4)
+                    .with_callback(move |_, value| {
                         comp_ratio.set_target_value(value);
                     },
                 )
@@ -841,6 +916,13 @@ impl UIComponents {
             comp_attack: {
                 let comp_attack = Arc::clone(&params.comp_attack_ms);
                 TextSlider::new(0.0, ui_layout.compression.attack)
+                    .with_label("Attack")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_suffix(" ms")
+                    .with_output_range(1.0..=500.0)
+                    .with_value_chars(5)
+                    .with_default_value(params.comp_attack_ms.current_value())
                     .with_callback(move |_, value| {
                         comp_attack.set_target_value(value);
                     })
@@ -848,6 +930,13 @@ impl UIComponents {
             comp_release: {
                 let comp_release = Arc::clone(&params.comp_release_ms);
                 TextSlider::new(0.0, ui_layout.compression.release)
+                    .with_label("Release")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_suffix(" ms")
+                    .with_output_range(1.0..=950.0)
+                    .with_value_chars(5)
+                    .with_default_value(params.comp_release_ms.current_value())
                     .with_callback(move |_, value| {
                         comp_release.set_target_value(value);
                     })
@@ -869,7 +958,7 @@ impl UIComponents {
                             return String::from("-inf dB");
                         }
                         if (0.0..=0.01).contains(&val) {
-                            return String::from("0.0 dB");
+                            return String::from("0.00 dB");
                         }
 
                         let val_str = if val.is_sign_negative() {
@@ -924,7 +1013,7 @@ impl UIComponents {
         mut self,
         contours: Arc<RwLock<ContoursGPU>>,
         smooth_life: Arc<RwLock<SmoothLifeGPU>>,
-        algo: Arc<Atomic<GenerativeAlgo>>,
+        params: &UIParams,
     ) -> Self {
         let ctr = contours.read().unwrap();
         let ctr_speed = ctr.z_increment_arc();

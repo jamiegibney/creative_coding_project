@@ -7,19 +7,13 @@ pub struct StereoWrapper<E> {
     pub r: E,
 }
 
-impl<E: Effect + Clone> StereoWrapper<E> {
+impl<E: Effect + Clone + Default> StereoWrapper<E> {
     pub fn from_single(effect: E) -> Self {
-        Self {
-            l: effect.clone(),
-            r: effect,
-        }
+        Self { l: effect.clone(), r: effect }
     }
 
     pub fn from_pair(effect_l: E, effect_r: E) -> Self {
-        Self {
-            l: effect_l,
-            r: effect_r,
-        }
+        Self { l: effect_l, r: effect_r }
     }
 
     pub fn unwrap(self) -> (E, E) {
@@ -27,7 +21,7 @@ impl<E: Effect + Clone> StereoWrapper<E> {
     }
 }
 
-impl<E: Effect + Clone> Effect for StereoWrapper<E> {
+impl<E: Effect + Clone + Default> Effect for StereoWrapper<E> {
     fn process_stereo(&mut self, in_l: f64, in_r: f64) -> (f64, f64) {
         let out_l = self.l.process_mono(in_l, 0);
         let out_r = self.r.process_mono(in_r, 1);
@@ -45,5 +39,11 @@ impl<E: Effect + Clone> Effect for StereoWrapper<E> {
 
     fn get_sample_rate(&self) -> f64 {
         self.l.get_sample_rate()
+    }
+}
+
+impl<E: Effect + Clone + Default> Default for StereoWrapper<E> {
+    fn default() -> Self {
+        Self { l: E::default(), r: E::default() }
     }
 }

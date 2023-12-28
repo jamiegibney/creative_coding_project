@@ -52,9 +52,14 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// provides some internal optimizations.
     ///
     pub fn skip(&self, num_steps: u32) -> T {
-        self.ramp.skip(num_steps);
+        if self.is_active() {
+            self.ramp.skip(num_steps);
 
-        self.interpolated_value()
+            self.interpolated_value()
+        }
+        else {
+            self.current_value()
+        }
     }
 
     /// Computes the `block_len` next elements and places them into `block`.

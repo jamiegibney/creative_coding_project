@@ -103,7 +103,7 @@ impl MenuEnum for DistortionType {
             Self::Soft => 1,
             Self::Hard => 2,
             Self::Wrap => 3,
-            Self::Downsample => 4,
+            Self::Crush => 4,
         }
     }
 
@@ -113,7 +113,7 @@ impl MenuEnum for DistortionType {
             1 => Some(Self::Soft),
             2 => Some(Self::Hard),
             3 => Some(Self::Wrap),
-            4 => Some(Self::Downsample),
+            4 => Some(Self::Crush),
             _ => None,
         }
     }

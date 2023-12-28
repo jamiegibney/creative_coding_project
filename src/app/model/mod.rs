@@ -42,8 +42,6 @@ pub struct Model {
     // pub spectral_mask: Arc<Mutex<SpectralMask>>,
     pub spectral_mask: Arc<Mutex<triple_buffer::Input<SpectralMask>>>,
 
-    pub reso_bank_params: ResonatorBankParams,
-
     pub voice_event_sender: mpsc::Sender<VoiceEvent>,
 
     /// A thread-safe reference to the timer which tracks when the audio callback
@@ -110,7 +108,9 @@ impl Model {
             post_spectrum,
             voice_event_sender,
             spectral_mask,
-        } = build_audio_system(MAX_SPECTRAL_BLOCK_SIZE, &params);
+        } = build_audio_system(&params);
+
+        let spectral_mask = Arc::new(Mutex::new(spectral_mask));
 
         let (_w, _h) = (WINDOW_SIZE.x as f32, WINDOW_SIZE.y as f32);
 
@@ -163,7 +163,7 @@ impl Model {
             .setup_mask_callbacks(
                 Arc::clone(&contours),
                 Arc::clone(&smooth_life),
-                Arc::clone(&params.mask_algorithm),
+                &params,
             )
             .setup_audio_channels(Arc::clone(&audio_senders));
 
@@ -181,15 +181,6 @@ impl Model {
 
             note_handler: Arc::clone(&note_handler),
 
-            reso_bank_params: ResonatorBankParams {
-                root_note: 52.0,
-                scale: Scale::MajPentatonic,
-                quantise_to_scale: true,
-                freq_spread: 0.7,
-                freq_shift: 0.0,
-                inharm: 0.3,
-            },
-
             pressed_keys: build_pressed_keys_map(),
 
             audio_callback_timer,
@@ -199,7 +190,7 @@ impl Model {
 
             voice_event_sender,
 
-            spectral_mask: Arc::new(Mutex::new(spectral_mask)),
+            spectral_mask,
 
             bank_rect,
 

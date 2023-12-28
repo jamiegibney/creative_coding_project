@@ -158,61 +158,71 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // try to receive any messages from other threads
     audio.try_receive();
 
-    let spectral_filter_is_post_fx = audio.params.mask_is_post_fx.lr();
-    let use_ping_pong_delay = audio.params.use_ping_pong.lr();
+    // check if the spectral filter order has changed
+    let filter_order_just_changed = audio.update_spectral_filter_order();
 
+    // update spectral mask
     if let Some(mask) = &mut audio.buffers.spectral_mask {
         if mask.update() {
             audio.processors.spectral_filter.set_mask(mask.read());
         }
     }
 
-    // process the spectral masking
-    if !spectral_filter_is_post_fx {
+    // set spectral filter size
+    audio.update_spectral_filter_size();
+
+    // process the spectral masking, if pre-fx
+    if !audio.data.spectral_mask_post_fx {
         audio.processors.spectral_filter.process_block(buffer);
     }
 
+    // process the resonator bank
     for (i, fr) in buffer.frames_mut().enumerate() {
+        audio.update_reso_bank();
+
         for ch in 0..NUM_CHANNELS {
             fr[ch] =
                 audio.processors.pre_fx_dc_filter[ch].process_mono(fr[ch], ch);
-            // audio.processors.resonator_bank.set_scale(audio.params.)
             fr[ch] = audio.processors.resonator_bank.process_mono(fr[ch], ch);
         }
     }
 
+    // process the pre-fx spectrum analyser
     audio.compute_pre_spectrum(buffer);
 
     for (i, fr) in buffer.frames_mut().enumerate() {
+        audio.update_post_fx_processors();
+
         // because ping-pong delay requires cross-feeding channels, it has to
         // be out of the other two loops in the middle here.
-        audio
-            .processors
-            .stereo_delay
-            .ping_pong(audio.params.use_ping_pong.lr());
-
         (fr[0], fr[1]) =
             audio.processors.stereo_delay.process_stereo(fr[0], fr[1]);
 
+        // process filters
         for ch in 0..NUM_CHANNELS {
             let mut sample = fr[ch];
-            sample = audio.processors.filter_hs[ch].process(sample);
-            sample = audio.processors.filter_peak[ch].process(sample);
-            // sample = audio.processors.filter_lp[ch].process(sample);
-            sample = audio.processors.filter_hp[ch].process(sample);
-            // sample = smooth_soft_clip(sample, 1.0);
+
+            sample = audio.process_filters(sample, ch);
+
+            sample = audio.processors.waveshaper[ch].process(sample);
+
             sample =
                 audio.processors.post_fx_dc_filter[ch].process_mono(sample, ch);
 
             fr[ch] = sample;
         }
+
+        // process compressor
+        (fr[0], fr[1]) =
+            audio.processors.compressor.process_stereo(fr[0], fr[1]);
     }
 
-    // process the spectral masking
-    if spectral_filter_is_post_fx {
+    // process the spectral masking, if post-fx
+    if audio.data.spectral_mask_post_fx && !filter_order_just_changed {
         audio.processors.spectral_filter.process_block(buffer);
     }
 
+    // process the post-fx spectrum analyser
     audio.compute_post_spectrum(buffer);
 
     // // copy the audio buffer into the oversampling buffer so the channel layout

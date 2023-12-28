@@ -9,7 +9,7 @@
 /// are recommended, if you need to change this at all.
 pub static mut SAMPLE_RATE: f64 = 44100.0;
 // in hindsight, this was not a great idea. works fine for a few things, but as soon as
-// oversampling entered the chat, this caused a bit of hassle and I needed to store
+// oversampling was implemented, this caused a bit of hassle and I needed to store
 // the sample rate internally in some processors anyway. not a good idea for the future!
 
 /// The global oversampling rate, set to `SAMPLE_RATE` by default.

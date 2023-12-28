@@ -1,19 +1,20 @@
+use crate::dsp::SpectralMask;
 use crate::prelude::*;
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::prelude::*;
 use std::ops::{Add, Rem};
 
+mod gpu;
 mod grid;
 mod process;
 mod process_async;
 mod state;
-mod gpu;
 
+pub use gpu::SmoothLifeGPU;
 pub use grid::{random_f64, Grid};
 pub use process::SmoothLifeGenerator;
 pub use process_async::SmoothLifeGeneratorAsync;
 pub use state::SLState;
-pub use gpu::SmoothLifeGPU;
 
 pub struct SmoothLife {
     generator: SmoothLifeGeneratorAsync,
@@ -156,16 +157,20 @@ impl DrawMask for SmoothLife {
     //         .wh(self.rect.wh());
     // }
 
-    fn column_to_mask(&self, mask: &mut crate::dsp::SpectralMask, x: f64) {
+    fn column_to_mask(
+        &self,
+        mask: &mut crate::dsp::SpectralMask,
+        mask_len: usize,
+        x: f64,
+    ) {
         if !(0.0..=1.0).contains(&x) {
             return;
         }
 
         let sr = unsafe { SAMPLE_RATE };
-        let num_bins = mask.len();
 
-        for i in 1..num_bins {
-            let bin_freq = mask.bin_freq(i, sr);
+        for i in 1..mask_len {
+            let bin_freq = SpectralMask::bin_freq(i, mask_len, sr);
             let y = 1.0 - freq_log_norm(bin_freq, 20.0, sr);
 
             mask[i] = self.generator.get_value_bilinear(x, y);

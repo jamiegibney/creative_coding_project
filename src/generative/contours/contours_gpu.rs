@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::dsp::SpectralMask;
 use atomic_float::AtomicF32;
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::prelude::*;
@@ -365,18 +366,27 @@ impl UIDraw for ContoursGPU {
 }
 
 impl DrawMask for ContoursGPU {
-    fn column_to_mask(&self, mask: &mut crate::dsp::SpectralMask, x: f64) {
+    fn column_to_mask(
+        &self,
+        mask: &mut crate::dsp::SpectralMask,
+        mask_len: usize,
+        x: f64,
+    ) {
         if !(0.0..=1.0).contains(&x) {
             return;
         }
 
         let sr = unsafe { SAMPLE_RATE };
-        let num_bins = mask.len();
 
         if let Ok(guard) = self.image_buffer.lock() {
-            for i in 1..num_bins {
-                let bin_hz = mask.bin_freq(i, sr);
+            for i in 1..mask_len {
+                let bin_hz = SpectralMask::bin_freq(i, mask_len, sr);
+                if bin_hz < 20.0 {
+                    mask[i] = 0.0;
+                    continue;
+                }
                 let y = 1.0 - freq_log_norm(bin_hz, 20.0, sr);
+                // dbg!(mask_len, i, bin_hz, y);
                 let x_px = (x * 256.0) as u32;
                 let y_px = (y * 256.0) as u32;
 

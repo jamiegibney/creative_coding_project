@@ -1,7 +1,10 @@
 use super::*;
 use crate::prelude::*;
 use atomic::Atomic;
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::{
+    atomic::{AtomicBool, AtomicU32, AtomicU8},
+    Arc,
+};
 
 /// All audio-related parameters linked to the UI.
 #[derive(Default)]
@@ -10,6 +13,24 @@ pub struct AudioParams {
     pub mask_resolution: Arc<Atomic<SpectralFilterSize>>,
     /// Whether the spectral filter is post-FX or not.
     pub mask_is_post_fx: Arc<AtomicBool>,
+
+    // ### RESONATOR BANK ###
+    /// The musical scale of the resonator bank.
+    pub reso_bank_scale: Arc<Atomic<Scale>>,
+    /// The root note of the resonator bank.
+    pub reso_bank_root_note: Arc<AtomicU8>,
+    /// The frequency spread (range) of each resonator.
+    pub reso_bank_spread: Arc<SmootherAtomic<f64>>,
+    /// The frequency shift of each resonator.
+    pub reso_bank_shift: Arc<SmootherAtomic<f64>>,
+    /// How much each resonator's pitch skews towards its original pitch.
+    pub reso_bank_inharm: Arc<SmootherAtomic<f64>>,
+    /// How much panning may be applied to each resonator.
+    pub reso_bank_pan: Arc<SmootherAtomic<f64>>,
+    /// Whether the resonators should quantise their pitch to a scale.
+    pub reso_bank_quantise: Arc<AtomicBool>,
+    /// The number of active resonators in the bank.
+    pub reso_bank_resonator_count: Arc<AtomicU32>,
 
     /// The cutoff of the filter in Hz.
     pub low_filter_cutoff: Arc<SmootherAtomic<f64>>,

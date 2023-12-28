@@ -8,6 +8,7 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
     let egui_ctx = model.egui.begin_frame();
     let pos = model.mask_scan_line_pos;
     let mask = Arc::clone(&model.spectral_mask);
+    let mask_len = model.ui_params.mask_resolution.lr().value();
 
     let input_data = model.input_data;
 
@@ -19,7 +20,7 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
             let mut mask = mask.lock().unwrap();
 
             ctr.update(app, &input_data);
-            ctr.column_to_mask(mask.input_buffer(), pos);
+            ctr.column_to_mask(mask.input_buffer(), mask_len, pos);
 
             drop(ctr);
             mask.publish();
@@ -31,7 +32,7 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
             let mut mask = mask.lock().unwrap();
 
             sml.update(app, &input_data);
-            sml.column_to_mask(mask.input_buffer(), pos);
+            sml.column_to_mask(mask.input_buffer(), mask_len, pos);
 
             drop(sml);
             mask.publish();

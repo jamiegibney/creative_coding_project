@@ -81,6 +81,6 @@ pub trait UIDraw {
 
 /// Trait for UI components which act as spectral masks.
 pub trait DrawMask: UIDraw {
-    fn column_to_mask(&self, mask: &mut SpectralMask, x: f64) {}
-    fn row_to_mask(&self, mask: &mut SpectralMask, y: f64) {}
+    fn column_to_mask(&self, mask: &mut SpectralMask, len: usize, x: f64) {}
+    fn row_to_mask(&self, mask: &mut SpectralMask, len: usize, y: f64) {}
 }

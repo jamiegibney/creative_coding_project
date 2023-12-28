@@ -2,8 +2,6 @@ use std::ops::RangeInclusive;
 
 use super::*;
 
-const MAX_DIST_MULT: f64 = 50.0;
-
 /// A waveshaper which dynamically accepts any transfer function and asymmetric
 /// drive levels.
 ///
@@ -36,8 +34,8 @@ impl Waveshaper {
             // curve_lower: 0.0,
             curve_range: 0.0..=1.0,
             // asymmetric_curve: false,
-            drive: MAX_DIST_MULT.recip(),
-            drive_lower: MAX_DIST_MULT.recip(),
+            drive: 1.0,
+            drive_lower: 1.0,
             asymmetric: false,
 
             xfer_function: Box::new(smooth_soft_clip),
@@ -50,11 +48,12 @@ impl Waveshaper {
         let xfer = &self.xfer_function;
         let drive = if sample.is_sign_negative() && self.asymmetric {
             self.drive_lower
-        } else {
+        }
+        else {
             self.drive
-        } * MAX_DIST_MULT;
+        };
 
-        xfer(sample * drive, self.curve)
+        xfer(sample * drive, self.curve) / drive
     }
 
     /// Moves `function` into the waveshaper, which will then use it as its
@@ -110,7 +109,8 @@ impl Waveshaper {
         let xfer = move |x: f64, d: f64| -> f64 {
             if x.is_sign_negative() {
                 -function(-x, d)
-            } else {
+            }
+            else {
                 function(x, d)
             }
         };
@@ -119,14 +119,17 @@ impl Waveshaper {
 
     /// `set_xfer_function_single_argument()` and `set_xfer_function_positive_only()`
     /// merged into one method.
-    pub fn set_xfer_function_single_argument_positive_only<F>(&mut self, function: F)
-    where
+    pub fn set_xfer_function_single_argument_positive_only<F>(
+        &mut self,
+        function: F,
+    ) where
         F: Fn(f64) -> f64 + Send + 'static,
     {
         let xfer = move |x: f64, _: f64| -> f64 {
             if x.is_sign_negative() {
                 -function(-x)
-            } else {
+            }
+            else {
                 function(x)
             }
         };
@@ -161,8 +164,8 @@ impl Waveshaper {
     ///
     /// Panics in debug mode if `curve` is outside the range of `0.0` to `1.0`.
     pub fn set_curve(&mut self, curve: f64) {
-        debug_assert!(self.curve_range.contains(&curve));
-        self.curve = curve.clamp(*self.curve_range.start(), *self.curve_range.end());
+        self.curve =
+            curve.clamp(*self.curve_range.start(), *self.curve_range.end());
     }
 
     /* /// Sets the curve of the waveshaper for negative parts of the signal; only
@@ -230,9 +233,11 @@ pub fn smooth_soft_clip(mut input: f64, mut c: f64) -> f64 {
 
     if abs > 1.0 {
         (c + 1.0) / 2.0 * sign
-    } else if abs > c {
+    }
+    else if abs > c {
         c + (abs - c) / (1.0 + ((abs + c) / (1.0 - c)).powi(2)) * sign
-    } else {
+    }
+    else {
         input
     }
 }

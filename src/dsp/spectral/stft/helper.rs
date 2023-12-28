@@ -33,13 +33,23 @@ impl StftHelper {
     ///
     /// Panics if `num_channels` or `max_block_size` is `0`.
     #[must_use]
-    pub fn new(num_channels: usize, max_block_size: usize, max_padding: usize) -> Self {
+    pub fn new(
+        num_channels: usize,
+        max_block_size: usize,
+        max_padding: usize,
+    ) -> Self {
         assert_ne!(num_channels, 0);
         assert_ne!(max_block_size, 0);
 
         Self {
-            main_input_ring_buffers: vec![vec![0.0; max_block_size]; num_channels],
-            main_output_ring_buffers: vec![vec![0.0; max_block_size]; num_channels],
+            main_input_ring_buffers: vec![
+                vec![0.0; max_block_size];
+                num_channels
+            ],
+            main_output_ring_buffers: vec![
+                vec![0.0; max_block_size];
+                num_channels
+            ],
             scratch_buffer: vec![0.0; max_block_size + max_padding],
             padding_buffers: vec![vec![0.0; max_padding]; num_channels],
             current_pos: 0,
@@ -57,6 +67,19 @@ impl StftHelper {
         assert!(block_size <= self.main_input_ring_buffers[0].capacity());
 
         self.initialize_buffers(block_size);
+    }
+
+    /// Clears the internal buffers.
+    pub fn clear(&mut self) {
+        self.main_input_ring_buffers
+            .iter_mut()
+            .for_each(|v| v.fill(0.0));
+        self.main_output_ring_buffers
+            .iter_mut()
+            .for_each(|v| v.fill(0.0));
+        self.scratch_buffer.fill(0.0);
+        self.padding_buffers.iter_mut().for_each(|v| v.fill(0.0));
+        self.current_pos = 0;
     }
 
     /// Set the amount of padding. This clears the internal buffers, meaning the next block
@@ -135,16 +158,20 @@ impl StftHelper {
 
         while num_processed_samples < main_buffer_len {
             let num_remaining_samples = main_buffer_len - num_processed_samples;
-            let samples_until_next_window = ((window_interval - self.current_pos as i32 - 1)
-                .rem_euclid(window_interval)
-                + 1) as usize;
-            let samples_to_process = samples_until_next_window.min(num_remaining_samples);
+            let samples_until_next_window =
+                ((window_interval - self.current_pos as i32 - 1)
+                    .rem_euclid(window_interval)
+                    + 1) as usize;
+            let samples_to_process =
+                samples_until_next_window.min(num_remaining_samples);
 
             for sample_offset in 0..samples_to_process {
                 for ch in 0..num_channels {
                     let sample = unsafe {
-                        main_buffer
-                            .get_sample_unchecked_mut(ch, num_processed_samples + sample_offset)
+                        main_buffer.get_sample_unchecked_mut(
+                            ch,
+                            num_processed_samples + sample_offset,
+                        )
                     };
                     let input_ring_buffer_sample = unsafe {
                         self.main_input_ring_buffers
@@ -165,17 +192,21 @@ impl StftHelper {
             }
 
             num_processed_samples += samples_to_process;
-            self.current_pos = (self.current_pos + samples_to_process) % block_size;
+            self.current_pos =
+                (self.current_pos + samples_to_process) % block_size;
 
             if samples_to_process == samples_until_next_window {
-                for (ch, ((input_buffer, output_buffer), padding_buffer)) in self
-                    .main_input_ring_buffers
-                    .iter()
-                    .zip(self.main_output_ring_buffers.iter_mut())
-                    .zip(self.padding_buffers.iter_mut())
-                    .enumerate()
+                for (ch, ((input_buffer, output_buffer), padding_buffer)) in
+                    self.main_input_ring_buffers
+                        .iter()
+                        .zip(self.main_output_ring_buffers.iter_mut())
+                        .zip(self.padding_buffers.iter_mut())
+                        .enumerate()
                 {
-                    copy_ring_to_scratch(&mut self.scratch_buffer, self.current_pos, input_buffer);
+                    copy_ring_to_scratch(
+                        &mut self.scratch_buffer, self.current_pos,
+                        input_buffer,
+                    );
 
                     if self.padding > 0 {
                         self.scratch_buffer[block_size..].fill(0.0);
@@ -186,7 +217,8 @@ impl StftHelper {
                     if self.padding > 0 {
                         let padding_to_copy = self.padding.min(block_size);
 
-                        for (scratch, padding) in self.scratch_buffer[..padding_to_copy]
+                        for (scratch, padding) in self.scratch_buffer
+                            [..padding_to_copy]
                             .iter_mut()
                             .zip(&mut padding_buffer[..padding_to_copy])
                         {
@@ -195,10 +227,13 @@ impl StftHelper {
 
                         padding_buffer.copy_within(padding_to_copy.., 0);
 
-                        padding_buffer[self.padding - padding_to_copy..].fill(0.0);
+                        padding_buffer[self.padding - padding_to_copy..]
+                            .fill(0.0);
                     }
 
-                    add_scratch_to_ring(&self.scratch_buffer, self.current_pos, output_buffer);
+                    add_scratch_to_ring(
+                        &self.scratch_buffer, self.current_pos, output_buffer,
+                    );
 
                     if self.padding > 0 {
                         for (padding, scratch) in padding_buffer
@@ -244,15 +279,20 @@ impl StftHelper {
 
         while num_processed_samples < main_buffer_len {
             let num_remaining_samples = main_buffer_len - num_processed_samples;
-            let samples_until_next_window = ((window_interval - self.current_pos as i32 - 1)
-                .rem_euclid(window_interval)
-                + 1) as usize;
-            let samples_to_process = samples_until_next_window.min(num_remaining_samples);
+            let samples_until_next_window =
+                ((window_interval - self.current_pos as i32 - 1)
+                    .rem_euclid(window_interval)
+                    + 1) as usize;
+            let samples_to_process =
+                samples_until_next_window.min(num_remaining_samples);
 
             for sample_offset in 0..samples_to_process {
                 for ch in 0..num_channels {
                     let sample = unsafe {
-                        main_buffer.get_sample_unchecked(ch, num_processed_samples + sample_offset)
+                        main_buffer.get_sample_unchecked(
+                            ch,
+                            num_processed_samples + sample_offset,
+                        )
                     };
                     let input_ring_buffer_sample = unsafe {
                         self.main_input_ring_buffers
@@ -265,11 +305,17 @@ impl StftHelper {
 
             num_processed_samples += samples_to_process;
 
-            self.current_pos = (self.current_pos + samples_to_process) % block_size;
+            self.current_pos =
+                (self.current_pos + samples_to_process) % block_size;
 
             if samples_to_process == samples_until_next_window {
-                for (ch, input_buffer) in self.main_input_ring_buffers.iter().enumerate() {
-                    copy_ring_to_scratch(&mut self.scratch_buffer, self.current_pos, input_buffer);
+                for (ch, input_buffer) in
+                    self.main_input_ring_buffers.iter().enumerate()
+                {
+                    copy_ring_to_scratch(
+                        &mut self.scratch_buffer, self.current_pos,
+                        input_buffer,
+                    );
 
                     if self.padding > 0 {
                         self.scratch_buffer[block_size..].fill(0.0);
@@ -306,17 +352,27 @@ impl StftHelper {
 
 /// Copies content from a ring buffer to a scratch buffer, starting at the current position.
 #[inline]
-fn copy_ring_to_scratch(scratch_buffer: &mut [f64], current_pos: usize, ring_buffer: &[f64]) {
+fn copy_ring_to_scratch(
+    scratch_buffer: &mut [f64],
+    current_pos: usize,
+    ring_buffer: &[f64],
+) {
     let block_size = ring_buffer.len();
     let num_before_wrap = block_size - current_pos;
 
-    scratch_buffer[0..num_before_wrap].copy_from_slice(&ring_buffer[current_pos..block_size]);
-    scratch_buffer[num_before_wrap..block_size].copy_from_slice(&ring_buffer[0..current_pos]);
+    scratch_buffer[0..num_before_wrap]
+        .copy_from_slice(&ring_buffer[current_pos..block_size]);
+    scratch_buffer[num_before_wrap..block_size]
+        .copy_from_slice(&ring_buffer[0..current_pos]);
 }
 
 /// Adds elements from a scratch buffer to a ring buffer.
 #[inline]
-fn add_scratch_to_ring(scratch_buffer: &[f64], current_pos: usize, ring_buffer: &mut [f64]) {
+fn add_scratch_to_ring(
+    scratch_buffer: &[f64],
+    current_pos: usize,
+    ring_buffer: &mut [f64],
+) {
     let block_size = ring_buffer.len();
     let num_before_wrap = block_size - current_pos;
 

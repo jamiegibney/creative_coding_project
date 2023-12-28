@@ -41,15 +41,14 @@ pub struct AudioSystem {
 
 /// Builds the audio stream, audio message channel senders, and input note handler.
 pub fn build_audio_system(
-    spectral_block_size: usize,
     params: &UIParams,
 ) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
-    let (spectral_mask, spectral_mask_output) =
-        triple_buffer::TripleBuffer::new(
-            &SpectralMask::new(spectral_block_size).with_size(512),
-        )
+    let (mut spectral_mask, mut spectral_mask_output) =
+        triple_buffer::TripleBuffer::new(&SpectralMask::new(
+            MAX_SPECTRAL_BLOCK_SIZE,
+        ))
         .split();
 
     let (voice_event_sender, voice_event_receiver) = mpsc::channel();
@@ -57,7 +56,6 @@ pub fn build_audio_system(
 
     // build the audio context
     let audio_context = AudioContext {
-        // note_handler: Arc::clone(&note_handler),
         note_channel_receiver,
         sample_rate: unsafe { SAMPLE_RATE },
         spectral_mask_output: Some(spectral_mask_output),

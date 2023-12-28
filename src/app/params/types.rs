@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum GenerativeAlgo {
-#[default]
+    #[default]
     /// A perlin noise contour-line generator.
     Contours,
     /// A [SmoothLife](https://arxiv.org/abs/1111.1567) simulation.
@@ -66,7 +66,7 @@ impl Display for SpectrogramView {
 
 unsafe impl NoUninit for SpectrogramView {}
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum DistortionType {
     #[default]
     /// No distortion.
@@ -80,7 +80,7 @@ pub enum DistortionType {
     /// A wrapping clipping algorithm. TODO
     Wrap,
     /// Downsampling distortion. TODO
-    Downsample,
+    Crush,
 }
 
 impl Display for DistortionType {
@@ -90,7 +90,7 @@ impl Display for DistortionType {
             Self::Soft => write!(f, "Soft"),
             Self::Hard => write!(f, "Hard"),
             Self::Wrap => write!(f, "Wrap"),
-            Self::Downsample => write!(f, "Downsample"),
+            Self::Crush => write!(f, "Crush"),
         }
     }
 }

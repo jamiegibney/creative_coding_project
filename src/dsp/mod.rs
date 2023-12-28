@@ -13,6 +13,7 @@ pub mod util;
 pub use delay::{Delay, StereoDelay, RingBuffer};
 pub use distortion::Waveshaper;
 pub use dynamics::adsr::{AdsrEnvelope, AdsrParameters};
+pub use dynamics::Compressor;
 pub use filtering::{
     biquad::{BiquadFilter, BiquadParams},
     comb::{FirCombFilter, IirCombFilter},
