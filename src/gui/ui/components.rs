@@ -18,7 +18,8 @@ pub struct UIComponents {
     mask_scan_line_speed: TextSlider,
     /// toggle
     mask_is_post_fx: Button,
-    mask_resolution: Menu<SpectralFilterSize>,
+    mask_mix: TextSlider,
+    pub mask_resolution: Menu<SpectralFilterSize>,
     /// trigger
     mask_reset: Button,
 
@@ -271,6 +272,24 @@ impl UIComponents {
                     .with_enabled_text("Post FX")
                     .with_disabled_text("Pre FX")
             },
+            mask_mix: {
+                let mask_mix = Arc::clone(&params.mask_mix);
+                TextSlider::new(1.0, ui_layout.mask_general.mix)
+                    .with_value_layout(Layout {
+                        font: Some(
+                            Font::from_bytes(BOLD_FONT_MONO_BYTES)
+                                .expect("failed to load font bytes"),
+                        ),
+                        ..small_value_layout()
+                    })
+                    .with_default_value(1.0)
+                    .with_callback(move |_, val| {
+                        mask_mix.sr(val);
+                    })
+                    .with_formatting_callback(|_, val| {
+                        format!("{:.0} %", val * 100.0)
+                    })
+            },
             mask_reset: Button::new(ui_layout.mask_general.reset)
                 .with_label_layout(main_value_layout())
                 .with_label("Regenerate")
@@ -474,7 +493,7 @@ impl UIComponents {
                     })
                     .with_value_layout(main_value_layout())
                     .with_value_chars(5)
-                    .with_output_range(-24.0..=24.0)
+                    .with_output_range(-36.0..=36.0)
                     .with_default_value(reso_bank_shift.current_value())
                     .with_callback(move |_, value| {
                         reso_bank_shift.set_target_value(value)
@@ -1112,7 +1131,8 @@ impl UIDraw for UIComponents {
     fn update(&mut self, app: &App, input_data: &InputData) {
         self.mask_algorithm.update(app, input_data);
         self.mask_scan_line_speed.update(app, input_data);
-        self.mask_is_post_fx.update(app, input_data);
+        // self.mask_is_post_fx.update(app, input_data);
+        self.mask_mix.update(app, input_data);
         self.mask_resolution.update(app, input_data);
         self.mask_reset.update(app, input_data);
 
@@ -1216,7 +1236,8 @@ impl UIDraw for UIComponents {
         }
 
         self.mask_scan_line_speed.draw(app, draw, frame);
-        self.mask_is_post_fx.draw(app, draw, frame);
+        // self.mask_is_post_fx.draw(app, draw, frame);
+        self.mask_mix.draw(app, draw, frame);
         self.mask_resolution.draw(app, draw, frame);
         self.mask_reset.draw(app, draw, frame);
 

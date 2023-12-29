@@ -157,9 +157,6 @@ fn callback_timer(audio: &AudioModel) {
 /// Processes all audio FX.
 #[allow(clippy::needless_range_loop)]
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
-    // check if the spectral filter order has changed
-    let filter_order_just_changed = audio.update_spectral_filter_order();
-
     // update spectral mask
     if let Some(mask) = &mut audio.buffers.spectral_mask {
         if mask.update() {
@@ -167,13 +164,8 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         }
     }
 
-    // set spectral filter size
-    audio.update_spectral_filter_size();
-
-    // process the spectral masking, if pre-fx
-    if !audio.data.spectral_mask_post_fx {
-        audio.processors.spectral_filter.process_block(buffer);
-    }
+    // set spectral filter
+    audio.update_spectral_filter();
 
     // process the resonator bank
     for (i, fr) in buffer.frames_mut().enumerate() {
@@ -216,10 +208,12 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
             audio.processors.compressor.process_stereo(fr[0], fr[1]);
     }
 
-    // process the spectral masking, if post-fx
-    if audio.data.spectral_mask_post_fx && !filter_order_just_changed {
-        audio.processors.spectral_filter.process_block(buffer);
-    }
+    // process the spectral filter
+    audio
+        .processors
+        .spectral_filter
+        .set_mix(audio.params.mask_mix.lr());
+    audio.processors.spectral_filter.process_block(buffer);
 
     // process the post-fx spectrum analyser
     audio.compute_post_spectrum(buffer);

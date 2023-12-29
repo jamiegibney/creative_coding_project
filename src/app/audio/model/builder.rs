@@ -127,7 +127,10 @@ impl AudioModelBuilder {
         pre_in.compute(&empty);
         post_in.compute(&empty);
 
-        let buffer = vec![0.0; MAX_BUFFER_SIZE * NUM_CHANNELS];
+        let mut buffer = vec![0.0; MAX_BUFFER_SIZE * NUM_CHANNELS];
+        unsafe {
+            buffer.set_len(BUFFER_SIZE * NUM_CHANNELS);
+        }
         self.model.spectrograms.pre_fx_spectrogram_buffer =
             Arc::new(Mutex::new(buffer.clone()));
 
@@ -195,6 +198,7 @@ impl AudioModelBuilder {
             Arc::clone(&ui_params.mask_resolution);
         self.model.params.mask_is_post_fx =
             Arc::clone(&ui_params.mask_is_post_fx);
+        self.model.params.mask_mix = Arc::clone(&ui_params.mask_mix);
 
         // reso bank
         self.model.params.reso_bank_scale =

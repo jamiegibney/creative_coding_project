@@ -13,6 +13,7 @@ pub struct AudioParams {
     pub mask_resolution: Arc<Atomic<SpectralFilterSize>>,
     /// Whether the spectral filter is post-FX or not.
     pub mask_is_post_fx: Arc<AtomicBool>,
+    pub mask_mix: Arc<AtomicF64>,
 
     // ### RESONATOR BANK ###
     /// The musical scale of the resonator bank.

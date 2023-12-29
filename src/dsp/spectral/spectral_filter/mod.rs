@@ -1,4 +1,7 @@
-use super::{stft::stft_trait::StftInputMut, *};
+use super::{
+    stft::stft_trait::{StftInput, StftInputMut},
+    *,
+};
 use crate::util::window::*;
 use nannou_audio::Buffer;
 use realfft::{
@@ -28,6 +31,11 @@ pub struct SpectralFilter {
 
     /// inverse fft plan
     ifft: Arc<dyn ComplexToReal<f64>>,
+
+    /// dry input data
+    dry_buffer: Vec<f64>,
+
+    mix: Smoother<f64>,
 
     /// filter mask
     mask: SpectralMask,
@@ -63,6 +71,10 @@ impl SpectralFilter {
             fft: RealFftPlanner::new().plan_fft_forward(max_block_size),
             ifft: RealFftPlanner::new().plan_fft_inverse(max_block_size),
 
+            dry_buffer: vec![0.0; max_block_size * num_channels],
+
+            mix: Smoother::new(30.0, 1.0, unsafe { SAMPLE_RATE }),
+
             mask: SpectralMask::new(max_block_size)
                 .with_size(max_block_size / 2),
         }
@@ -77,12 +89,13 @@ impl SpectralFilter {
         let compensation_factor = self.compensation_factor(block_size);
 
         // window function
-        self.compensated_window_function = sine(block_size)
-            .into_iter()
+        self.window_function = sine(block_size);
+
+        self.compensated_window_function = self
+            .window_function
+            .iter()
             .map(|x| x * compensation_factor)
             .collect();
-
-        self.window_function = sine(block_size);
 
         // stft
         self.stft.set_block_size(block_size);
@@ -114,12 +127,20 @@ impl SpectralFilter {
         }
     }
 
+    /// Sets the dry/wet mix of the filter. `0.0` is 100% dry, and `1.0` is
+    /// 100% wet. The value is clamped to `[0.0, 1.0]`.
+    pub fn set_mix(&mut self, mix: f64) {
+        self.mix.set_target_value(mix.clamp(0.0, 1.0));
+    }
+
     /// Processes a block of audio. This does not necessarily call the FFT algorithms.
     #[allow(clippy::missing_panics_doc)] // this function will not panic.
     pub fn process_block<B>(&mut self, buffer: &mut B)
     where
         B: StftInputMut,
     {
+        self.store_dry(buffer);
+
         self.stft.process_overlap_add(
             buffer,
             Self::OVERLAP_FACTOR,
@@ -153,6 +174,8 @@ impl SpectralFilter {
                 );
             },
         );
+
+        self.apply_mix(buffer);
     }
 
     /// The maximum block size of the filter.
@@ -177,6 +200,56 @@ impl SpectralFilter {
     pub fn compensation_factor(&self, block_size: usize) -> f64 {
         ((block_size / 2) as f64 / (Self::OVERLAP_FACTOR as f64 * 4.0)).recip()
     }
+
+    /// Stores the input data into a temporary scratch buffer, used for
+    /// dry/wet mixing.
+    fn store_dry<B: StftInput>(&mut self, buffer: &B) {
+        let num_ch = buffer.num_channels();
+        let num_sm = buffer.num_samples();
+
+        for ch in 0..num_ch {
+            for smp in 0..num_sm {
+                // safety: this will not violate the bounds of the
+                // num_channels() and num_samples() methods, thus
+                // should not expect to go out of bounds
+                unsafe {
+                    self.dry_buffer[ch * num_sm + smp] =
+                        buffer.get_sample_unchecked(ch, smp);
+                }
+            }
+        }
+    }
+
+    fn apply_mix<B: StftInputMut>(&mut self, buffer: &mut B) {
+        let num_ch = buffer.num_channels();
+        let num_sm = buffer.num_samples();
+
+        for smp in 0..num_sm {
+            let (dry, wet) = self.get_dry_wet();
+
+            for ch in 0..num_ch {
+                let dry_sample = self.dry_buffer[ch * num_sm + smp];
+
+                unsafe {
+                    let wet_sample = buffer.get_sample_unchecked(ch, smp);
+
+                    *buffer.get_sample_unchecked_mut(ch, smp) =
+                        dry.mul_add(dry_sample, wet * wet_sample);
+                }
+            }
+        }
+    }
+
+    /// Returns the `(dry, wet)` values of the filter.
+    fn get_dry_wet(&mut self) -> (f64, f64) {
+        let mix = self.mix.next();
+
+        let dry = ((FRAC_PI_2 * mix).cos())
+            * self.compensation_factor(self.mask.len()).recip();
+        let wet = ((FRAC_PI_2 * mix).sin());
+
+        (dry, wet)
+    }
 }
 
 impl Default for SpectralFilter {
@@ -193,6 +266,10 @@ impl Default for SpectralFilter {
 
             compensated_window_function: Vec::default(),
             window_function: Vec::default(),
+
+            dry_buffer: Vec::default(),
+
+            mix: Smoother::new(30.0, 1.0, unsafe { SAMPLE_RATE }),
 
             complex_buffers: Vec::default(),
         }

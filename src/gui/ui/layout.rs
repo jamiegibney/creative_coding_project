@@ -26,6 +26,7 @@ pub struct MaskUILayout {
     pub scan_line_speed: Rect,
     pub resolution: Rect,
     pub is_post_fx: Rect,
+    pub mix: Rect,
     pub reset: Rect,
 }
 
@@ -48,10 +49,10 @@ impl Default for MaskUILayout {
             pt2(sp_w, SMALL_HEIGHT),
         );
 
-        let pfx_w = small_width_chars(7);
-        let post_fx_rect = Rect::from_xy_wh(
-            pt2(-128.0 + pfx_w / 2.0, 323.0),
-            pt2(pfx_w, SMALL_HEIGHT),
+        let mx_w = small_width_chars(5);
+        let mix_rect = Rect::from_xy_wh(
+            pt2(-128.0 + mx_w / 2.0, 323.0),
+            pt2(mx_w, SMALL_HEIGHT),
         );
 
         let label_rect =
@@ -68,7 +69,8 @@ impl Default for MaskUILayout {
             algorithm: algo_rect,
             scan_line_speed: speed_rect,
             resolution: reso_rect,
-            is_post_fx: post_fx_rect,
+            is_post_fx: def_rect(),
+            mix: mix_rect,
             reset: reset_rect,
         }
     }

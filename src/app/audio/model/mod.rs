@@ -159,7 +159,7 @@ impl AudioModel {
         }
     }
 
-    pub fn update_spectral_filter_size(&mut self) {
+    pub fn update_spectral_filter(&mut self) {
         let param = self.params.mask_resolution.lr().value();
 
         if param != self.data.spectral_filter_size {
@@ -168,6 +168,8 @@ impl AudioModel {
                 .spectral_filter
                 .set_block_size(self.params.mask_resolution.lr().value());
         }
+
+        self.processors.spectral_filter.set_mix(self.params.mask_mix.lr());
     }
 
     pub fn update_spectral_filter_order(&mut self) -> bool {

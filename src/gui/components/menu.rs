@@ -177,6 +177,11 @@ impl<E: MenuEnum> Menu<E> {
         self.selected_item_text_layout.as_mut()
     }
 
+    /// Returns whether the menu is open or not.
+    pub fn is_open(&self) -> bool {
+        self.is_open
+    }
+
     fn reset_to_default(&mut self) {
         self.variant = E::default();
 

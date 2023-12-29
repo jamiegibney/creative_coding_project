@@ -6,20 +6,18 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
     model.update_vectors(app);
     model.increment_mask_scan_line();
 
+    // update the mask scan line based on mouse events
+    if model.ui_components.mask_resolution.is_open()
+        && model.input_data.is_left_clicked
+    {
+        model.mouse_clicked_outside_of_mask = true;
+    }
+    model.update_mask_scan_line_from_mouse();
+
     let input_data = &model.input_data;
-    let mouse_pos = input_data.mouse_pos;
 
     // ui components
     model.ui_components.update(app, input_data);
-
-    // spectral mask
-    if model.mask_rect.contains(mouse_pos) && model.input_data.is_left_clicked {
-        let x_pos = mouse_pos.x as f64;
-        let l = model.mask_rect.left() as f64;
-        let r = model.mask_rect.right() as f64;
-
-        model.mask_scan_line_pos = normalise(x_pos, l, r);
-    }
 
     let pos = model.mask_scan_line_pos;
     let mask_len = model.ui_params.mask_resolution.lr().value();

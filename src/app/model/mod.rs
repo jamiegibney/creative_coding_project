@@ -77,6 +77,7 @@ pub struct Model {
     pub reso_bank_reset_receiver: Receiver<()>,
     pub reso_bank_data: triple_buffer::Input<ResoBankData>,
     pub mask_rect: Rect,
+    pub mouse_clicked_outside_of_mask: bool,
 
     /// A Perlin noise contour generator.
     pub contours: Option<Arc<RwLock<ContoursGPU>>>,
@@ -201,6 +202,7 @@ impl Model {
             mask_rect,
             reso_bank_reset_receiver,
             reso_bank_data,
+            mouse_clicked_outside_of_mask: false,
 
             contours: Some(contours),
             smooth_life: Some(smooth_life),
@@ -318,5 +320,25 @@ impl Model {
             .set_reso_bank_data(self.reso_bank_data.input_buffer());
 
         self.reso_bank_data.publish();
+    }
+
+    pub fn update_mask_scan_line_from_mouse(&mut self) {
+        if self.input_data.is_left_clicked {
+            if self.mask_rect.contains(self.input_data.mouse_pos) {
+                if !self.mouse_clicked_outside_of_mask {
+                    let x_pos = self.input_data.mouse_pos.x as f64;
+                    let l = self.mask_rect.left() as f64;
+                    let r = self.mask_rect.right() as f64;
+
+                    self.mask_scan_line_pos = normalise(x_pos, l, r);
+                }
+            }
+            else {
+                self.mouse_clicked_outside_of_mask = true;
+            }
+        }
+        else {
+            self.mouse_clicked_outside_of_mask = false;
+        }
     }
 }

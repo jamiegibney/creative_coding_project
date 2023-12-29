@@ -260,7 +260,7 @@ impl SpectrumAnalyzer {
         let bottom = self.rect.bottom() as f64;
         let top = self.rect.top() as f64;
 
-        ((gain) * 4.0 + bottom / 2.0).clamp(bottom, top)
+        (gain * 3.0 + bottom - bottom * 0.3).clamp(bottom, top)
     }
 }
 

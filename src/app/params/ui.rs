@@ -27,6 +27,8 @@ pub struct UIParams {
     pub mask_scan_line_speed: Arc<AtomicF64>,
     /// Whether the spectral filter is pre- or post-FX.
     pub mask_is_post_fx: Arc<AtomicBool>,
+
+    pub mask_mix: Arc<AtomicF64>,
     /// The block size of the spectral filter.
     pub mask_resolution: Arc<Atomic<SpectralFilterSize>>,
 
@@ -146,6 +148,7 @@ impl Default for UIParams {
             mask_algorithm: Arc::new(Atomic::new(GenerativeAlgo::default())),
             mask_scan_line_speed: Arc::new(AtomicF64::new(0.1)),
             mask_is_post_fx: Arc::new(AtomicBool::new(false)),
+            mask_mix: Arc::new(AtomicF64::new(1.0)),
             mask_resolution: Arc::new(Atomic::new(
                 SpectralFilterSize::default(),
             )),
