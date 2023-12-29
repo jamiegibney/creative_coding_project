@@ -216,3 +216,18 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
         })
     }
 }
+
+impl<T: SmoothableAtomic> Clone for SmootherAtomic<T> {
+    fn clone(&self) -> Self {
+        let t = T::from_f64(1.0).atomic_new();
+        T::atomic_store(&t, T::atomic_load(&self.target_value));
+
+        Self {
+            ramp: self.ramp.clone(),
+            start_value: AtomicF64::new(self.start_value.lr()),
+            current_value: AtomicF64::new(self.current_value.lr()),
+            target_value: t,
+            smoothing_type: self.smoothing_type,
+        }
+    }
+}

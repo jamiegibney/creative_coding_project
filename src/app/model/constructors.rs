@@ -1,15 +1,9 @@
 use super::audio_constructor::build_audio_model;
 use super::*;
+use crate::app::audio::audio_constructor::MAX_NUM_RESONATORS;
+use crate::dsp::ResoBankData;
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::mpsc;
-
-fn egui_raw_event(
-    _app: &App,
-    model: &mut Model,
-    event: &nannou::winit::event::WindowEvent,
-) {
-    model.egui.handle_raw_event(event);
-}
 
 /// Builds the app window.
 pub fn build_window(app: &App, width: u32, height: u32) -> Id {
@@ -22,7 +16,6 @@ pub fn build_window(app: &App, width: u32, height: u32) -> Id {
         .mouse_moved(mouse::mouse_moved)
         .event(event)
         .view(view)
-        // .raw_event(egui_raw_event)
         .build()
         .expect("failed to build app window!")
 }
@@ -37,17 +30,22 @@ pub struct AudioSystem {
     pub(super) post_spectrum: SpectrumOutput,
     pub(super) voice_event_sender: mpsc::Sender<VoiceEvent>,
     pub(super) spectral_mask: triple_buffer::Input<SpectralMask>,
+    pub(super) reso_bank_data: triple_buffer::Input<ResoBankData>,
 }
 
 /// Builds the audio stream, audio message channel senders, and input note handler.
-pub fn build_audio_system(
-    params: &UIParams,
-) -> AudioSystem {
+pub fn build_audio_system(params: &UIParams) -> AudioSystem {
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
-    let (mut spectral_mask, mut spectral_mask_output) =
+    let (spectral_mask, spectral_mask_output) =
         triple_buffer::TripleBuffer::new(&SpectralMask::new(
             MAX_SPECTRAL_BLOCK_SIZE,
+        ))
+        .split();
+
+    let (reso_bank_data, reso_bank_data_output) =
+        triple_buffer::TripleBuffer::new(&ResoBankData::new(
+            MAX_NUM_RESONATORS,
         ))
         .split();
 
@@ -59,6 +57,7 @@ pub fn build_audio_system(
         note_channel_receiver,
         sample_rate: unsafe { SAMPLE_RATE },
         spectral_mask_output: Some(spectral_mask_output),
+        reso_bank_data_output: Some(reso_bank_data_output),
         voice_event_sender: voice_event_sender.clone(),
         voice_event_receiver: Some(voice_event_receiver),
     };
@@ -96,14 +95,17 @@ pub fn build_audio_system(
         post_spectrum,
         voice_event_sender,
         spectral_mask,
+        reso_bank_data,
     }
 }
 
 pub struct GuiElements {
+    pub(super) mask_rect: Rect,
     pub(super) bank_rect: Rect,
 
     pub(super) contours: ContoursGPU,
     pub(super) smooth_life: SmoothLifeGPU,
+    pub(super) vectors: Vectors,
 
     pub(super) pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
     pub(super) post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
@@ -140,6 +142,7 @@ pub fn build_gui_elements(
 
     GuiElements {
         bank_rect,
+        mask_rect,
 
         // contours: Contours::new(app.main_window().device(), mask_rect)
         //     .with_num_threads(16)
@@ -153,6 +156,8 @@ pub fn build_gui_elements(
             .with_num_contours(params.contour_count.lr())
             .with_contour_range(0.0..=(params.contour_thickness.lr() as f32)),
         smooth_life: SmoothLifeGPU::new(app, mask_rect),
+        vectors: Vectors::new(MAX_NUM_RESONATORS, bank_rect)
+            .with_point_radius(4.0),
 
         pre_spectrum_analyzer,
         post_spectrum_analyzer,

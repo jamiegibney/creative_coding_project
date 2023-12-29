@@ -334,8 +334,8 @@ impl DrawMask for SmoothLifeGPU {
             for i in 1..mask_len {
                 let bin_hz = SpectralMask::bin_freq(i, mask_len, sr);
                 let y = 1.0 - freq_log_norm(bin_hz, 20.0, sr);
-                let x_px = (x * 256.0) as u32;
-                let y_px = (y * 256.0) as u32;
+                let x_px = ((x * 255.0) as u32).min(255);
+                let y_px = ((y * 255.0) as u32).min(255);
 
                 let br = guard.get_pixel(x_px, y_px).0[0];
 

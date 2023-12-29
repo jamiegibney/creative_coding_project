@@ -60,7 +60,8 @@ impl RampAtomic {
         if steps_remaining <= num_steps {
             self.steps_remaining.sr(0);
             self.current_value.sr(RAMP_TARGET);
-        } else {
+        }
+        else {
             self.current_value
                 .fetch_add(step_size * num_steps as f64, Relaxed);
             self.steps_remaining.fetch_sub(num_steps, Relaxed);
@@ -84,12 +85,7 @@ impl RampAtomic {
     /// Fills block with filled samples. Progresses the `Ramp` by `block.len()`
     /// values.
     pub fn next_block_exact(&self, block: &mut [f64]) {
-        let Self {
-            steps_remaining,
-            step_size,
-            current_value,
-            ..
-        } = self;
+        let Self { steps_remaining, step_size, current_value, .. } = self;
 
         let step_size = self.step_size.lr();
 
@@ -101,14 +97,16 @@ impl RampAtomic {
             return;
         }
 
-        let filler = || self.current_value.fetch_add(step_size, Relaxed) + step_size;
+        let filler =
+            || self.current_value.fetch_add(step_size, Relaxed) + step_size;
 
         if num_smoothed_values == steps_remaining {
             block[..num_smoothed_values - 1].fill_with(filler);
 
             self.current_value.sr(RAMP_TARGET);
             block[num_smoothed_values - 1] = RAMP_TARGET;
-        } else {
+        }
+        else {
             block[..num_smoothed_values].fill_with(filler);
         }
 
@@ -122,8 +120,12 @@ impl RampAtomic {
     /// Same as the [`next_block`][Self::next_block()] method, but applies
     /// a mapping function to each element (should map `0.0` to `1.0` to
     /// the desired range).
-    pub fn next_block_mapped<T, F>(&self, block: &mut [T], _block_len: usize, function: F)
-    where
+    pub fn next_block_mapped<T, F>(
+        &self,
+        block: &mut [T],
+        _block_len: usize,
+        function: F,
+    ) where
         F: FnMut(f64) -> T,
         T: SmoothableAtomic,
     {
@@ -133,8 +135,11 @@ impl RampAtomic {
     /// Same as the [`next_block_exaxt`][Self::next_block_exact()] method,
     /// but applies a mapping function to each element (should map `0.0`
     /// to `1.0` to the desired range).
-    pub fn next_block_exact_mapped<T, F>(&self, block: &mut [T], mut mapping_function: F)
-    where
+    pub fn next_block_exact_mapped<T, F>(
+        &self,
+        block: &mut [T],
+        mut mapping_function: F,
+    ) where
         F: FnMut(f64) -> T,
         T: SmoothableAtomic,
     {
@@ -161,7 +166,8 @@ impl RampAtomic {
 
             self.current_value.sr(RAMP_TARGET);
             block[num_smoothed_values - 1] = mapping_function(RAMP_TARGET);
-        } else {
+        }
+        else {
             block.iter_mut().take(num_smoothed_values).for_each(|x| {
                 self.current_value.fetch_add(step_size, Relaxed);
                 *x = mapping_function(self.current_value.lr());
@@ -180,7 +186,7 @@ impl RampAtomic {
     /// Resets the `Ramp` to the provided value, and recomputes its
     /// step size/remaining count.
     pub fn reset_to(&self, value: f64) {
-        self.current_value.sr(value);
+        self.current_value.sr(value.clamp(0.0, 1.0));
         self.setup();
     }
 
@@ -219,7 +225,8 @@ impl RampAtomic {
 
         self.step_size.sr(if steps_remaining > 0 {
             self.compute_step_size()
-        } else {
+        }
+        else {
             0.0
         });
     }
@@ -232,6 +239,19 @@ impl RampAtomic {
 
     /// Computes the size of each step.
     fn compute_step_size(&self) -> f64 {
-        (RAMP_TARGET - self.current_value.lr()) / (self.steps_remaining.lr() as f64)
+        (RAMP_TARGET - self.current_value.lr())
+            / (self.steps_remaining.lr() as f64)
+    }
+}
+
+impl Clone for RampAtomic {
+    fn clone(&self) -> Self {
+        Self {
+            steps_remaining: AtomicU32::new(self.steps_remaining.lr()),
+            step_size: AtomicF64::new(self.step_size.lr()),
+            current_value: AtomicF64::new(self.current_value.lr()),
+            duration_ms: AtomicF64::new(self.duration_ms.lr()),
+            sample_rate: self.sample_rate,
+        }
     }
 }

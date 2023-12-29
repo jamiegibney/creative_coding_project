@@ -31,6 +31,10 @@ pub struct AudioParams {
     pub reso_bank_quantise: Arc<AtomicBool>,
     /// The number of active resonators in the bank.
     pub reso_bank_resonator_count: Arc<AtomicU32>,
+    /// The dry/wet mix of the resonator bank.
+    pub reso_bank_mix: Arc<SmootherAtomic<f64>>,
+    /// The exciter oscillator.
+    pub exciter_osc: Arc<Atomic<ExciterOscillator>>,
 
     /// The cutoff of the filter in Hz.
     pub low_filter_cutoff: Arc<SmootherAtomic<f64>>,
@@ -51,7 +55,7 @@ pub struct AudioParams {
     pub high_filter_is_shelf: Arc<AtomicBool>,
 
     /// The time between delay taps in milliseconds.
-    pub delay_time_ms: Arc<SmootherAtomic<f64>>,
+    pub delay_time_ms: Arc<AtomicF64>,
     /// The delay feedback.
     pub delay_feedback: Arc<SmootherAtomic<f64>>,
     /// The dry/wet mix for the delay.

@@ -11,10 +11,8 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let V2 { x: _width, y: _height } = WINDOW_SIZE;
 
     let bank_rect = &model.bank_rect;
-    draw.rect()
-        .xy(bank_rect.xy())
-        .wh(bank_rect.wh())
-        .color(GREEN);
+    model.vectors.draw(app, draw, &frame);
+    outline_rect(bank_rect, draw, 2.0);
 
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
@@ -82,7 +80,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     // if the frame fails to draw, we'll just ignore it
     let _ = draw.to_frame(app, &frame);
-    let _ = model.egui.draw_to_frame(&frame);
+    // let _ = model.egui.draw_to_frame(&frame);
 }
 
 fn outline_rect(rect: &Rect, draw: &Draw, width: f32) {

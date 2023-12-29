@@ -387,8 +387,8 @@ impl DrawMask for ContoursGPU {
                 }
                 let y = 1.0 - freq_log_norm(bin_hz, 20.0, sr);
                 // dbg!(mask_len, i, bin_hz, y);
-                let x_px = (x * 256.0) as u32;
-                let y_px = (y * 256.0) as u32;
+                let x_px = ((x * 255.0) as u32).min(255);
+                let y_px = ((y * 255.0) as u32).min(255);
 
                 let br = guard.get_pixel(x_px, y_px).0[0];
 

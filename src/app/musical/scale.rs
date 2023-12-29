@@ -2,7 +2,7 @@ use bytemuck::NoUninit;
 use std::fmt::Display;
 
 /// Common scale representations.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Scale {
     Major,
     Minor,
@@ -37,10 +37,9 @@ impl Scale {
         }
     }
 
-    /// Quantises `note` to the current scale, with `root` only used
-    /// as a musical note (i.e., the octave of root is shifted to match
-    /// note. In other words, `note` is quantised to the nearest possible
-    /// note in the scale).
+    /// Quantises `note` to its current scale, i.e. snaps it to the nearest
+    /// possible note within the scale. `root` is only used to find the offset
+    /// for this particular scale.
     pub fn quantise_to_scale(&self, note: f64, root: f64) -> f64 {
         // FIXME: need to avoid the output being -1 (if note == 0)
         // start with the root note

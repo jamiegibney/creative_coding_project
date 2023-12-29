@@ -21,6 +21,7 @@ pub struct TextSlider {
     output_value: f64,
     default_value: Option<f64>,
     integer_rounding: bool,
+    last_int: f64,
 
     output_range: RangeInclusive<f64>,
     log_scaling: bool,
@@ -64,6 +65,7 @@ impl TextSlider {
             output_range: 0.0..=1.0,
 
             integer_rounding: false,
+            last_int: 0.0,
             log_scaling: false,
 
             label: None,
@@ -397,7 +399,11 @@ impl TextSlider {
         }
 
         if let Some(cb) = self.callback.as_mut() {
-            cb(self.raw_value, self.output_value);
+            if !(self.integer_rounding
+                && epsilon_eq(self.output_value, self.last_int))
+            {
+                cb(self.raw_value, self.output_value);
+            }
         }
 
         self.value_text = format!(
@@ -406,6 +412,10 @@ impl TextSlider {
             self.format_output_value(),
             self.value_suffix.as_ref().map_or("", |suf| suf),
         );
+
+        if self.integer_rounding {
+            self.last_int = self.output_value;
+        }
     }
 
     fn format_output_value(&self) -> String {

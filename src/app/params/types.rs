@@ -194,3 +194,27 @@ impl Display for SpectralFilterSize {
 }
 
 unsafe impl NoUninit for SpectralFilterSize {}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ExciterOscillator {
+    Sine,
+    Tri,
+    Saw,
+    Square,
+    #[default]
+    Noise,
+}
+
+impl Display for ExciterOscillator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::Sine => write!(f, "Sine"),
+            Self::Tri => write!(f, "Tri"),
+            Self::Saw => write!(f, "Saw"),
+            Self::Square => write!(f, "Square"),
+            Self::Noise => write!(f, "Noise"),
+        }
+    }
+}
+
+unsafe impl NoUninit for ExciterOscillator {}

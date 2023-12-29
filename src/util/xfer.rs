@@ -177,6 +177,8 @@ pub fn skewed_sine(mut input: f64) -> f64 {
 /// Raising `c` will increase the amount of saturation.
 ///
 /// From <https://www.musicdsp.org/en/latest/Effects/42-soft-saturation.html>
+///
+/// Visualisation: <https://www.desmos.com/calculator/6kc511fbhe>
 pub fn smooth_soft_clip(mut input: f64, mut c: f64) -> f64 {
     input = input.clamp(-1.0, 1.0);
     c = 1.0 - c.clamp(0.0, 1.0);
@@ -188,9 +190,9 @@ pub fn smooth_soft_clip(mut input: f64, mut c: f64) -> f64 {
         ((c + 1.0) / 2.0) * sign
     }
     else if abs > c {
-        let inner = (input - c) / (1.0 - c);
+        let inner = (abs - c) / (1.0 - c);
 
-        c + (input - c) / (1.0 + (inner.powi(2)))
+        (c + (abs - c) / (1.0 + (inner.powi(2)))) * sign
     }
     else {
         input

@@ -36,16 +36,8 @@ impl GeneratorProcessor for SquareOsc {
     fn process(&mut self) -> (f64, f64) {
         self.increment_phase();
 
-        let out_l = if self.phase_l.is_sign_positive() {
-            1.0
-        } else {
-            -1.0
-        };
-        let out_r = if self.phase_r.is_sign_positive() {
-            1.0
-        } else {
-            -1.0
-        };
+        let out_l = if self.phase_l < 0.5 { 1.0 } else { -1.0 };
+        let out_r = if self.phase_r < 0.5 { 1.0 } else { -1.0 };
 
         (out_l, out_r)
     }

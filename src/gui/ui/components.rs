@@ -64,6 +64,10 @@ pub struct UIComponents {
     reso_bank_randomise: Button,
 
     // f64
+    reso_bank_mix: TextSlider,
+    exciter_osc: Menu<ExciterOscillator>,
+
+    // f64
     reso_bank_cell_jitter: TextSlider,
     // u32
     reso_bank_cell_count: TextSlider,
@@ -230,7 +234,7 @@ impl UIComponents {
                     scan_line_speed.lr(),
                     ui_layout.mask_general.scan_line_speed,
                 )
-                .with_output_range(0.1..=10.0)
+                .with_output_range(-10.0..=10.0)
                 .with_value_chars(4)
                 .with_value_layout(Layout {
                     font: Some(
@@ -239,11 +243,11 @@ impl UIComponents {
                     ),
                     ..small_value_layout()
                 })
-                .with_sensitivity(0.005)
+                .with_sensitivity(0.003)
                 .with_suffix(" x")
                 .with_default_value(1.0)
                 .with_callback(move |raw_val, _| {
-                    scan_line_speed.sr(scale(raw_val, 0.01, 1.0));
+                    scan_line_speed.sr(scale(raw_val, -1.0, 1.0));
                 })
             },
             mask_is_post_fx: {
@@ -424,8 +428,8 @@ impl UIComponents {
                 let reso_bank_root_note =
                     Arc::clone(&params.reso_bank_root_note);
                 TextSlider::new(0.0, ui_layout.reso_bank.root_note)
-                    .with_output_range(12.0..=83.0)
-                    .with_sensitivity(0.001)
+                    .with_output_range(60.0..=71.0)
+                    // .with_sensitivity(0.001)
                     .with_value_layout(Layout {
                         font: Some(
                             Font::from_bytes(BOLD_FONT_MONO_BYTES)
@@ -433,13 +437,13 @@ impl UIComponents {
                         ),
                         ..small_value_layout()
                     })
-                    .with_default_value(69.0) // A4
+                    .with_default_value(60.0) // C4
                     .with_integer_rounding()
                     .with_callback(move |_, value| {
                         reso_bank_root_note.sr(value as u8);
                     })
                     .with_formatting_callback(|raw, val| {
-                        midi_note_to_string(val as u8)
+                        format!("{}", Note::from_value(val as i32))
                     })
             },
             reso_bank_spread: {
@@ -537,7 +541,10 @@ impl UIComponents {
                 let reso_count = Arc::clone(&params.reso_bank_resonator_count);
                 TextSlider::new(8.0, ui_layout.reso_bank.reso_count)
                     .with_label("Resonators")
-                    .with_label_layout(main_label_layout())
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
                     .with_value_layout(main_value_layout())
                     .with_integer_rounding()
                     .with_output_range(1.0..=32.0)
@@ -563,9 +570,13 @@ impl UIComponents {
                 let cell_jitter = Arc::clone(&params.reso_bank_cell_jitter);
                 TextSlider::new(0.1, ui_layout.reso_bank.cell_jitter)
                     .with_label("Jitter")
-                    .with_label_layout(main_label_layout())
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
                     .with_value_layout(main_value_layout())
                     .with_default_value(0.1)
+                    .with_value_chars(4)
                     .with_callback(move |_, value| {
                         cell_jitter.sr(value);
                     })
@@ -574,11 +585,48 @@ impl UIComponents {
                 let cell_scatter = Arc::clone(&params.reso_bank_cell_scatter);
                 TextSlider::new(0.5, ui_layout.reso_bank.cell_scatter)
                     .with_label("Scatter")
-                    .with_label_layout(main_label_layout())
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
                     .with_value_layout(main_value_layout())
                     .with_default_value(0.5)
+                    .with_value_chars(4)
                     .with_callback(move |_, value| {
                         cell_scatter.sr(value);
+                    })
+            },
+
+            reso_bank_mix: {
+                let mix = Arc::clone(&params.reso_bank_mix);
+                TextSlider::new(0.0, ui_layout.reso_bank.mix)
+                    .with_label("Mix")
+                    .with_suffix(" %")
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(0.0..=100.0)
+                    .with_default_value(mix.current_value() * 100.0)
+                    .with_value_chars(5)
+                    .with_callback(move |raw, _| {
+                        mix.set_target_value(raw);
+                    })
+            },
+
+            exciter_osc: {
+                let osc = Arc::clone(&params.exciter_osc);
+                Menu::new(ui_layout.reso_bank.exciter)
+                    .with_label("Exciter")
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_item_text_layout(main_value_layout())
+                    .with_selected_item_text_layout(main_value_layout())
+                    .with_callback(move |selected| {
+                        osc.sr(selected);
                     })
             },
 
@@ -601,6 +649,7 @@ impl UIComponents {
                     .with_disabled_text("Cut")
                     .with_enabled_layout(main_value_layout())
                     .with_disabled_layout(main_value_layout())
+                    .with_state(low_filter_type.lr())
                     .with_callback(move |state| low_filter_type.sr(state))
             },
             low_filter_cutoff: {
@@ -613,8 +662,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    // .with_output_range(3.4868..=135.0762) // 10 to 20k
-                    .with_output_range(3.4868..=71.2131) // 10 to 500
+                    .with_output_range(3.4868..=111.0762) // 10Hz to 5kHz
                     .with_default_value(freq_to_note(
                         low_filter_cutoff.current_value(),
                     ))
@@ -666,7 +714,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    .with_output_range(-12.0..=12.0)
+                    .with_output_range(-24.0..=24.0)
                     .with_value_chars(5)
                     .with_suffix(" dB")
                     .with_default_value(low_filter_gain.current_value())
@@ -690,6 +738,7 @@ impl UIComponents {
                     .with_disabled_text("Cut")
                     .with_enabled_layout(main_value_layout())
                     .with_disabled_layout(main_value_layout())
+                    .with_state(high_filter_type.lr())
                     .with_callback(move |state| high_filter_type.sr(state))
             },
             high_filter_cutoff: {
@@ -702,8 +751,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    // .with_output_range(3.4868..=135.0762) // 10 to 20k
-                    .with_output_range(71.2131..=135.0762) // 500 to 20k
+                    .with_output_range(55.35..=135.075_366) // 200Hz to 20kHz
                     .with_default_value(freq_to_note(
                         high_filter_cutoff.current_value(),
                     ))
@@ -756,7 +804,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    .with_output_range(-12.0..=12.0)
+                    .with_output_range(-24.0..=24.0)
                     .with_value_chars(5)
                     .with_suffix(" dB")
                     .with_default_value(high_filter_gain.current_value())
@@ -777,9 +825,9 @@ impl UIComponents {
                     .with_suffix(" ms")
                     .with_output_range(10.0..=999.9)
                     .with_value_chars(5)
-                    .with_default_value(pp_delay_time_ms.current_value())
+                    .with_default_value(pp_delay_time_ms.lr())
                     .with_callback(move |_, value| {
-                        pp_delay_time_ms.set_target_value(value);
+                        pp_delay_time_ms.sr(value);
                     })
             },
             delay_feedback: {
@@ -808,7 +856,7 @@ impl UIComponents {
                     .with_output_range(0.0..=100.0)
                     .with_value_chars(5)
                     .with_default_value(pp_delay_mix.current_value() * 100.0)
-                    .with_callback(move |_, value| {
+                    .with_callback(move |value, _| {
                         pp_delay_mix.set_target_value(value);
                     })
             },
@@ -861,7 +909,7 @@ impl UIComponents {
                     .with_label_layout(main_label_layout())
                     .with_value_layout(main_value_layout())
                     .with_output_range(MINUS_INFINITY_DB..=0.0)
-                    .with_default_value(0.0)
+                    .with_default_value(params.comp_thresh.current_value())
                     .with_callback(move |_, value| {
                         comp_thresh.set_target_value(value);
                     })
@@ -906,12 +954,11 @@ impl UIComponents {
                     .with_value_layout(main_value_layout())
                     .with_suffix(":1")
                     .with_output_range(1.0..=99.9)
-                    .with_default_value(1.0)
+                    .with_default_value(params.comp_ratio.current_value())
                     .with_value_chars(4)
                     .with_callback(move |_, value| {
                         comp_ratio.set_target_value(value);
-                    },
-                )
+                    })
             },
             comp_attack: {
                 let comp_attack = Arc::clone(&params.comp_attack_ms);
@@ -1051,20 +1098,11 @@ impl UIComponents {
         mut self,
         audio_senders: Arc<AudioMessageSenders>,
     ) -> Self {
-        let as_1 = Arc::clone(&audio_senders);
+        // let as_1 = Arc::clone(&audio_senders);
         // self.mask_is_post_fx.set_callback(move |state| {
         //     as_1.spectral_mask_post_fx.send(()).unwrap();
         // });
-        let rbp = Arc::new(Mutex::new(ResonatorBankParams::default()));
-
-        let rbp_1 = Arc::clone(&rbp);
-        let as_2 = Arc::clone(&audio_senders);
-        self.reso_bank_root_note.set_callback(move |_, val| {
-            if let Ok(mut guard) = rbp_1.lock() {
-                guard.root_note = val;
-                as_2.resonator_bank_params.send(guard.clone()).unwrap();
-            }
-        });
+        // let rbp = Arc::new(Mutex::new(ResonatorBankParams::default()));
 
         self
     }
@@ -1107,9 +1145,11 @@ impl UIDraw for UIComponents {
         self.reso_bank_randomise.update(app, input_data);
 
         self.reso_bank_resonator_count.update(app, input_data);
-        self.reso_bank_cell_count.update(app, input_data);
+        // self.reso_bank_cell_count.update(app, input_data);
         self.reso_bank_cell_jitter.update(app, input_data);
         self.reso_bank_cell_scatter.update(app, input_data);
+        self.reso_bank_mix.update(app, input_data);
+        self.exciter_osc.update(app, input_data);
 
         self.low_filter_type.update(app, input_data);
         self.low_filter_cutoff.update(app, input_data);
@@ -1210,9 +1250,12 @@ impl UIDraw for UIComponents {
         self.reso_bank_scale.draw(app, draw, frame); // menu
 
         self.reso_bank_resonator_count.draw(app, draw, frame);
-        self.reso_bank_cell_count.draw(app, draw, frame);
+        // self.reso_bank_cell_count.draw(app, draw, frame);
         self.reso_bank_cell_jitter.draw(app, draw, frame);
         self.reso_bank_cell_scatter.draw(app, draw, frame);
+
+        self.reso_bank_mix.draw(app, draw, frame);
+        self.exciter_osc.draw(app, draw, frame);
 
         self.low_filter_type.draw(app, draw, frame);
         self.low_filter_cutoff.draw(app, draw, frame);

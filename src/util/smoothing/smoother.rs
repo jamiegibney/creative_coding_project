@@ -30,7 +30,10 @@ impl<T: Smoothable> Smoother<T> {
     }
 
     /// Creates a smoother with `smoothing_type` smoothing.
-    pub fn with_smoothing_type(mut self, smoothing_type: SmoothingType) -> Self {
+    pub fn with_smoothing_type(
+        mut self,
+        smoothing_type: SmoothingType,
+    ) -> Self {
         self.set_smoothing_type(smoothing_type);
         self
     }
@@ -49,8 +52,11 @@ impl<T: Smoothable> Smoother<T> {
     /// provides some internal optimizations.
     ///
     pub fn skip(&mut self, num_steps: u32) -> T {
-        self.ramp.skip(num_steps);
+        if !self.is_active() {
+            return self.current_value();
+        }
 
+        self.ramp.skip(num_steps);
         self.interpolated_value()
     }
 
@@ -75,7 +81,9 @@ impl<T: Smoothable> Smoother<T> {
                 ST::SineTop => lerp(a, b, xfer::sine_upper(t)),
                 ST::SineBottom => lerp(a, b, xfer::sine_lower(t)),
                 ST::CurveNormal(c) => lerp(a, b, xfer::s_curve(t, c)),
-                ST::CurveLinearStart(c) => lerp(a, b, xfer::s_curve_linear_centre(t, c)),
+                ST::CurveLinearStart(c) => {
+                    lerp(a, b, xfer::s_curve_linear_centre(t, c))
+                }
                 ST::CurveRounder(c) => lerp(a, b, xfer::s_curve_round(t, c)),
             })
         });
@@ -99,6 +107,11 @@ impl<T: Smoothable> Smoother<T> {
     /// by its [`next()`][Self::next()] method.
     pub fn current_value(&self) -> T {
         self.current_value
+    }
+
+    /// Returns the current target value of the smoother.
+    pub fn target_value(&self) -> T {
+        self.target_value
     }
 
     /// Sets the smoothing (interpolation) type of the `Smoother`. See the
@@ -160,11 +173,15 @@ impl<T: Smoothable> Smoother<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
+            ST::CurveNormal(tension) => {
+                interp::lerp(a, b, xfer::s_curve(t, tension))
+            }
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
+            ST::CurveRounder(tension) => {
+                interp::lerp(a, b, xfer::s_curve_round(t, tension))
+            }
         });
 
         self.current_value
@@ -178,11 +195,15 @@ impl<T: Smoothable> Smoother<T> {
             ST::Cosine => interp::cosine(a, b, t),
             ST::SineTop => interp::lerp(a, b, xfer::sine_upper(t)),
             ST::SineBottom => interp::lerp(a, b, xfer::sine_lower(t)),
-            ST::CurveNormal(tension) => interp::lerp(a, b, xfer::s_curve(t, tension)),
+            ST::CurveNormal(tension) => {
+                interp::lerp(a, b, xfer::s_curve(t, tension))
+            }
             ST::CurveLinearStart(tension) => {
                 interp::lerp(a, b, xfer::s_curve_linear_centre(t, tension))
             }
-            ST::CurveRounder(tension) => interp::lerp(a, b, xfer::s_curve_round(t, tension)),
+            ST::CurveRounder(tension) => {
+                interp::lerp(a, b, xfer::s_curve_round(t, tension))
+            }
         })
     }
 }

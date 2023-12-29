@@ -58,6 +58,8 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                         NoteEvent::NoteOn { note, .. } => {
                             voice_handler.start_voice(
                                 note,
+                                audio.params.exciter_osc.lr(),
+                                audio.data.sample_rate.lr(),
                                 Some(audio.generation.amp_envelope.clone()),
                             );
                         }
@@ -155,9 +157,6 @@ fn callback_timer(audio: &AudioModel) {
 /// Processes all audio FX.
 #[allow(clippy::needless_range_loop)]
 fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
-    // try to receive any messages from other threads
-    audio.try_receive();
-
     // check if the spectral filter order has changed
     let filter_order_just_changed = audio.update_spectral_filter_order();
 

@@ -80,6 +80,11 @@ pub struct UIParams {
     /// correspond to a less even distribution.
     pub reso_bank_cell_scatter: Arc<AtomicF64>,
 
+    /// The dry/wet mix of the resonator bank.
+    pub reso_bank_mix: Arc<SmootherAtomic<f64>>,
+    /// The exciter oscillator.
+    pub exciter_osc: Arc<Atomic<ExciterOscillator>>,
+
     // ### POST EFFECTS ###
 
     // LOW-PASS
@@ -104,7 +109,7 @@ pub struct UIParams {
 
     // STEREO DELAY
     /// The time between delay taps in milliseconds.
-    pub delay_time_ms: Arc<SmootherAtomic<f64>>,
+    pub delay_time_ms: Arc<AtomicF64>,
     /// The delay feedback.
     pub delay_feedback: Arc<SmootherAtomic<f64>>,
     /// The dry/wet mix for the delay.
@@ -176,33 +181,31 @@ impl Default for UIParams {
             reso_bank_cell_jitter: Arc::new(AtomicF64::new(0.1)),
             reso_bank_cell_scatter: Arc::new(AtomicF64::new(0.5)),
 
-            low_filter_cutoff: smoother(4000.0),
+            reso_bank_mix: smoother(1.0),
+            exciter_osc: Arc::new(Atomic::new(ExciterOscillator::default())),
+
+            low_filter_cutoff: smoother(500.0),
             low_filter_q: smoother(BUTTERWORTH_Q),
             low_filter_gain_db: smoother(0.0),
-            low_filter_is_shelf: Arc::new(AtomicBool::new(true)),
+            low_filter_is_shelf: Arc::new(AtomicBool::new(false)),
 
             high_filter_cutoff: smoother(500.0),
             high_filter_q: smoother(BUTTERWORTH_Q),
             high_filter_gain_db: smoother(0.0),
             high_filter_is_shelf: Arc::new(AtomicBool::new(true)),
 
-            delay_time_ms: Arc::new(
-                SmootherAtomic::new(10.0, 250.0, unsafe {
-                    OVERSAMPLED_SAMPLE_RATE
-                })
-                .with_smoothing_type(SmoothingType::Cosine),
-            ),
+            delay_time_ms: Arc::new(AtomicF64::new(250.0)),
             delay_feedback: smoother(0.75),
             delay_mix: smoother(0.5),
-            use_ping_pong: Arc::new(AtomicBool::new(false)),
+            use_ping_pong: Arc::new(AtomicBool::new(true)),
 
             dist_amount: smoother(0.0),
             dist_type: Arc::new(Atomic::new(DistortionType::default())),
 
-            comp_thresh: smoother(0.0),
-            comp_ratio: smoother(1.0),
-            comp_attack_ms: smoother(30.0),
-            comp_release_ms: smoother(100.0),
+            comp_thresh: smoother(-12.0),
+            comp_ratio: smoother(10.0),
+            comp_attack_ms: smoother(80.0),
+            comp_release_ms: smoother(200.0),
 
             master_gain: smoother(1.0),
             // eq_params: EQParams::default(),

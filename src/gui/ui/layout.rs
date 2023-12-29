@@ -211,6 +211,9 @@ pub struct ResoBankUILayout {
     pub cell_jitter: Rect,
     pub cell_count: Rect,
     pub cell_scatter: Rect,
+
+    pub mix: Rect,
+    pub exciter: Rect,
 }
 
 impl Default for ResoBankUILayout {
@@ -260,14 +263,41 @@ impl Default for ResoBankUILayout {
 
         let sc_w = small_width_chars(9);
         let scale_rect = Rect::from_xy_wh(
-            pt2(-495.0 + sc_w / 2.0, 332.0 - SMALL_HEIGHT * 2.5),
+            pt2(-503.0 + sc_w / 2.0, 332.0 - SMALL_HEIGHT * 2.5),
             pt2(sc_w, SMALL_HEIGHT * 5.0),
         );
 
-        let rn_w = small_width_chars(3);
+        let rn_w = small_width_chars(2);
         let root_rect = Rect::from_xy_wh(
             pt2(-540.0 + rn_w / 2.0, 323.0),
             pt2(rn_w, SMALL_HEIGHT),
+        );
+
+        let rc_w = main_width_chars(2);
+        let count_rect = Rect::from_xy_wh(
+            pt2(-284.0 + rc_w / 2.0 + 10.0, 260.0 + MAIN_HEIGHT / 2.0),
+            pt2(rc_w, MAIN_HEIGHT),
+        );
+
+        let sc_w = main_width_chars(4);
+        let scatter_rect = Rect::from_xy_wh(
+            pt2(-284.0 + sc_w / 2.0 + 10.0, 190.0 + MAIN_HEIGHT / 2.0),
+            pt2(sc_w, MAIN_HEIGHT),
+        );
+
+        let mx_w = main_width_chars(7);
+        let mix_rect = Rect::from_xy_wh(
+            pt2(-284.0 + mx_w / 2.0 + 10.0, 120.0 + MAIN_HEIGHT / 2.0),
+            pt2(mx_w, MAIN_HEIGHT),
+        );
+
+        let ex_w = main_width_chars(6);
+        let exciter_rect = Rect::from_xy_wh(
+            pt2(
+                -284.0 + mx_w / 2.0 + 10.0,
+                50.0 + MAIN_HEIGHT / 2.0 - MAIN_HEIGHT * 2.0,
+            ),
+            pt2(mx_w, MAIN_HEIGHT * 5.0),
         );
 
         Self {
@@ -284,10 +314,13 @@ impl Default for ResoBankUILayout {
 
             randomise: reset_rect,
 
-            reso_count: def_rect(),
+            reso_count: count_rect,
             cell_count: def_rect(),
             cell_jitter: def_rect(),
-            cell_scatter: def_rect(),
+            cell_scatter: scatter_rect,
+
+            mix: mix_rect,
+            exciter: exciter_rect,
         }
     }
 }

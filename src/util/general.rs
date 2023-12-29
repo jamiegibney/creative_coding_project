@@ -34,8 +34,26 @@ pub fn db_to_level(db_value: f64) -> f64 {
 
 /// Maps a value from the provided input range to the provided output range.
 #[inline]
-pub fn map(value: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> f64 {
+pub fn map(
+    value: f64,
+    in_min: f64,
+    in_max: f64,
+    out_min: f64,
+    out_max: f64,
+) -> f64 {
     scale(normalise(value, in_min, in_max), out_min, out_max)
+}
+
+/// Maps a value from the provided input range to the provided output range.
+#[inline]
+pub fn map_f32(
+    value: f32,
+    in_min: f32,
+    in_max: f32,
+    out_min: f32,
+    out_max: f32,
+) -> f32 {
+    scale_f32(normalise_f32(value, in_min, in_max), out_min, out_max)
 }
 
 /// Scales a value to a provided range, assuming it is normalised.
@@ -46,11 +64,27 @@ pub fn scale(value: f64, min: f64, max: f64) -> f64 {
     value.mul_add(max - min, min)
 }
 
+/// Scales a value to a provided range, assuming it is normalised.
+///
+/// Like `map()`, but with no input range.
+#[inline]
+pub fn scale_f32(value: f32, min: f32, max: f32) -> f32 {
+    value.mul_add(max - min, min)
+}
+
 /// Normalises a value from a provided range.
 ///
 /// Like `map()`, but with the output range set to `0.0 - 1.0`.
 #[inline]
 pub fn normalise(value: f64, min: f64, max: f64) -> f64 {
+    (value - min) / (max - min)
+}
+
+/// Normalises a value from a provided range.
+///
+/// Like `map()`, but with the output range set to `0.0 - 1.0`.
+#[inline]
+pub fn normalise_f32(value: f32, min: f32, max: f32) -> f32 {
     (value - min) / (max - min)
 }
 
@@ -162,7 +196,9 @@ pub fn lanczos_kernel(a_factor: u8, scale: f64, trim_zeroes: bool) -> Vec<f64> {
 pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
     assert!(!epsilon_eq(start_hz, 0.0));
     debug_assert!(
-        freq_hz.is_sign_positive() && start_hz.is_sign_positive() && sample_rate.is_sign_positive()
+        freq_hz.is_sign_positive()
+            && start_hz.is_sign_positive()
+            && sample_rate.is_sign_positive()
     );
     let log_start = start_hz.log10();
     let norm = ((sample_rate / 2.0).log10() - log_start).recip();
@@ -186,7 +222,11 @@ pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
 /// # Source
 ///
 /// [Found by experimenting on Desmos.](https://www.desmos.com/calculator/nqgorlqxyw)
-pub fn freq_lin_from_log(freq_hz_log_norm: f64, start_hz: f64, sample_rate: f64) -> f64 {
+pub fn freq_lin_from_log(
+    freq_hz_log_norm: f64,
+    start_hz: f64,
+    sample_rate: f64,
+) -> f64 {
     assert!(!epsilon_eq(start_hz, 0.0));
     debug_assert!(
         freq_hz_log_norm.is_sign_positive()

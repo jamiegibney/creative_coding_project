@@ -2,6 +2,7 @@ use nannou_audio::Buffer;
 use std::sync::{mpsc, Arc, Mutex};
 
 use super::note::NoteHandler;
+use crate::app::ExciterOscillator;
 use crate::dsp::synthesis::*;
 use crate::dsp::*;
 use crate::prelude::*;
@@ -33,7 +34,12 @@ pub struct Voice {
 }
 
 impl Voice {
-    pub fn new(id: u64, note: f64, generator: Generator, envelope: Option<AdsrEnvelope>) -> Self {
+    pub fn new(
+        id: u64,
+        note: f64,
+        generator: Generator,
+        envelope: Option<AdsrEnvelope>,
+    ) -> Self {
         Self {
             id,
             note,
@@ -98,7 +104,8 @@ impl VoiceHandler {
                 .envelope
                 .next_block(&mut voice_amp_envelope, block_len);
 
-            for (value_idx, sample_idx) in (block_start..block_end).enumerate() {
+            for (value_idx, sample_idx) in (block_start..block_end).enumerate()
+            {
                 let amp = gain[value_idx] * voice_amp_envelope[value_idx];
 
                 let (sample_l, sample_r) = voice.generator.process();
@@ -112,21 +119,47 @@ impl VoiceHandler {
 
     /// Starts a new voice.
     #[allow(clippy::missing_panics_doc)] // this function should not panic
-    pub fn start_voice(&mut self, note: f64, envelope: Option<AdsrEnvelope>) -> &mut Voice {
-        let sr = unsafe { SAMPLE_RATE };
+    pub fn start_voice(
+        &mut self,
+        note: f64,
+        generator: ExciterOscillator,
+        sample_rate: f64,
+        envelope: Option<AdsrEnvelope>,
+    ) -> &mut Voice {
         let mut new_voice = Voice {
             id: self.next_voice_id(),
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
             // generator: Generator::Saw(Phasor::new(note_to_freq(note), sr)),
-            generator: Generator::Noise,
+            generator: {
+                match generator {
+                    ExciterOscillator::Sine => Generator::Sine(SineOsc::new(
+                        note_to_freq(note),
+                        sample_rate,
+                    )),
+                    ExciterOscillator::Tri => Generator::Tri(TriOsc::new(
+                        note_to_freq(note),
+                        sample_rate,
+                    )),
+                    ExciterOscillator::Saw => Generator::Saw(Phasor::new(
+                        note_to_freq(note),
+                        sample_rate,
+                    )),
+                    ExciterOscillator::Square => Generator::Square(
+                        SquareOsc::new(note_to_freq(note), sample_rate),
+                    ),
+                    ExciterOscillator::Noise => Generator::Noise,
+                }
+            },
         };
 
         new_voice.envelope.set_trigger(true);
 
         // is there a free voice?
-        if let Some(free_idx) = self.voices.iter().position(|voice| voice.is_none()) {
+        if let Some(free_idx) =
+            self.voices.iter().position(|voice| voice.is_none())
+        {
             self.voices[free_idx] = Some(new_voice);
             return self.voices[free_idx].as_mut().unwrap();
         }
@@ -145,7 +178,11 @@ impl VoiceHandler {
     }
 
     /// Starts a voice's release stage.
-    pub fn start_release_for_voice(&mut self, voice_id: Option<u64>, note: f64) {
+    pub fn start_release_for_voice(
+        &mut self,
+        voice_id: Option<u64>,
+        note: f64,
+    ) {
         for voice in &mut self.voices {
             match voice {
                 Some(Voice {
@@ -154,7 +191,9 @@ impl VoiceHandler {
                     releasing,
                     envelope,
                     ..
-                }) if voice_id == Some(*candidate_id) || note == *candidate_note => {
+                }) if voice_id == Some(*candidate_id)
+                    || note == *candidate_note =>
+                {
                     *releasing = true;
                     envelope.set_trigger(false);
                 }

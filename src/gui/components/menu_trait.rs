@@ -234,3 +234,30 @@ impl MenuEnum for SpectralFilterSize {
         }
     }
 }
+
+impl MenuEnum for ExciterOscillator {
+    fn num_variants() -> usize {
+        5
+    }
+
+    fn idx(&self) -> usize {
+        match self {
+            Self::Sine => 0,
+            Self::Tri => 1,
+            Self::Saw => 2,
+            Self::Square => 3,
+            Self::Noise => 4,
+        }
+    }
+
+    fn from_idx(idx: usize) -> Option<Self> {
+        match idx {
+            0 => Some(Self::Sine),
+            1 => Some(Self::Tri),
+            2 => Some(Self::Saw),
+            3 => Some(Self::Square),
+            4 => Some(Self::Noise),
+            _ => None,
+        }
+    }
+}

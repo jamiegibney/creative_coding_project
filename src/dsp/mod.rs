@@ -10,7 +10,7 @@ pub mod spectral;
 pub mod synthesis;
 pub mod util;
 
-pub use delay::{Delay, StereoDelay, RingBuffer};
+pub use delay::{Delay, RingBuffer, StereoDelay};
 pub use distortion::Waveshaper;
 pub use dynamics::adsr::{AdsrEnvelope, AdsrParameters};
 pub use dynamics::Compressor;
@@ -20,7 +20,7 @@ pub use filtering::{
     first_order::FirstOrderFilter,
     lrf::LinkwitzRileyFilter,
     resonator::{
-        resonator_bank::{ResonatorBank, ResonatorBankParams},
+        resonator_bank::{ResoBankData, ResonatorBank, ResonatorBankParams},
         two_pole_resonator::TwoPoleResonator,
     },
     simple::{dc_filter::DCFilter, one_pole_lowpass::OnePoleLowpass},

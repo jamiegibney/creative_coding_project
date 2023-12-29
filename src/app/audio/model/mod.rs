@@ -148,47 +148,15 @@ impl AudioModel {
             .and_then(|ch| ch.try_recv().ok())
     }
 
-    pub fn try_receive(&mut self) {
-        let receivers = self.message_channels.borrow_mut();
-
-        if let Some(pitch_trigger) = &receivers.resonator_bank_reset_pitch {
-            if pitch_trigger.try_recv().is_ok() {
-                self.processors.resonator_bank.randomise_resonator_pitches();
-            }
-        }
-
-        if let Some(bank_params) = &receivers.resonator_bank_params {
-            if let Ok(params) = bank_params.try_recv() {
-                self.processors.resonator_bank.set_params(params);
-            }
-        }
-
-        if receivers.resonator_bank_reset_pitch.is_some() {
-            self.processors.resonator_bank.randomise_resonator_pitches();
-        }
-
-        // if let Some(mask_order) = &receivers.spectral_mask_post_fx {
-        //     if mask_order.try_recv().is_ok() {
-        //         self.processors.spectral_filter.clear();
-        //         self.data.spectral_mask_post_fx =
-        //             !self.data.spectral_mask_post_fx;
-        //     }
-        // }
-    }
-
     pub fn increment_sample_count(&mut self, buffer_size: u32) {
         let time = 6.0;
         let tmr = (time * self.data.sample_rate.lr()) as u32;
 
         self.data.sample_timer += buffer_size;
         if self.data.sample_timer > tmr {
-            self.processors.resonator_bank.randomise_resonator_pitches();
+            self.processors.resonator_bank.randomize();
             self.data.sample_timer -= tmr;
         }
-    }
-
-    pub fn reset_resonantor_bank(&mut self) {
-        self.processors.resonator_bank.randomise_resonator_pitches();
     }
 
     pub fn update_spectral_filter_size(&mut self) {
@@ -216,22 +184,31 @@ impl AudioModel {
     }
 
     pub fn update_reso_bank(&mut self) {
+        if let Some(bank_data) = &mut self.buffers.reso_bank_data {
+            if bank_data.update() {
+                // println!("trying to update reso bank data");
+                self.processors
+                    .resonator_bank
+                    .set_state_from_data(bank_data.read());
+            }
+        }
+
         let scale_param = self.params.reso_bank_scale.lr();
         let curr_scale = self.data.reso_bank_scale;
-        if !matches!(scale_param, curr_scale) {
+
+        if scale_param != curr_scale {
             self.data.reso_bank_scale = scale_param;
-            self.processors
-                .resonator_bank
-                .set_scale(self.params.reso_bank_scale.lr());
+            self.processors.resonator_bank.set_scale(scale_param);
         }
 
         let root_note_param = self.params.reso_bank_root_note.lr() as f64;
         let curr_root_note = self.data.reso_bank_root_note;
-        if !matches!(root_note_param, curr_root_note) {
+
+        if !epsilon_eq(root_note_param, curr_root_note) {
             self.data.reso_bank_root_note = root_note_param;
             self.processors
                 .resonator_bank
-                .set_root_note(self.params.reso_bank_root_note.lr() as f64);
+                .set_root_note(root_note_param);
         }
 
         if self.params.reso_bank_spread.is_active() {
@@ -252,12 +229,17 @@ impl AudioModel {
         if self.params.reso_bank_pan.is_active() {
             self.processors
                 .resonator_bank
-                .set_max_panning(self.params.reso_bank_pan.next());
+                .set_panning_scale(self.params.reso_bank_pan.next());
+        }
+        if self.params.reso_bank_mix.is_active() {
+            self.processors
+                .resonator_bank
+                .set_mix_equal_power(self.params.reso_bank_mix.next());
         }
 
         self.processors
             .resonator_bank
-            .quantise_to_scale(self.params.reso_bank_quantise.lr());
+            .quantize_to_scale(self.params.reso_bank_quantise.lr());
 
         self.processors.resonator_bank.set_num_resonators(
             self.params.reso_bank_resonator_count.lr() as usize,
@@ -267,10 +249,8 @@ impl AudioModel {
     #[allow(clippy::too_many_lines)]
     pub fn update_post_fx_processors(&mut self) {
         let AudioProcessors {
-            filter_lp, // arr
-            filter_ls, // arr
-            filter_hp, // arr
-            filter_hs, // arr
+            filter_low,  // arr
+            filter_high, // arr
 
             stereo_delay,
 
@@ -289,11 +269,11 @@ impl AudioModel {
         if self.params.delay_feedback.is_active() {
             stereo_delay.set_feedback_amount(self.params.delay_feedback.next());
         }
-        if self.params.delay_time_ms.is_active() {
-            stereo_delay
-                .set_delay_time(self.params.delay_time_ms.next() * 0.001);
-        }
+
+        let delay_time = self.params.delay_time_ms.lr();
+
         stereo_delay.ping_pong(self.params.use_ping_pong.lr());
+        stereo_delay.set_delay_time(delay_time * 0.001);
 
         // compressor
         if self.params.comp_ratio.is_active() {
@@ -321,10 +301,12 @@ impl AudioModel {
             true
         };
 
-        // filters and waveshaper
-        for ch in 0..2 {
-            waveshaper[ch].set_curve(self.params.dist_amount.next());
+        if self.params.dist_amount.is_active() {
+            waveshaper[0].set_curve(self.params.dist_amount.next());
+            waveshaper[1].set_curve(self.params.dist_amount.current_value());
+        }
 
+        for ch in 0..2 {
             if update_ws_algo {
                 match self.data.distortion_algorithm {
                     DistortionType::None => {
@@ -334,9 +316,11 @@ impl AudioModel {
                     DistortionType::Soft => {
                         waveshaper[ch].set_asymmetric(false);
                         waveshaper[ch].set_curve_range(0.0..=1.0);
-                        waveshaper[ch].set_xfer_function(|mut input, mut cv| {
-                            smooth_soft_clip(input, cv)
-                        });
+                        waveshaper[ch].set_xfer_function(
+                            |mut input, mut cv| {
+                                smooth_soft_clip(input * 5.0, cv) * 0.2
+                            },
+                        );
                     }
                     DistortionType::Hard => {
                         waveshaper[ch].set_asymmetric(false);
@@ -344,7 +328,9 @@ impl AudioModel {
                         waveshaper[ch].set_xfer_function(
                             |mut input, mut cv| {
                                 let cv = (cv * 15.0).max(0.01);
-                                (cv * input).tanh() / cv.tanh()
+
+                                ((cv * input).tanh() / cv.tanh())
+                                    * map(cv, 0.15, 15.0, 1.0, 0.15)
                             },
                         );
                     }
@@ -375,68 +361,96 @@ impl AudioModel {
                     }
                 }
             }
+        }
 
-            if self.params.low_filter_is_shelf.lr() {
-                if self.params.low_filter_cutoff.is_active() {
-                    filter_ls[ch]
-                        .set_freq(self.params.low_filter_cutoff.next());
-                }
-                if self.params.low_filter_gain_db.is_active() {
-                    filter_ls[ch]
-                        .set_gain(self.params.low_filter_gain_db.next());
-                }
-                filter_hp[ch].suspend();
+        let low_fil_shelf = self.params.low_filter_is_shelf.lr();
+
+        if self.data.low_filter_is_shelf != low_fil_shelf {
+            self.data.low_filter_is_shelf = low_fil_shelf;
+
+            filter_low[0].set_type(if low_fil_shelf {
+                FilterType::Lowshelf
             }
             else {
-                if self.params.low_filter_cutoff.is_active() {
-                    filter_hp[ch]
-                        .set_freq(self.params.low_filter_cutoff.next());
-                }
-                if self.params.low_filter_q.is_active() {
-                    filter_hp[ch].set_q(self.params.low_filter_q.next());
-                }
-                filter_ls[ch].suspend();
-            }
-            if self.params.high_filter_is_shelf.lr() {
-                if self.params.high_filter_cutoff.is_active() {
-                    filter_hs[ch]
-                        .set_freq(self.params.high_filter_cutoff.next());
-                }
-                if self.params.high_filter_gain_db.is_active() {
-                    filter_hs[ch]
-                        .set_gain(self.params.high_filter_gain_db.next());
-                }
-                filter_lp[ch].suspend();
+                FilterType::Highpass
+            });
+
+            filter_low[1].set_type(if low_fil_shelf {
+                FilterType::Lowshelf
             }
             else {
-                if self.params.high_filter_cutoff.is_active() {
-                    filter_lp[ch]
-                        .set_freq(self.params.high_filter_cutoff.next());
-                }
-                if self.params.high_filter_q.is_active() {
-                    filter_lp[ch].set_q(self.params.high_filter_q.next());
-                }
-                filter_hs[ch].suspend();
+                FilterType::Highpass
+            });
+        }
+
+        let high_fil_shelf = self.params.high_filter_is_shelf.lr();
+
+        if self.data.high_filter_is_shelf != high_fil_shelf {
+            self.data.high_filter_is_shelf = high_fil_shelf;
+
+            filter_high[0].set_type(if high_fil_shelf {
+                FilterType::Highshelf
             }
+            else {
+                FilterType::Lowpass
+            });
+
+            filter_high[1].set_type(if high_fil_shelf {
+                FilterType::Highshelf
+            }
+            else {
+                FilterType::Lowpass
+            });
+        }
+
+        // low filter params
+        if self.params.low_filter_cutoff.is_active() {
+            filter_low[0].set_freq(self.params.low_filter_cutoff.next());
+            filter_low[1]
+                .set_freq(self.params.low_filter_cutoff.current_value());
+        }
+        if self.params.low_filter_gain_db.is_active() {
+            filter_low[0].set_gain(self.params.low_filter_gain_db.next());
+            filter_low[1]
+                .set_gain(self.params.low_filter_gain_db.current_value());
+        }
+        if self.params.low_filter_q.is_active() {
+            let q = if low_fil_shelf {
+                BUTTERWORTH_Q
+            }
+            else {
+                self.params.low_filter_q.next()
+            };
+            filter_low[0].set_q(q);
+            filter_low[1].set_q(q);
+        }
+
+        if self.params.high_filter_cutoff.is_active() {
+            filter_high[0].set_freq(self.params.high_filter_cutoff.next());
+            filter_high[1]
+                .set_freq(self.params.high_filter_cutoff.current_value());
+        }
+        if self.params.high_filter_gain_db.is_active() {
+            filter_high[0].set_gain(self.params.high_filter_gain_db.next());
+            filter_high[1]
+                .set_gain(self.params.high_filter_gain_db.current_value());
+        }
+        if self.params.high_filter_q.is_active() {
+            let q = if high_fil_shelf {
+                BUTTERWORTH_Q
+            }
+            else {
+                self.params.high_filter_q.next()
+            };
+
+            filter_high[0].set_q(q);
+            filter_high[1].set_q(q);
         }
     }
 
     pub fn process_filters(&mut self, mut sample: f64, ch_idx: usize) -> f64 {
-        // low filter
-        sample = if self.data.low_filter_is_shelf {
-            self.processors.filter_ls[ch_idx].process(sample)
-        }
-        else {
-            self.processors.filter_hp[ch_idx].process(sample)
-        };
-
-        // high filter
-        sample = if self.data.high_filter_is_shelf {
-            self.processors.filter_hs[ch_idx].process(sample)
-        }
-        else {
-            self.processors.filter_lp[ch_idx].process(sample)
-        };
+        sample = self.processors.filter_low[ch_idx].process(sample);
+        sample = self.processors.filter_high[ch_idx].process(sample);
 
         // tone shaping filters
         sample = self.processors.filter_hs_2[ch_idx].process(sample);

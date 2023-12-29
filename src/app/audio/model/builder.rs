@@ -212,6 +212,8 @@ impl AudioModelBuilder {
             Arc::clone(&ui_params.reso_bank_quantise);
         self.model.params.reso_bank_resonator_count =
             Arc::clone(&ui_params.reso_bank_resonator_count);
+        self.model.params.reso_bank_mix = Arc::clone(&ui_params.reso_bank_mix);
+        self.model.params.exciter_osc = Arc::clone(&ui_params.exciter_osc);
 
         // low filter
         self.model.params.low_filter_cutoff =

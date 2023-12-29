@@ -2,10 +2,12 @@
 
 #![allow(unused, clippy::must_use_candidate)]
 mod filter;
+mod filter_2;
 use super::{Filter, FilterType};
 use crate::util;
 
-pub use filter::*;
+// pub use filter::*;
+pub use filter_2::*;
 
 #[cfg(test)]
 mod tests {

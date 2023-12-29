@@ -1,17 +1,17 @@
 use crossbeam_channel::{Receiver as CCReceiver, Sender as CCSender};
 use std::time::Instant;
 
-use crate::dsp::filtering::comb::delay::Delay;
+use crate::dsp::filtering::{
+    comb::delay::Delay, resonator::resonator_bank::ResoBankData,
+};
 
 use super::*;
 
 #[derive(Default)]
 pub struct AudioProcessors {
     // FILTERS
-    pub filter_lp: Box<[BiquadFilter; NUM_CHANNELS]>,
-    pub filter_ls: Box<[BiquadFilter; NUM_CHANNELS]>,
-    pub filter_hp: Box<[BiquadFilter; NUM_CHANNELS]>,
-    pub filter_hs: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_low: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_high: Box<[BiquadFilter; NUM_CHANNELS]>,
 
     pub filter_peak: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_hs_2: Box<[BiquadFilter; NUM_CHANNELS]>,
@@ -69,6 +69,8 @@ pub struct AudioData {
     pub reso_bank_scale: Scale,
     pub reso_bank_root_note: f64,
 
+    pub delay_time_ms: f64,
+
     pub sample_timer: u32,
 
     pub callback_time_elapsed: Arc<Mutex<Instant>>,
@@ -100,6 +102,8 @@ impl Default for AudioData {
             reso_bank_scale: Scale::default(),
             reso_bank_root_note: 69.0,
 
+            delay_time_ms: 250.0,
+
             distortion_algorithm: DistortionType::default(),
 
             sample_timer: 0,
@@ -116,6 +120,8 @@ pub struct AudioBuffers {
     pub oversampling_buffer: OversamplingBuffer,
 
     pub spectral_mask: Option<triple_buffer::Output<SpectralMask>>,
+
+    pub reso_bank_data: Option<triple_buffer::Output<ResoBankData>>,
 }
 
 #[derive(Default)]

@@ -1,17 +1,22 @@
 use super::*;
-use crate::dsp::{filtering::comb::delay::Delay, *};
+use crate::dsp::{
+    filtering::{comb::delay::Delay, resonator::resonator_bank::ResoBankData},
+    *,
+};
 use atomic_float::AtomicF64;
 use std::sync::atomic::AtomicUsize;
 use triple_buffer::Output;
 
 pub const DEFAULT_SPECTRAL_BLOCK_SIZE: usize = 1 << 10; // 1024
 pub const DEFAULT_GAIN: f64 = 1.5;
+pub const MAX_NUM_RESONATORS: usize = 32;
 
 pub fn build_audio_model(
     mut context: AudioContext,
     ui_params: &UIParams,
 ) -> AudioPackage {
     let spectral_mask = context.spectral_mask_output.take();
+    let reso_bank_data = context.reso_bank_data_output.take();
     let sample_rate = context.sample_rate;
     let upsampled_rate = DEFAULT_OVERSAMPLING_FACTOR as f64 * sample_rate;
 
@@ -19,7 +24,7 @@ pub fn build_audio_model(
         .processors(audio_processors(sample_rate, sample_rate, ui_params))
         .generation(audio_generation(sample_rate))
         .data(audio_data(sample_rate, sample_rate, ui_params))
-        .buffers(audio_buffers(spectral_mask))
+        .buffers(audio_buffers(spectral_mask, reso_bank_data))
         .params(ui_params)
         .build()
 }
@@ -69,42 +74,34 @@ fn audio_processors(
         SpectralFilter::new(NUM_CHANNELS, MAX_SPECTRAL_BLOCK_SIZE);
     spectral_filter.set_block_size(ui_params.mask_resolution.lr().value());
 
-    let mut filter_lp = st_bq();
-    let mut filter_ls = st_bq();
-    let mut filter_hp = st_bq();
-    let mut filter_hs = st_bq();
+    let mut filter_low = st_bq();
+    let mut filter_high = st_bq();
 
     for ch in 0..2 {
-        filter_lp[ch].set_type(FilterType::Lowpass);
-        filter_lp[ch].set_freq(ui_params.high_filter_cutoff.current_value());
-        filter_lp[ch].set_q(ui_params.high_filter_q.current_value());
+        filter_low[ch].set_type(FilterType::Highpass);
+        filter_low[ch].set_freq(ui_params.low_filter_cutoff.current_value());
+        filter_low[ch].set_gain(ui_params.low_filter_gain_db.current_value());
 
-        filter_hp[ch].set_type(FilterType::Highpass);
-        filter_hp[ch].set_freq(ui_params.low_filter_cutoff.current_value());
-        filter_hp[ch].set_q(ui_params.low_filter_q.current_value());
-
-        filter_ls[ch].set_type(FilterType::Lowshelf);
-        filter_ls[ch].set_freq(ui_params.low_filter_cutoff.current_value());
-        filter_ls[ch].set_gain(ui_params.low_filter_gain_db.current_value());
-
-        filter_hs[ch].set_type(FilterType::Highshelf);
-        filter_hs[ch].set_freq(ui_params.high_filter_cutoff.current_value());
-        filter_hs[ch].set_gain(ui_params.high_filter_gain_db.current_value());
+        filter_high[ch].set_type(FilterType::Highshelf);
+        filter_high[ch].set_freq(ui_params.high_filter_cutoff.current_value());
+        filter_high[ch].set_gain(ui_params.high_filter_gain_db.current_value());
     }
 
-    let mut resonator_bank = ResonatorBank::new(upsampled_rate, 64);
+    let mut resonator_bank =
+        ResonatorBank::new(upsampled_rate, MAX_NUM_RESONATORS);
     resonator_bank
         .set_num_resonators(ui_params.reso_bank_resonator_count.lr() as usize);
     resonator_bank.set_scale(ui_params.reso_bank_scale.lr());
     resonator_bank.set_root_note(ui_params.reso_bank_root_note.lr() as f64);
     resonator_bank.set_inharm(ui_params.reso_bank_inharm.current_value());
-    resonator_bank.set_freq_spread(ui_params.reso_bank_spread.current_value());
+    resonator_bank.set_freq_spread(0.5);
     resonator_bank.set_freq_shift(ui_params.reso_bank_shift.current_value());
-    resonator_bank.quantise_to_scale(ui_params.reso_bank_quantise.lr());
-    resonator_bank.randomise_resonator_pitches();
+    resonator_bank.quantize_to_scale(ui_params.reso_bank_quantise.lr());
+    resonator_bank.set_panning_scale(ui_params.reso_bank_pan.current_value());
+    resonator_bank.randomize();
 
     let mut resonator_bank = DryWet::new(resonator_bank);
-    resonator_bank.set_mix_equal_power(0.99);
+    resonator_bank.set_mix_equal_power(ui_params.reso_bank_mix.current_value());
 
     let mut resonator = TwoPoleResonator::new(upsampled_rate);
     resonator.set_resonance(0.99);
@@ -117,7 +114,7 @@ fn audio_processors(
     delay.set_mix_equal_power(0.1);
 
     let mut st_delay = StereoDelay::new(1.0, upsampled_rate)
-        .with_delay_time(ui_params.delay_time_ms.current_value() * 0.001)
+        .with_delay_time(ui_params.delay_time_ms.lr() * 0.001)
         .with_ping_pong(ui_params.use_ping_pong.lr());
     st_delay.set_feedback_amount(ui_params.delay_feedback.current_value());
 
@@ -151,10 +148,8 @@ fn audio_processors(
     compressor.use_rms(false);
 
     AudioProcessors {
-        filter_lp,
-        filter_ls,
-        filter_hp,
-        filter_hs,
+        filter_low,
+        filter_high,
 
         filter_hs_2,
         filter_peak: st_bq(),
@@ -190,7 +185,7 @@ fn audio_processors(
 
 fn audio_generation(sample_rate: f64) -> AudioGeneration {
     let mut amp_envelope = AdsrEnvelope::new(sample_rate);
-    amp_envelope.set_parameters(5.0, 300.0, 1.0, 20.0);
+    amp_envelope.set_parameters(15.0, 300.0, 1.0, 20.0);
 
     AudioGeneration { amp_envelope, generator: Generator::Noise }
 }
@@ -225,12 +220,17 @@ fn audio_data(
         reso_bank_scale: ui_params.reso_bank_scale.lr(),
         reso_bank_root_note: ui_params.reso_bank_root_note.lr() as f64,
 
+        delay_time_ms: 250.0,
+
         high_filter_is_shelf: ui_params.high_filter_is_shelf.lr(),
         low_filter_is_shelf: ui_params.low_filter_is_shelf.lr(),
     }
 }
 
-fn audio_buffers(spectral_mask: Option<Output<SpectralMask>>) -> AudioBuffers {
+fn audio_buffers(
+    spectral_mask: Option<Output<SpectralMask>>,
+    reso_bank_data: Option<Output<ResoBankData>>,
+) -> AudioBuffers {
     AudioBuffers {
         master_gain_buffer: vec![
             DEFAULT_GAIN;
@@ -241,5 +241,6 @@ fn audio_buffers(spectral_mask: Option<Output<SpectralMask>>) -> AudioBuffers {
             NUM_CHANNELS, MAX_BUFFER_SIZE,
         ),
         spectral_mask,
+        reso_bank_data,
     }
 }
