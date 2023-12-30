@@ -5,9 +5,9 @@ use nannou_audio::Stream;
 
 // use nannou_egui::{self, egui, Egui};
 
+use super::audio::*;
 use super::view::view;
 use super::*;
-use super::{audio::*, sequencer::Sequencer};
 use crate::app::params::*;
 use crate::dsp::{
     BiquadFilter, BiquadParams, Filter, FilterType, ResoBankData,
@@ -106,8 +106,6 @@ pub struct Model {
 
     pub input_data: InputData,
 
-    pub sequencer: Sequencer,
-
     pub mask_thread_pool: ThreadPool,
 }
 
@@ -149,11 +147,6 @@ impl Model {
             dsp_load,
             vectors,
         } = build_gui_elements(app, pre_spectrum, post_spectrum, &params);
-
-        let sequencer = Sequencer::new(
-            sample_rate_ref.lr(),
-            audio_senders.note_event.clone(),
-        );
 
         let audio_senders = Arc::new(audio_senders);
         let audio_senders_cl = Arc::clone(&audio_senders);
@@ -275,8 +268,6 @@ impl Model {
             mask_scan_line_increment: 0.1,
 
             input_data: InputData::default(),
-
-            sequencer,
 
             mask_thread_pool: ThreadPool::build(1)
                 .expect("failed to build mask thread pool"),
