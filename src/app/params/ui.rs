@@ -13,9 +13,6 @@ use std::sync::{
     Arc,
 };
 
-pub mod eq;
-pub use eq::*;
-
 /// All parameters controlled by the user interface.
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
