@@ -82,13 +82,12 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         draw.rect()
             .xy(model.mask_rect.xy())
             .wh(model.mask_rect.wh())
-            .color(Rgba::new(0.0, 0.0, 0.0, s_curve(1.0 - mask_mix, -0.9)));
+            .color(Rgba::new(1.0, 1.0, 1.0, s_curve(1.0 - mask_mix, -0.9)));
     }
 
     outline_rect(&model.mask_rect, draw, 2.0);
 
     model.draw_mask_scan_line(draw);
-
     model.draw_filter_line(draw);
 
     outline_rect(&model.spectrum_rect, draw, 2.0);

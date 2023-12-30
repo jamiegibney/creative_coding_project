@@ -229,9 +229,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         .spectral_filter
         .set_mix(audio.params.mask_mix.lr());
 
-    if audio.params.mask_mix.lr() > f64::EPSILON {
-        audio.processors.spectral_filter.process_block(buffer);
-    }
+    audio.processors.spectral_filter.process_block(buffer);
 
     // process the post-fx spectrum analyser
     audio.compute_post_spectrum(buffer);

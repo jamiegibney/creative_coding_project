@@ -55,13 +55,16 @@ fn brightness(num_contours: u32, upper: f32, noise: f32) -> f32 {
     let mid = mix(lower, upper, 0.5);
     let feathering = 0.02;
 
+    // "s_curve_round" is used to feather the edges of the contours, acting as a quick
+    // and dirty anti-aliasing solution. this doesn't work for very thin lines very well,
+    // but is great otherwise.
     if (contains(lower, mid, px)) {
-        return s_curve_round(map(px, lower, mid, 0.0, 0.5), 4.0);
+        return s_curve_round(map(px, lower, mid, 0.0, 0.5), 2.0);
         //return 0.0;
         //return smoothStep(0.0, feathering, px);
     } else {
         if (contains(mid, upper, px)) {
-            return s_curve_round(map(px, upper, mid, 0.0, 0.5), 4.0);
+            return s_curve_round(map(px, upper, mid, 0.0, 0.5), 2.0);
             //return smoothStep(0.0, feathering, upper - px);
         }
         else {
