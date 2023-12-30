@@ -58,7 +58,6 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
                         NoteEvent::NoteOn { note, .. } => {
                             voice_handler.start_voice(
                                 note,
-                                audio.params.exciter_osc.lr(),
                                 audio.data.sample_rate.lr(),
                                 Some(audio.generation.amp_envelope.clone()),
                             );

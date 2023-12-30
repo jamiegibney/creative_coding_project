@@ -44,8 +44,8 @@ impl AudioModelBuilder {
                 buffers: AudioBuffers::default(),
                 spectrograms: AudioSpectrograms::default(),
                 voice_handler: VoiceHandler::build(
-                    // context.note_handler_ref(),
                     context.voice_event_receiver.take().unwrap(),
+                    Arc::new(AtomicF64::new(context.sample_rate)),
                 ),
                 context,
                 message_channels: RefCell::new(AudioMessageReceivers::default()),
@@ -73,6 +73,10 @@ impl AudioModelBuilder {
     /// Moves `data` into the `AudioModel`.
     pub fn data(mut self, data: AudioData) -> Self {
         self.model.data = data;
+        self.model
+            .voice_handler
+            .attach_sample_rate_ref(Arc::clone(&self.model.data.sample_rate));
+
         self.prepared_state |= 0b0000_0100;
         self
     }
@@ -218,6 +222,9 @@ impl AudioModelBuilder {
             Arc::clone(&ui_params.reso_bank_resonator_count);
         self.model.params.reso_bank_mix = Arc::clone(&ui_params.reso_bank_mix);
         self.model.params.exciter_osc = Arc::clone(&ui_params.exciter_osc);
+        self.model
+            .voice_handler
+            .attach_generator_osc(Arc::clone(&ui_params.exciter_osc));
 
         // low filter
         self.model.params.low_filter_cutoff =

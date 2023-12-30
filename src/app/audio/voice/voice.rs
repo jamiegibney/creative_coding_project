@@ -1,3 +1,4 @@
+use atomic::Atomic;
 use nannou_audio::Buffer;
 use std::sync::{mpsc, Arc, Mutex};
 
@@ -28,9 +29,14 @@ pub struct Voice {
     /// the number of samples left until the voice should be cleared.
     pub releasing: bool,
 
+    pub sample_rate: Arc<AtomicF64>,
+
+    /// The type of generator to use.
+    pub generator_type: Arc<Atomic<ExciterOscillator>>,
+    pub curr_generator: ExciterOscillator,
+
     /// The audio generator stored within the voice.
     pub generator: Generator,
-    // this may cause issues with constructing new voices...
 }
 
 impl Voice {
@@ -38,6 +44,8 @@ impl Voice {
         id: u64,
         note: f64,
         generator: Generator,
+        generator_type_ref: Arc<Atomic<ExciterOscillator>>,
+        sample_rate: Arc<AtomicF64>,
         envelope: Option<AdsrEnvelope>,
     ) -> Self {
         Self {
@@ -45,7 +53,39 @@ impl Voice {
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
+            sample_rate,
+            curr_generator: generator_type_ref.lr(),
+            generator_type: generator_type_ref,
             generator,
+        }
+    }
+
+    pub fn update_generator(&mut self) {
+        let new_type = self.generator_type.lr();
+
+        if new_type == self.curr_generator {
+            return;
+        }
+
+        self.curr_generator = new_type;
+
+        let freq = note_to_freq(self.note);
+        let sample_rate = self.sample_rate.lr();
+
+        self.generator = match new_type {
+            ExciterOscillator::Sine => {
+                Generator::Sine(SineOsc::new(freq, sample_rate))
+            }
+            ExciterOscillator::Tri => {
+                Generator::Tri(TriOsc::new(freq, sample_rate))
+            }
+            ExciterOscillator::Saw => {
+                Generator::Saw(Phasor::new(freq, sample_rate))
+            }
+            ExciterOscillator::Square => {
+                Generator::Square(SquareOsc::new(freq, sample_rate))
+            }
+            ExciterOscillator::Noise => Generator::Noise,
         }
     }
 }
@@ -60,6 +100,8 @@ pub struct VoiceHandler {
     voice_event_receiver: mpsc::Receiver<VoiceEvent>,
     /// Internal counter for assigning new IDs.
     id_counter: u64,
+    generator: Option<Arc<Atomic<ExciterOscillator>>>,
+    sample_rate: Arc<AtomicF64>,
 }
 
 impl VoiceHandler {
@@ -68,15 +110,30 @@ impl VoiceHandler {
     /// The `NoteHandler` reference is used to obtain new note events
     /// automatically.
     pub fn build(
-        // note_handler_ref: Arc<Mutex<NoteHandler>>,
         voice_event_receiver: mpsc::Receiver<VoiceEvent>,
+        sample_rate_ref: Arc<AtomicF64>,
     ) -> Self {
         Self {
             // note_handler_ref,
             voices: std::array::from_fn(|_| None),
             voice_event_receiver,
             id_counter: 0,
+            generator: None,
+            sample_rate: sample_rate_ref,
         }
+    }
+
+    /// Attaches the current generator oscillator to the `VoiceHandler`.
+    pub fn attach_generator_osc(
+        &mut self,
+        generator: Arc<Atomic<ExciterOscillator>>,
+    ) {
+        self.generator = Some(generator);
+    }
+
+    /// Attaches a reference to the sample rate to the `VoiceHandler`.
+    pub fn attach_sample_rate_ref(&mut self, sample_rate_ref: Arc<AtomicF64>) {
+        self.sample_rate = sample_rate_ref;
     }
 
     pub fn process_block(
@@ -104,6 +161,8 @@ impl VoiceHandler {
                 .envelope
                 .next_block(&mut voice_amp_envelope, block_len);
 
+            voice.update_generator();
+
             for (value_idx, sample_idx) in (block_start..block_end).enumerate()
             {
                 let amp = gain[value_idx] * voice_amp_envelope[value_idx];
@@ -122,37 +181,27 @@ impl VoiceHandler {
     pub fn start_voice(
         &mut self,
         note: f64,
-        generator: ExciterOscillator,
         sample_rate: f64,
         envelope: Option<AdsrEnvelope>,
     ) -> &mut Voice {
+        let next_voice_id = self.next_voice_id();
+        let gen = self
+            .generator
+            .as_ref()
+            .expect("expected reference to generator type");
+
         let mut new_voice = Voice {
-            id: self.next_voice_id(),
+            id: next_voice_id,
             note,
             envelope: envelope.unwrap_or_default(),
             releasing: false,
-            // generator: Generator::Saw(Phasor::new(note_to_freq(note), sr)),
-            generator: {
-                match generator {
-                    ExciterOscillator::Sine => Generator::Sine(SineOsc::new(
-                        note_to_freq(note),
-                        sample_rate,
-                    )),
-                    ExciterOscillator::Tri => Generator::Tri(TriOsc::new(
-                        note_to_freq(note),
-                        sample_rate,
-                    )),
-                    ExciterOscillator::Saw => Generator::Saw(Phasor::new(
-                        note_to_freq(note),
-                        sample_rate,
-                    )),
-                    ExciterOscillator::Square => Generator::Square(
-                        SquareOsc::new(note_to_freq(note), sample_rate),
-                    ),
-                    ExciterOscillator::Noise => Generator::Noise,
-                }
-            },
+            sample_rate: Arc::clone(&self.sample_rate),
+            generator_type: Arc::clone(gen),
+            curr_generator: ExciterOscillator::Noise,
+            generator: { Generator::Noise },
         };
+
+        new_voice.update_generator();
 
         new_voice.envelope.set_trigger(true);
 
