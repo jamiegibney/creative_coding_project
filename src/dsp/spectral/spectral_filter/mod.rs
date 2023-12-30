@@ -51,14 +51,14 @@ impl SpectralFilter {
         Self {
             stft: StftHelper::new(num_channels, max_block_size, 0),
 
-            compensated_window_function: sine(max_block_size)
+            compensated_window_function: hann(max_block_size)
                 .into_iter()
                 .map(|x| {
                     x * ((max_block_size * Self::OVERLAP_FACTOR) as f64).recip()
                 })
                 .collect(),
 
-            window_function: sine(max_block_size),
+            window_function: hann(max_block_size),
 
             complex_buffers: vec![
                 vec![
@@ -89,7 +89,7 @@ impl SpectralFilter {
         let compensation_factor = self.compensation_factor(block_size);
 
         // window function
-        self.window_function = sine(block_size);
+        self.window_function = hann(block_size);
 
         self.compensated_window_function = self
             .window_function
@@ -197,8 +197,10 @@ impl SpectralFilter {
         self.mask.fill(0.0);
     }
 
+    /// The compensation factor for a hanning window, resulting in unity gain for
+    /// overlap factors of 4 and above.
     pub fn compensation_factor(&self, block_size: usize) -> f64 {
-        ((block_size / 2) as f64 / (Self::OVERLAP_FACTOR as f64 * 4.0)).recip()
+        ((Self::OVERLAP_FACTOR as f64 / 4.0) * 1.5).recip() / block_size as f64
     }
 
     /// Stores the input data into a temporary scratch buffer, used for
@@ -244,8 +246,8 @@ impl SpectralFilter {
     fn get_dry_wet(&mut self) -> (f64, f64) {
         let mix = self.mix.next();
 
-        let dry = ((FRAC_PI_2 * mix).cos())
-            * self.compensation_factor(self.mask.len()).recip();
+        let dry = ((FRAC_PI_2 * mix).cos());
+        // * self.compensation_factor(self.mask.len()).recip();
         let wet = ((FRAC_PI_2 * mix).sin());
 
         (dry, wet)

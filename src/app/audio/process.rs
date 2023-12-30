@@ -167,6 +167,9 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // set spectral filter
     audio.update_spectral_filter();
 
+    let process_reso_bank =
+        audio.params.reso_bank_mix.current_value() > f64::EPSILON;
+
     // process the resonator bank
     for (i, fr) in buffer.frames_mut().enumerate() {
         audio.update_reso_bank();
@@ -174,12 +177,24 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         for ch in 0..NUM_CHANNELS {
             fr[ch] =
                 audio.processors.pre_fx_dc_filter[ch].process_mono(fr[ch], ch);
-            fr[ch] = audio.processors.resonator_bank.process_mono(fr[ch], ch);
+            if process_reso_bank {
+                fr[ch] =
+                    audio.processors.resonator_bank.process_mono(fr[ch], ch);
+            }
+            fr[ch] *= 64.0;
         }
     }
 
     // process the pre-fx spectrum analyser
     audio.compute_pre_spectrum(buffer);
+
+    for frame in buffer.frames_mut() {
+        let pre_gain = audio.params.pre_fx_gain.next();
+
+        for ch in 0..NUM_CHANNELS {
+            frame[ch] *= pre_gain;
+        }
+    }
 
     for (i, fr) in buffer.frames_mut().enumerate() {
         audio.update_post_fx_processors();
@@ -213,7 +228,10 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         .processors
         .spectral_filter
         .set_mix(audio.params.mask_mix.lr());
-    audio.processors.spectral_filter.process_block(buffer);
+
+    if audio.params.mask_mix.lr() > f64::EPSILON {
+        audio.processors.spectral_filter.process_block(buffer);
+    }
 
     // process the post-fx spectrum analyser
     audio.compute_post_spectrum(buffer);
@@ -260,10 +278,9 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     for (i, output) in buffer.frames_mut().enumerate() {
         // let gain = audio.buffers.master_gain_buffer[i];
         let gain = audio.params.master_gain.next();
-        let ceiling = db_to_level(-3.0);
-        // hard-clip output;
-        output[0] = output[0].clamp(-ceiling, ceiling) * gain;
-        output[1] = output[1].clamp(-ceiling, ceiling) * gain;
+
+        output[0] *= gain;
+        output[1] *= gain;
 
         // used to decide whether to skip DSP processing in the next block or not
         if (output[0].abs() > SIGNAL_EPSILON

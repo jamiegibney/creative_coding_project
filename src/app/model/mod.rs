@@ -1,3 +1,5 @@
+use crate::gui::rdp::rdp_in_place;
+use crate::prelude::interp::linear_unclamped;
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use nannou_audio::Stream;
 
@@ -7,12 +9,16 @@ use super::view::view;
 use super::*;
 use super::{audio::*, sequencer::Sequencer};
 use crate::app::params::*;
-use crate::dsp::{ResoBankData, ResonatorBankParams, SpectralMask};
+use crate::dsp::{
+    BiquadFilter, BiquadParams, Filter, FilterType, ResoBankData,
+    ResonatorBankParams, SpectralMask, BUTTERWORTH_Q,
+};
 use crate::generative::*;
 use crate::gui::spectrum::*;
 use crate::gui::UIComponents;
 use nannou::prelude::WindowId as Id;
 
+use std::f64::consts::SQRT_2;
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -78,6 +84,7 @@ pub struct Model {
     pub reso_bank_data: triple_buffer::Input<ResoBankData>,
     pub mask_rect: Rect,
     pub mouse_clicked_outside_of_mask: bool,
+    pub spectrum_rect: Rect,
 
     /// A Perlin noise contour generator.
     pub contours: Option<Arc<RwLock<ContoursGPU>>>,
@@ -89,6 +96,13 @@ pub struct Model {
     pub mask_scan_line_pos: f64,
     /// The amount to increment the position of the mask scan line each frame.
     pub mask_scan_line_increment: f64,
+
+    pub low_filter: BiquadFilter,
+    pub high_filter: BiquadFilter,
+    pub filter_raw_points: Vec<[f64; 2]>,
+    pub filter_indices: Vec<usize>,
+    pub filter_points: Vec<Vec2>,
+    pub log_lines: Vec<[Vec2; 2]>,
 
     pub input_data: InputData,
 
@@ -103,6 +117,7 @@ impl Model {
     /// # Panics
     ///
     /// Panics if a new window cannot be initialized.
+    #[allow(clippy::too_many_lines)]
     pub fn build(app: &App) -> Self {
         let params = build_ui_parameters();
         let AudioSystem {
@@ -126,6 +141,7 @@ impl Model {
         let GuiElements {
             bank_rect,
             mask_rect,
+            spectrum_rect,
             contours,
             smooth_life,
             pre_spectrum_analyzer,
@@ -173,6 +189,32 @@ impl Model {
             )
             .setup_audio_channels(Arc::clone(&audio_senders));
 
+        let mut low_filter = BiquadFilter::new(sample_rate_ref.lr());
+        low_filter.set_params(&BiquadParams {
+            freq: params.low_filter_cutoff.current_value(),
+            gain: params.low_filter_gain_db.current_value(),
+            q: params.low_filter_q.current_value(),
+            filter_type: if params.low_filter_is_shelf.lr() {
+                FilterType::Lowshelf
+            }
+            else {
+                FilterType::Highpass
+            },
+        });
+
+        let mut high_filter = BiquadFilter::new(sample_rate_ref.lr());
+        high_filter.set_params(&BiquadParams {
+            freq: params.high_filter_cutoff.current_value(),
+            gain: params.high_filter_gain_db.current_value(),
+            q: params.high_filter_q.current_value(),
+            filter_type: if params.high_filter_is_shelf.lr() {
+                FilterType::Highshelf
+            }
+            else {
+                FilterType::Lowpass
+            },
+        });
+
         Self {
             window,
 
@@ -202,11 +244,32 @@ impl Model {
             mask_rect,
             reso_bank_reset_receiver,
             reso_bank_data,
+            spectrum_rect,
+
             mouse_clicked_outside_of_mask: false,
 
             contours: Some(contours),
             smooth_life: Some(smooth_life),
             vectors,
+
+            low_filter,
+            high_filter,
+            filter_raw_points: {
+                let mid = spectrum_rect.mid_left().y;
+                let left = spectrum_rect.left();
+                let right = spectrum_rect.right();
+                let points = spectrum_rect.w() as usize;
+
+                (0..spectrum_rect.w() as usize)
+                    .map(|i| {
+                        let x_pos = left as f64 + i as f64;
+                        [x_pos, mid as f64]
+                    })
+                    .collect()
+            },
+            filter_points: vec![Vec2::ZERO; spectrum_rect.w() as usize],
+            filter_indices: vec![0; spectrum_rect.w() as usize],
+            log_lines: create_log_lines(&spectrum_rect),
 
             mask_scan_line_pos: 0.0,
             mask_scan_line_increment: 0.1,
@@ -256,15 +319,7 @@ impl Model {
     ///
     /// This will panic if the `SmoothLife` generator cannot be locked.
     pub fn mask_rect(&self) -> Rect {
-        self.contours.as_ref().map_or_else(
-            || {
-                self.smooth_life.as_ref().map_or_else(
-                    || unreachable!("this should be unreachable as it is set to Some before this can be called."),
-                    |sml| *sml.read().unwrap().rect(),
-                )
-            },
-            |ctr| *ctr.read().unwrap().rect(),
-        )
+        self.mask_rect
     }
 
     /// Draws the spectral mask scan line.
@@ -341,4 +396,182 @@ impl Model {
             self.mouse_clicked_outside_of_mask = false;
         }
     }
+
+    pub fn update_filters(&mut self) {
+        let low_filter_is_shelf = self.ui_components.low_filter_type.enabled();
+        self.low_filter.set_params(&BiquadParams {
+            freq: note_to_freq(self.ui_components.low_filter_cutoff.value()),
+            gain: self.ui_components.low_filter_gain.value(),
+            q: if low_filter_is_shelf {
+                SQRT_2
+            }
+            else {
+                self.ui_components.low_filter_q.value().recip()
+            },
+            filter_type: if low_filter_is_shelf {
+                FilterType::Lowshelf
+            }
+            else {
+                FilterType::Highpass
+            },
+        });
+
+        let high_filter_is_shelf =
+            self.ui_components.high_filter_type.enabled();
+
+        self.high_filter.set_params(&BiquadParams {
+            freq: note_to_freq(self.ui_components.high_filter_cutoff.value()),
+            gain: self.ui_components.high_filter_gain.value(),
+            q: if high_filter_is_shelf {
+                SQRT_2
+            }
+            else {
+                self.ui_components.high_filter_q.value().recip()
+            },
+            filter_type: if high_filter_is_shelf {
+                FilterType::Highshelf
+            }
+            else {
+                FilterType::Lowpass
+            },
+        });
+
+        self.low_filter.process(0.0);
+        self.high_filter.process(0.0);
+    }
+
+    #[allow(clippy::many_single_char_names)]
+    pub fn update_filter_line(&mut self) {
+        let sr = self.sample_rate_ref.lr();
+        let (l, r) = (
+            self.spectrum_rect.left() as f64,
+            self.spectrum_rect.right() as f64,
+        );
+        let (b, t) = (
+            self.spectrum_rect.bottom() as f64,
+            self.spectrum_rect.top() as f64,
+        );
+        let w = self.spectrum_rect.w() as f64;
+        let half_height = self.spectrum_rect.h() as f64 * 0.5; // marks +- 30 db
+        let mid = self.spectrum_rect.mid_left().y as f64;
+
+        for (i, point) in self.filter_raw_points.iter_mut().enumerate().skip(1)
+        {
+            let x = i as f64 / w;
+            let freq = freq_lin_from_log(x, 25.0, sr);
+            let scaled = map(freq, 0.0, sr * 0.5, 0.0, PI_F64);
+
+            let mag_db = self.low_filter.response_at(scaled)
+                + self.high_filter.response_at(scaled);
+
+            point[1] = (mid
+                + map(mag_db, -30.0, 30.0, -half_height, half_height))
+            .clamp(b, t);
+        }
+
+        // copy second point to first, as the first is ignored.
+        self.filter_raw_points[0][1] = self.filter_raw_points[1][1];
+
+        // decimate redundant points — this reduces the number of points to be drawn by
+        // over 10 times.
+        rdp_in_place(
+            self.filter_raw_points.as_slice(),
+            &mut self.filter_indices,
+            0.2,
+        );
+
+        let len = self.filter_indices.len();
+
+        unsafe {
+            self.filter_points.set_len(len);
+        }
+
+        for i in 0..len {
+            let point = self.filter_raw_points[self.filter_indices[i]];
+            self.filter_points[i] =
+                Vec2::from([point[0] as f32, point[1] as f32]);
+        }
+    }
+
+    pub fn draw_filter_line(&self, draw: &Draw) {
+        draw.polyline()
+            .weight(2.0)
+            .points(self.filter_points.iter().copied())
+            .color(Rgba::new(1.0, 1.0, 1.0, 0.08));
+    }
+
+    pub fn draw_log_lines(&self, draw: &Draw) {
+        for line in &self.log_lines {
+            draw.line()
+                .points(line[0], line[1])
+                .weight(2.0)
+                .color(Rgb::new(0.08, 0.08, 0.08));
+        }
+    }
 }
+
+fn create_log_lines(rect: &Rect) -> Vec<[Vec2; 2]> {
+    let (w, h) = (rect.w() as f64, rect.h() as f64);
+    let (l, r) = (rect.left() as f64, rect.right() as f64);
+    let (b, t) = (rect.bottom(), rect.top());
+
+    let max = *LOG_10_VALUES.last().unwrap();
+
+    let lower = freq_log_norm(10.0, 25.0, 44100.0);
+    let upper = freq_log_norm(30000.0, 25.0, 44100.0);
+    let lower_x = linear_unclamped(l, r, lower);
+    let upper_x = linear_unclamped(l, r, upper);
+
+    LOG_10_VALUES
+        .iter()
+        .skip(2)
+        .take(26)
+        .map(|&x| {
+            let norm = normalise(x, 0.0, max);
+            let x_pos = lerp(lower_x, upper_x, norm) as f32;
+
+            [Vec2::new(x_pos, b), Vec2::new(x_pos, t)]
+        })
+        .collect()
+}
+
+/// Log values intended to represent the logarithmic
+/// scaling from 10 Hz to 30 kHz.
+#[allow(
+    clippy::unreadable_literal,
+    clippy::excessive_precision,
+    clippy::approx_constant,
+)]
+#[rustfmt::skip]
+pub const LOG_10_VALUES: [f64; 30] = [
+    0.0,
+    0.301029995664,
+    0.47712125472,
+    0.602059991328,
+    0.698970004336,
+    0.778151250384,
+    0.845098040014,
+    0.903089986992,
+    0.954242509439,
+    1.0,
+    1.301029995664,
+    1.47712125472,
+    1.602059991328,
+    1.698970004336,
+    1.778151250384,
+    1.845098040014,
+    1.903089986992,
+    1.954242509439,
+    2.0,
+    2.301029995664,
+    2.47712125472,
+    2.602059991328,
+    2.698970004336,
+    2.778151250384,
+    2.845098040014,
+    2.903089986992,
+    2.954242509439,
+    3.0,
+    3.301029995664,
+    3.47712125472,
+];

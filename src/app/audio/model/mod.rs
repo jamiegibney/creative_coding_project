@@ -241,7 +241,7 @@ impl AudioModel {
 
         self.processors
             .resonator_bank
-            .quantize_to_scale(self.params.reso_bank_quantise.lr());
+            .quantize_to_scale(self.params.reso_bank_quantize.lr());
 
         self.processors.resonator_bank.set_num_resonators(
             self.params.reso_bank_resonator_count.lr() as usize,

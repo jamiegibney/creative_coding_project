@@ -206,7 +206,7 @@ pub struct ResoBankUILayout {
     pub shift: Rect,
     pub inharm: Rect,
     pub pan: Rect,
-    pub quantise: Rect,
+    pub quantize: Rect,
     pub randomise: Rect,
 
     pub reso_count: Rect,
@@ -230,7 +230,7 @@ impl Default for ResoBankUILayout {
 
         let reset_rect = Rect::from_xy_wh(
             pt2(-412.0, 28.0),
-            pt2(main_width_chars(15), MAIN_HEIGHT),
+            pt2(main_width_chars(10), MAIN_HEIGHT),
         );
 
         let sh_w = main_width_chars(8);
@@ -307,7 +307,7 @@ impl Default for ResoBankUILayout {
 
             root_note: root_rect,
             scale: scale_rect,
-            quantise: quant_rect,
+            quantize: quant_rect,
 
             shift: shift_rect,
             spread: spread_rect,
@@ -435,23 +435,23 @@ pub struct DelayUILayout {
 impl Default for DelayUILayout {
     fn default() -> Self {
         let label_rect =
-            Rect::from_xy_wh(pt2(500.0, 70.0), pt2(120.0, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(500.0, 45.0), pt2(120.0, MAIN_HEIGHT));
 
         let tm_w = main_width_chars(8);
         let time_rect =
-            Rect::from_xy_wh(pt2(440.0, 8.0), pt2(tm_w, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(440.0, -27.0), pt2(tm_w, MAIN_HEIGHT));
 
         let pp_w = main_width_chars(3);
         let ping_rect =
-            Rect::from_xy_wh(pt2(440.0, -70.0), pt2(pp_w, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(440.0, -100.0), pt2(pp_w, MAIN_HEIGHT));
 
         let fb_w = main_width_chars(7);
         let feed_rect =
-            Rect::from_xy_wh(pt2(570.0, 8.0), pt2(fb_w, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(570.0, -27.0), pt2(fb_w, MAIN_HEIGHT));
 
         let mx_w = main_width_chars(7);
         let mix_rect =
-            Rect::from_xy_wh(pt2(570.0, -70.0), pt2(mx_w, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(570.0, -100.0), pt2(mx_w, MAIN_HEIGHT));
 
         Self {
             label: label_rect,
@@ -472,15 +472,15 @@ pub struct DistortionUILayout {
 impl Default for DistortionUILayout {
     fn default() -> Self {
         let label_rect =
-            Rect::from_xy_wh(pt2(500.0, 230.0), pt2(120.0, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(500.0, 170.0), pt2(120.0, MAIN_HEIGHT));
 
         let am_w = main_width_chars(7);
         let amount_rect =
-            Rect::from_xy_wh(pt2(442.0, 165.0), pt2(am_w, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(442.0, 105.0), pt2(am_w, MAIN_HEIGHT));
 
         let ty_w = main_width_chars(5);
         let type_rect = Rect::from_xy_wh(
-            pt2(572.0, 165.0 - MAIN_HEIGHT * 2.0),
+            pt2(572.0, 105.0 - MAIN_HEIGHT * 2.0),
             pt2(ty_w, MAIN_HEIGHT * 5.0),
         );
 
@@ -530,6 +530,7 @@ impl Default for CompressionUILayout {
 pub struct OtherUILayout {
     pub effects_label: Rect,
     pub master_gain: Rect,
+    pub pre_fx_gain: Rect,
 }
 
 impl Default for OtherUILayout {
@@ -540,7 +541,15 @@ impl Default for OtherUILayout {
 
         let fx_rect =
             Rect::from_xy_wh(pt2(500.0, 300.0), pt2(120.0, MAIN_HEIGHT));
-        Self { effects_label: fx_rect, master_gain: m_gain_rect }
+
+        let pre_rect =
+            Rect::from_xy_wh(pt2(500.0, 230.0), pt2(120.0, MAIN_HEIGHT));
+
+        Self {
+            effects_label: fx_rect,
+            master_gain: m_gain_rect,
+            pre_fx_gain: pre_rect,
+        }
     }
 }
 

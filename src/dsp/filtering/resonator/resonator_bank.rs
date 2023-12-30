@@ -182,7 +182,6 @@ impl ResonatorBank {
         self.params.root_note = root_note_midi;
 
         if self.params.quantize_to_scale {
-            // println!("setting pitches from root note");
             self.set_active_pitches();
         }
     }
@@ -228,7 +227,6 @@ impl ResonatorBank {
     }
 
     pub fn set_state_from_data(&mut self, data: &ResoBankData) {
-        // println!("trying to set bank state from data");
         let mut should_update_panning = false;
         let mut should_update_pitches = false;
 
@@ -246,11 +244,9 @@ impl ResonatorBank {
         }
 
         if should_update_pitches {
-            println!("should update active bank pitches");
             self.set_active_pitches();
         }
         if should_update_panning {
-            println!("should update bank panning");
             self.update_panning();
         }
     }

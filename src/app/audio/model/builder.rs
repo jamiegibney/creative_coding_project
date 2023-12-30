@@ -212,8 +212,8 @@ impl AudioModelBuilder {
         self.model.params.reso_bank_inharm =
             Arc::clone(&ui_params.reso_bank_inharm);
         self.model.params.reso_bank_pan = Arc::clone(&ui_params.reso_bank_pan);
-        self.model.params.reso_bank_quantise =
-            Arc::clone(&ui_params.reso_bank_quantise);
+        self.model.params.reso_bank_quantize =
+            Arc::clone(&ui_params.reso_bank_quantize);
         self.model.params.reso_bank_resonator_count =
             Arc::clone(&ui_params.reso_bank_resonator_count);
         self.model.params.reso_bank_mix = Arc::clone(&ui_params.reso_bank_mix);
@@ -258,5 +258,6 @@ impl AudioModelBuilder {
 
         // master gain
         self.model.params.master_gain = Arc::clone(&ui_params.master_gain);
+        self.model.params.pre_fx_gain = Arc::clone(&ui_params.pre_fx_gain);
     }
 }

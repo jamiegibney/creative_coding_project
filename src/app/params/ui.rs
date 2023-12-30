@@ -70,7 +70,7 @@ pub struct UIParams {
     /// How much panning may be applied to each resonator.
     pub reso_bank_pan: Arc<SmootherAtomic<f64>>,
     /// Whether the resonators should quantise their pitch to a scale.
-    pub reso_bank_quantise: Arc<AtomicBool>,
+    pub reso_bank_quantize: Arc<AtomicBool>,
 
     /// The number of active resonators in the bank.
     pub reso_bank_resonator_count: Arc<AtomicU32>,
@@ -135,6 +135,7 @@ pub struct UIParams {
     /// Compression release time in milliseconds.
     pub comp_release_ms: Arc<SmootherAtomic<f64>>,
 
+    pub pre_fx_gain: Arc<SmootherAtomic<f64>>,
     /// Master gain level in decibels.
     pub master_gain: Arc<SmootherAtomic<f64>>,
     // // EQ
@@ -177,7 +178,7 @@ impl Default for UIParams {
             reso_bank_shift: smoother(0.0),
             reso_bank_inharm: smoother(0.3),
             reso_bank_pan: smoother(1.0),
-            reso_bank_quantise: Arc::new(AtomicBool::new(true)),
+            reso_bank_quantize: Arc::new(AtomicBool::new(true)),
 
             reso_bank_resonator_count: Arc::new(AtomicU32::new(8)),
             reso_bank_cell_count: Arc::new(AtomicU32::new(12)),
@@ -192,7 +193,7 @@ impl Default for UIParams {
             low_filter_gain_db: smoother(0.0),
             low_filter_is_shelf: Arc::new(AtomicBool::new(false)),
 
-            high_filter_cutoff: smoother(500.0),
+            high_filter_cutoff: smoother(2000.0),
             high_filter_q: smoother(BUTTERWORTH_Q),
             high_filter_gain_db: smoother(0.0),
             high_filter_is_shelf: Arc::new(AtomicBool::new(true)),
@@ -210,6 +211,7 @@ impl Default for UIParams {
             comp_attack_ms: smoother(80.0),
             comp_release_ms: smoother(200.0),
 
+            pre_fx_gain: smoother(0.0),
             master_gain: smoother(1.0),
             // eq_params: EQParams::default(),
         }

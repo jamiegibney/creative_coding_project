@@ -60,7 +60,7 @@ pub struct UIComponents {
     /// f64
     reso_bank_pan: TextSlider,
     /// toggle
-    reso_bank_quantise: Button,
+    reso_bank_quantize: Button,
     /// trigger
     reso_bank_randomise: Button,
 
@@ -83,24 +83,24 @@ pub struct UIComponents {
     // ### Low filter
     low_filter_label: Label,
     /// toggle
-    low_filter_type: Button,
+    pub low_filter_type: Button,
     /// f64 (smoother callback)
-    low_filter_cutoff: TextSlider,
+    pub low_filter_cutoff: TextSlider,
     /// f64 (smoother callback)
-    low_filter_q: TextSlider,
+    pub low_filter_q: TextSlider,
     // f64 (smoother callback)
-    low_filter_gain: TextSlider,
+    pub low_filter_gain: TextSlider,
 
     // ### High filter
     high_filter_label: Label,
     /// toggle
-    high_filter_type: Button,
+    pub high_filter_type: Button,
     /// f64 (smoother callback)
-    high_filter_cutoff: TextSlider,
+    pub high_filter_cutoff: TextSlider,
     /// f64 (smoother callback)
-    high_filter_q: TextSlider,
+    pub high_filter_q: TextSlider,
     // f64 (smoother callback)
-    high_filter_gain: TextSlider,
+    pub high_filter_gain: TextSlider,
 
     // ### Stereo delay
     delay_label: Label,
@@ -130,6 +130,8 @@ pub struct UIComponents {
     /// f64 (slider callback)
     comp_release: TextSlider,
 
+    // ### Pre-FX gain
+    pre_fx_gain: TextSlider,
     // ### Master gain
     master_gain: TextSlider,
 }
@@ -529,10 +531,10 @@ impl UIComponents {
                         reso_bank_pan.set_target_value(value)
                     })
             },
-            reso_bank_quantise: {
-                let reso_bank_quantise = Arc::clone(&params.reso_bank_quantise);
-                Button::new(ui_layout.reso_bank.quantise)
-                    .with_callback(move |state| reso_bank_quantise.sr(state))
+            reso_bank_quantize: {
+                let reso_bank_quantize = Arc::clone(&params.reso_bank_quantize);
+                Button::new(ui_layout.reso_bank.quantize)
+                    .with_callback(move |state| reso_bank_quantize.sr(state))
                     .with_state(true)
                     .with_enabled_layout(Layout {
                         font: Some(
@@ -552,7 +554,7 @@ impl UIComponents {
                     .with_disabled_text("Quantise Off")
             },
             reso_bank_randomise: Button::new(ui_layout.reso_bank.randomise)
-                .with_label("Randomise pitch")
+                .with_label("Regenerate")
                 .with_label_layout(main_value_layout())
                 .toggleable(false),
 
@@ -716,10 +718,10 @@ impl UIComponents {
                     })
                     .with_value_layout(main_value_layout())
                     .with_value_chars(4)
-                    .with_output_range(0.025..=10.0)
+                    .with_output_range(0.3..=10.0)
                     .with_default_value(low_filter_q.current_value())
                     .with_callback(move |_, value| {
-                        low_filter_q.set_target_value(value);
+                        low_filter_q.set_target_value(value.recip());
                     })
             },
             low_filter_gain: {
@@ -806,10 +808,10 @@ impl UIComponents {
                     })
                     .with_value_layout(main_value_layout())
                     .with_value_chars(4)
-                    .with_output_range(0.025..=10.0)
+                    .with_output_range(0.3..=10.0)
                     .with_default_value(high_filter_q.current_value())
                     .with_callback(move |_, value| {
-                        high_filter_q.set_target_value(value);
+                        high_filter_q.set_target_value(value.recip());
                     })
             },
             high_filter_gain: {
@@ -1055,6 +1057,48 @@ impl UIComponents {
                         master_gain.set_target_value(output_value);
                     })
             },
+            pre_fx_gain: {
+                let pre_fx_gain = Arc::clone(&params.pre_fx_gain);
+                TextSlider::new(0.0, ui_layout.other.pre_fx_gain)
+                    .with_label("Pre-FX Gain")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(-36.0..=36.0)
+                    .with_default_value(0.0)
+                    .with_sensitivity(0.002)
+                    .with_callback(move |_, val| {
+                        pre_fx_gain.set_target_value(db_to_level(val));
+                    })
+                    .with_formatting_callback(|_, val| {
+                        if (0.0..=0.01).contains(&val) {
+                            return String::from("0.00 dB");
+                        }
+
+                        let val_str = if val.is_sign_negative() {
+                            format!("{val:.10}")
+                        }
+                        else {
+                            format!("+{val:.10}")
+                        };
+
+                        let mut decimal_idx = val_str.find('.').unwrap();
+
+                        // 5
+                        let truncate_to = if decimal_idx == 4 {
+                            6
+                        }
+                        else if decimal_idx > 5 {
+                            decimal_idx
+                        }
+                        else {
+                            5
+                        };
+
+                        let mut out = val_str[..truncate_to].to_string();
+                        out.push_str(" dB");
+                        out
+                    })
+            },
         }
     }
 
@@ -1161,7 +1205,7 @@ impl UIDraw for UIComponents {
         self.reso_bank_shift.update(app, input_data);
         self.reso_bank_inharm.update(app, input_data);
         self.reso_bank_pan.update(app, input_data);
-        self.reso_bank_quantise.update(app, input_data);
+        self.reso_bank_quantize.update(app, input_data);
         self.reso_bank_randomise.update(app, input_data);
 
         self.reso_bank_resonator_count.update(app, input_data);
@@ -1204,6 +1248,7 @@ impl UIDraw for UIComponents {
         self.comp_attack.update(app, input_data);
         self.comp_release.update(app, input_data);
 
+        self.pre_fx_gain.update(app, input_data);
         self.master_gain.update(app, input_data);
     }
 
@@ -1266,7 +1311,7 @@ impl UIDraw for UIComponents {
         self.reso_bank_shift.draw(app, draw, frame);
         self.reso_bank_inharm.draw(app, draw, frame);
         self.reso_bank_pan.draw(app, draw, frame);
-        self.reso_bank_quantise.draw(app, draw, frame);
+        self.reso_bank_quantize.draw(app, draw, frame);
         self.reso_bank_randomise.draw(app, draw, frame);
         self.reso_bank_scale.draw(app, draw, frame); // menu
 
@@ -1282,18 +1327,20 @@ impl UIDraw for UIComponents {
         self.low_filter_cutoff.draw(app, draw, frame);
 
         self.dist_amount.draw(app, draw, frame);
-        self.dist_type.draw(app, draw, frame); // menu
 
         self.delay_time_ms.draw(app, draw, frame);
         self.delay_feedback.draw(app, draw, frame);
         self.delay_mix.draw(app, draw, frame);
         self.delay_is_ping_pong.draw(app, draw, frame);
 
+        self.dist_type.draw(app, draw, frame); // menu
+
         self.comp_thresh.draw(app, draw, frame);
         self.comp_ratio.draw(app, draw, frame);
         self.comp_attack.draw(app, draw, frame);
         self.comp_release.draw(app, draw, frame);
 
+        self.pre_fx_gain.draw(app, draw, frame);
         self.master_gain.draw(app, draw, frame);
     }
 

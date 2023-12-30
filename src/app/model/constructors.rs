@@ -102,6 +102,7 @@ pub fn build_audio_system(params: &UIParams) -> AudioSystem {
 pub struct GuiElements {
     pub(super) mask_rect: Rect,
     pub(super) bank_rect: Rect,
+    pub(super) spectrum_rect: Rect,
 
     pub(super) contours: ContoursGPU,
     pub(super) smooth_life: SmoothLifeGPU,
@@ -143,6 +144,7 @@ pub fn build_gui_elements(
     GuiElements {
         bank_rect,
         mask_rect,
+        spectrum_rect,
 
         // contours: Contours::new(app.main_window().device(), mask_rect)
         //     .with_num_threads(16)

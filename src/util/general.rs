@@ -210,7 +210,7 @@ pub fn freq_log_norm(freq_hz: f64, start_hz: f64, sample_rate: f64) -> f64 {
 ///
 /// The expectation of this function is that `freq_hz_log_norm` is a normalised value
 /// between `0.0` and `1.0`, and that it will transpose a logarithmically-scaled frequency
-/// value between `0.0` and `1.0` back to its original frequeny value between `0.0` and the
+/// value between `0.0` and `1.0` back to its original frequency value between `0.0` and the
 /// Nyquist frequency.
 ///
 /// # Panics

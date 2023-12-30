@@ -29,7 +29,7 @@ pub struct AudioParams {
     /// How much panning may be applied to each resonator.
     pub reso_bank_pan: Arc<SmootherAtomic<f64>>,
     /// Whether the resonators should quantise their pitch to a scale.
-    pub reso_bank_quantise: Arc<AtomicBool>,
+    pub reso_bank_quantize: Arc<AtomicBool>,
     /// The number of active resonators in the bank.
     pub reso_bank_resonator_count: Arc<AtomicU32>,
     /// The dry/wet mix of the resonator bank.
@@ -78,6 +78,7 @@ pub struct AudioParams {
     /// Compressor release time in milliseconds.
     pub comp_release_ms: Arc<SmootherAtomic<f64>>,
 
+    pub pre_fx_gain: Arc<SmootherAtomic<f64>>,
     /// The device's master gain level.
     pub master_gain: Arc<SmootherAtomic<f64>>,
 }

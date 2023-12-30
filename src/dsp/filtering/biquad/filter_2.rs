@@ -284,8 +284,12 @@ impl BiquadFilter {
     ///
     /// Panics in debug mode if `freq <= 0.0 || freq > sample_rate / 2`.
     pub fn response_at(&self, freq: f64) -> f64 {
-        debug_assert!(0.0 < freq && freq <= self.sample_rate / 2.0);
-        let Coefs { a0, a1, a2, b0, b1, b2 } = self.coefs;
+        // debug_assert!(0.0 < freq && freq <= self.sample_rate / 2.0);
+        let Coefs { a1, a2, b0, b1, b2, .. } = self.coefs;
+        // I realised that, as I'm already normalising all coefficients by a0
+        // (for low/high pass/shelves), that it needs to be 1.0 here as it sort of
+        // normalises itself.
+        let a0 = 1.0;
 
         // sin²(w / 2)
         let phi = (freq * 0.5).sin().powi(2);

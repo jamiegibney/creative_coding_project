@@ -96,7 +96,7 @@ fn audio_processors(
     resonator_bank.set_inharm(ui_params.reso_bank_inharm.current_value());
     resonator_bank.set_freq_spread(0.5);
     resonator_bank.set_freq_shift(ui_params.reso_bank_shift.current_value());
-    resonator_bank.quantize_to_scale(ui_params.reso_bank_quantise.lr());
+    resonator_bank.quantize_to_scale(ui_params.reso_bank_quantize.lr());
     resonator_bank.set_panning_scale(ui_params.reso_bank_pan.current_value());
     resonator_bank.randomize();
 

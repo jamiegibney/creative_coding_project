@@ -1,4 +1,4 @@
-use crate::gui::colors::*;
+use crate::{gui::colors::*, prelude::xfer::s_curve};
 use nannou::geom::{path, Path};
 
 use super::*;
@@ -12,13 +12,17 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     let bank_rect = &model.bank_rect;
     model.vectors.draw(app, draw, &frame);
-    outline_rect(bank_rect, draw, 2.0);
+
+    let line_weight = 2.0;
+
+    outline_rect(bank_rect, draw, line_weight);
 
     // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
     let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
     // let post_spectrum_line_color = Rgba::new(1.0, 1.0, 1.0, 1.0);
     let post_spectrum_mesh_color = Rgba::new(0.9, 0.4, 0.0, 0.3);
-    let line_weight = 2.0;
+
+    model.draw_log_lines(draw);
 
     let spectrogram_view = model.ui_params.spectrogram_view.lr();
 
@@ -28,10 +32,10 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     ) {
         let mut pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
         let spectrum_rect = pre_spectrum.rect();
-        draw.rect()
-            .wh(spectrum_rect.wh())
-            .xy(spectrum_rect.xy())
-            .color(BLACK);
+        // draw.rect()
+        //     .wh(spectrum_rect.wh())
+        //     .xy(spectrum_rect.xy())
+        //     .color(BLACK);
 
         pre_spectrum.draw(
             draw,
@@ -55,8 +59,6 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         );
     }
 
-    outline_rect(model.pre_spectrum_analyzer.borrow().rect(), draw, 2.0);
-
     match model.ui_params.mask_algorithm.lr() {
         GenerativeAlgo::Contours => model
             .contours
@@ -74,7 +76,22 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
             .draw(app, draw, &frame),
     }
 
+    let mask_mix = model.ui_params.mask_mix.lr();
+
+    if mask_mix < 1.0 {
+        draw.rect()
+            .xy(model.mask_rect.xy())
+            .wh(model.mask_rect.wh())
+            .color(Rgba::new(0.0, 0.0, 0.0, s_curve(1.0 - mask_mix, -0.9)));
+    }
+
+    outline_rect(&model.mask_rect, draw, 2.0);
+
     model.draw_mask_scan_line(draw);
+
+    model.draw_filter_line(draw);
+
+    outline_rect(&model.spectrum_rect, draw, 2.0);
 
     model.ui_components.draw(app, draw, &frame);
 
