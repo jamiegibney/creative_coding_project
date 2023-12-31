@@ -170,13 +170,6 @@ fn main([[builtin(global_invocation_id)]] id: vec3<u32>) {
     let y = u32(id.y);
 
     let dt = state.dt * state.delta_time;
-    // var foo = 32432.0;
-
-    // for (var n = 0.0; n < scale_to(hash2(uv), 1.0, 20.0); n = n + 0.001) {
-    //     foo = sqrt(foo);
-    // }
-
-    // let bar = exp(foo);
 
     var pxl: f32;
     if (state.should_randomize >= u32(1)) {

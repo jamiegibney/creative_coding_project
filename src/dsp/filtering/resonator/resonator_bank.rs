@@ -43,6 +43,7 @@ pub struct ResonatorBank {
     active_pitches: Vec<Smoother<f64>>,
     panning: Vec<Smoother<f64>>,
     params: ResonatorBankParams,
+    num_active: usize,
 }
 
 impl ResonatorBank {
@@ -54,9 +55,9 @@ impl ResonatorBank {
     pub fn new(sample_rate: f64, max_num_resonators: usize) -> Self {
         assert!(max_num_resonators > 0);
 
-        let pitch_smoother = Smoother::new(1000.0, 69.0, sample_rate)
+        let pitch_smoother = Smoother::new(200.0, 69.0, sample_rate)
             .with_smoothing_type(SmoothingType::Cosine);
-        let pan_smoother = Smoother::new(500.0, 0.0, sample_rate);
+        let pan_smoother = Smoother::new(100.0, 0.0, sample_rate);
 
         let mut s = Self {
             resonators: vec![
@@ -68,7 +69,7 @@ impl ResonatorBank {
             original_pitches: vec![0.0; max_num_resonators],
             active_pitches: vec![pitch_smoother; max_num_resonators],
             panning: vec![pan_smoother; max_num_resonators],
-            // stereo_link: true,
+            num_active: max_num_resonators,
             params: ResonatorBankParams {
                 panning_scale: 1.0,
                 freq_shift: 0.0,
@@ -108,13 +109,7 @@ impl ResonatorBank {
             num_resonators <= self.resonators.capacity() && num_resonators != 0
         );
 
-        // technically only the resonator vector needs to be changed here,
-        // but truncating the active pitches helps to improve performance a little
-        // when changing parameters when using less than the maximum number of resonators
-        unsafe {
-            self.resonators.set_len(num_resonators);
-            self.active_pitches.set_len(num_resonators);
-        }
+        self.num_active = num_resonators;
     }
 
     /// Returns the maximum number of resonators available in the bank.
@@ -294,6 +289,7 @@ impl ResonatorBank {
 
         self.resonators
             .iter_mut()
+            .take(self.num_active)
             .zip(self.active_pitches.iter_mut())
             .for_each(|(res, p)| {
                 let note = p.next();
@@ -301,12 +297,29 @@ impl ResonatorBank {
                 res.l.set_cutoff(note_to_freq(note).min(nyquist));
                 res.r.set_cutoff(note_to_freq(note).min(nyquist));
             });
+
+        for (res, p) in self
+            .resonators
+            .iter_mut()
+            .skip(self.num_active)
+            .zip(self.active_pitches.iter_mut())
+        {
+            if !p.is_active() {
+                continue;
+            }
+
+            let note = p.next();
+
+            res.l.set_cutoff(note_to_freq(note).min(nyquist));
+            res.r.set_cutoff(note_to_freq(note).min(nyquist));
+        }
     }
 
     fn set_active_pitches(&mut self) {
         for (active, &original) in self
             .active_pitches
             .iter_mut()
+            .take(self.num_active)
             .zip(self.original_pitches.iter())
         {
             // apply frequency spread and then add shift
@@ -353,8 +366,12 @@ impl Effect for ResonatorBank {
         self.update_resonator_pitches();
 
         let mut output = 0.0;
-        for res in &mut self.resonators {
+        for res in self.resonators.iter_mut().take(self.num_active) {
             output += res.process_mono(input, ch_idx);
+        }
+
+        for res in self.resonators.iter_mut().skip(self.num_active) {
+            output += res.process_mono(0.0, ch_idx);
         }
 
         output
@@ -364,8 +381,14 @@ impl Effect for ResonatorBank {
         self.update_resonator_pitches();
 
         let (mut out_l, mut out_r) = (0.0, 0.0);
-        for res in &mut self.resonators {
+        for res in self.resonators.iter_mut().take(self.num_active) {
             let (l, r) = res.process_stereo(left, right);
+            out_l += l;
+            out_r += r;
+        }
+
+        for res in self.resonators.iter_mut().skip(self.num_active) {
+            let (l, r) = res.process_stereo(0.0, 0.0);
             out_l += l;
             out_r += r;
         }

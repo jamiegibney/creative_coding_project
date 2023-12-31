@@ -11,6 +11,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let V2 { x: _width, y: _height } = WINDOW_SIZE;
 
     let bank_rect = &model.bank_rect;
+    model.voronoi_reso_bank.draw(app, draw, &frame);
     model.vectors.draw(app, draw, &frame);
 
     let line_weight = 2.0;

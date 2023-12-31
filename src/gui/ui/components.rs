@@ -62,7 +62,9 @@ pub struct UIComponents {
     /// toggle
     reso_bank_quantize: Button,
     /// trigger
-    reso_bank_randomise: Button,
+    reso_bank_randomize: Button,
+    /// trigger
+    reso_bank_push: Button,
 
     // f64
     reso_bank_mix: TextSlider,
@@ -75,7 +77,7 @@ pub struct UIComponents {
     // u32
     reso_bank_resonator_count: TextSlider,
     // f64
-    reso_bank_cell_scatter: TextSlider,
+    reso_bank_field_friction: TextSlider,
 
     // ### POST EFFECTS ###
     effects_label: Label,
@@ -428,7 +430,8 @@ impl UIComponents {
             },
 
             reso_bank_label: Label::new(ui_layout.reso_bank.label)
-                .with_text("RESONATOR BANK")
+                // .with_text("RESONATOR BANK")
+                .with_text("RESONATOR FIELD")
                 .with_text_layout(big_label_layout()),
             reso_bank_scale: {
                 let reso_bank_scale = Arc::clone(&params.reso_bank_scale);
@@ -553,8 +556,12 @@ impl UIComponents {
                     .with_enabled_text("Quantise On")
                     .with_disabled_text("Quantise Off")
             },
-            reso_bank_randomise: Button::new(ui_layout.reso_bank.randomise)
+            reso_bank_randomize: Button::new(ui_layout.reso_bank.randomise)
                 .with_label("Regenerate")
+                .with_label_layout(main_value_layout())
+                .toggleable(false),
+            reso_bank_push: Button::new(ui_layout.reso_bank.push)
+                .with_label("Push")
                 .with_label_layout(main_value_layout())
                 .toggleable(false),
 
@@ -602,19 +609,20 @@ impl UIComponents {
                         cell_jitter.sr(value);
                     })
             },
-            reso_bank_cell_scatter: {
-                let cell_scatter = Arc::clone(&params.reso_bank_cell_scatter);
-                TextSlider::new(0.5, ui_layout.reso_bank.cell_scatter)
-                    .with_label("Scatter")
+            reso_bank_field_friction: {
+                let friction = Arc::clone(&params.reso_bank_field_friction);
+                TextSlider::new(0.5, ui_layout.reso_bank.field_friction)
+                    .with_label("Friction")
                     .with_label_layout(Layout {
                         justify: Justify::Left,
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
+                    .with_output_range(0.1..=1.0)
                     .with_default_value(0.5)
                     .with_value_chars(4)
                     .with_callback(move |_, value| {
-                        cell_scatter.sr(value);
+                        friction.sr(value);
                     })
             },
 
@@ -1102,11 +1110,19 @@ impl UIComponents {
         }
     }
 
-    pub fn attach_reso_bank_randomise_callback<F: Fn(bool) + 'static>(
+    pub fn attach_reso_bank_randomize_callback<F: Fn(bool) + 'static>(
         mut self,
         cb: F,
     ) -> Self {
-        self.reso_bank_randomise.set_callback(cb);
+        self.reso_bank_randomize.set_callback(cb);
+        self
+    }
+
+    pub fn attach_reso_bank_push_callback<F: Fn(bool) + 'static>(
+        mut self,
+        cb: F,
+    ) -> Self {
+        self.reso_bank_push.set_callback(cb);
         self
     }
 
@@ -1206,12 +1222,13 @@ impl UIDraw for UIComponents {
         self.reso_bank_inharm.update(app, input_data);
         self.reso_bank_pan.update(app, input_data);
         self.reso_bank_quantize.update(app, input_data);
-        self.reso_bank_randomise.update(app, input_data);
+        self.reso_bank_randomize.update(app, input_data);
+        self.reso_bank_push.update(app, input_data);
 
         self.reso_bank_resonator_count.update(app, input_data);
         // self.reso_bank_cell_count.update(app, input_data);
         self.reso_bank_cell_jitter.update(app, input_data);
-        self.reso_bank_cell_scatter.update(app, input_data);
+        self.reso_bank_field_friction.update(app, input_data);
         self.reso_bank_mix.update(app, input_data);
         self.exciter_osc.update(app, input_data);
 
@@ -1312,13 +1329,14 @@ impl UIDraw for UIComponents {
         self.reso_bank_inharm.draw(app, draw, frame);
         self.reso_bank_pan.draw(app, draw, frame);
         self.reso_bank_quantize.draw(app, draw, frame);
-        self.reso_bank_randomise.draw(app, draw, frame);
+        self.reso_bank_randomize.draw(app, draw, frame);
+        self.reso_bank_push.draw(app, draw, frame);
         self.reso_bank_scale.draw(app, draw, frame); // menu
 
         self.reso_bank_resonator_count.draw(app, draw, frame);
         // self.reso_bank_cell_count.draw(app, draw, frame);
         self.reso_bank_cell_jitter.draw(app, draw, frame);
-        self.reso_bank_cell_scatter.draw(app, draw, frame);
+        self.reso_bank_field_friction.draw(app, draw, frame);
 
         self.reso_bank_mix.draw(app, draw, frame);
         self.exciter_osc.draw(app, draw, frame);

@@ -71,13 +71,10 @@ pub struct UIParams {
 
     /// The number of active resonators in the bank.
     pub reso_bank_resonator_count: Arc<AtomicU32>,
-    /// The number of active Voronoi cells.
     pub reso_bank_cell_count: Arc<AtomicU32>,
-    /// The amount of jitter applied to Voronoi cells.
     pub reso_bank_cell_jitter: Arc<AtomicF64>,
-    /// How uniformly Voronoi cells are distributed — higher values
-    /// correspond to a less even distribution.
-    pub reso_bank_cell_scatter: Arc<AtomicF64>,
+    /// The friction applied to each point in the vector field.
+    pub reso_bank_field_friction: Arc<AtomicF64>,
 
     /// The dry/wet mix of the resonator bank.
     pub reso_bank_mix: Arc<SmootherAtomic<f64>>,
@@ -180,7 +177,7 @@ impl Default for UIParams {
             reso_bank_resonator_count: Arc::new(AtomicU32::new(8)),
             reso_bank_cell_count: Arc::new(AtomicU32::new(12)),
             reso_bank_cell_jitter: Arc::new(AtomicF64::new(0.1)),
-            reso_bank_cell_scatter: Arc::new(AtomicF64::new(0.5)),
+            reso_bank_field_friction: Arc::new(AtomicF64::new(0.5)),
 
             reso_bank_mix: smoother(1.0),
             exciter_osc: Arc::new(Atomic::new(ExciterOscillator::default())),
@@ -197,7 +194,7 @@ impl Default for UIParams {
 
             delay_time_ms: Arc::new(AtomicF64::new(250.0)),
             delay_feedback: smoother(0.75),
-            delay_mix: smoother(0.5),
+            delay_mix: smoother(0.0),
             use_ping_pong: Arc::new(AtomicBool::new(true)),
 
             dist_amount: smoother(0.0),

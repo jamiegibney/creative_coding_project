@@ -56,5 +56,7 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
         }
     }
 
+    model.voronoi_reso_bank.update(app, &model.input_data);
+
     model.update_filter_line();
 }

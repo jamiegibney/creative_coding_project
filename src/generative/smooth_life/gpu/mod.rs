@@ -286,8 +286,8 @@ impl UIDraw for SmoothLifeGPU {
                     };
 
                     for (pxl, &br) in guard.pixels_mut().zip(floats.iter()) {
-                        let br = (br * 256.0) as u8;
-                        *pxl = Rgba([br, br, br, u8::MAX])
+                        let br = (br * 255.0) as u8;
+                        *pxl = Rgba([br, br, br, u8::MAX]);
                     }
                 }
             }

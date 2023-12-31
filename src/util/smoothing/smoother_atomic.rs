@@ -126,8 +126,16 @@ impl<T: SmoothableAtomic> SmootherAtomic<T> {
     /// Sets the new target value of the `Smoother`. This will automatically
     /// set its starting value to the current value.
     pub fn set_target_value(&self, target_value: T) {
+        if epsilon_eq(
+            target_value.to_f64(),
+            T::atomic_load(&self.target_value).to_f64(),
+        ) {
+            return;
+        }
+
         self.start_value.sr(self.current_value.lr());
         T::atomic_store(&self.target_value, target_value);
+
         self.ramp.reset();
     }
 

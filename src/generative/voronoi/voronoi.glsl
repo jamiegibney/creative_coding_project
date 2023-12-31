@@ -35,7 +35,7 @@ vec3 voronoi(in vec2 x) {
     vec2 fractionalPart = fract(x);
 
     // first pass: regular voronoi
-    vec2 minGrid, minRemainder;
+    vec2 minGrid, minRelative;
     float minDistance = 8.0;
 
     // iterate 3x3 grid
@@ -46,16 +46,12 @@ vec3 voronoi(in vec2 x) {
             // get noise value for cell
             vec2 offset = hash2(integerPart + cellOffset);
 
-            #ifdef ANIMATE
-            offset = 0.5 + 0.5 * sin(iTime + 6.2831 * offset);
-            #endif
-
-            vec2 remainder = cellOffset + offset - fractionalPart;
-            float dist = dot(remainder, remainder);
+            vec2 relative = cellOffset + offset - fractionalPart;
+            float dist = dot(relative, relative);
 
             if (dist < minDistance) {
                 minDistance = dist;
-                minRemainder = remainder;
+                minRelative = relative;
                 minGrid = cellOffset;
             }
         }
@@ -69,30 +65,26 @@ vec3 voronoi(in vec2 x) {
             vec2 cellOffset = minGrid + vec2(float(i), float(j));
             vec2 offset = hash2(integerPart + cellOffset);
 
-            #ifdef ANIMATE
-            offset = 0.5 + 0.5 * sin(iTime + 6.2831 * offset);
-            #endif
-
-            vec2 remainder = cellOffset + offset - fractionalPart;
+            vec2 relative = cellOffset + offset - fractionalPart;
 
             if (dot(
-                    minRemainder - remainder,
-                    minRemainder - remainder
+                    minRelative - relative,
+                    minRelative - relative
                 ) > 0.00001)
             {
                 minDistance =
                     min(
                         minDistance,
                         dot(
-                            0.5 * (minRemainder + remainder),
-                            normalize(remainder - minRemainder)
+                            0.5 * (minRelative + relative),
+                            normalize(relative - minRelative)
                         )
                     );
             }
         }
     }
 
-    return vec3(minDistance, minRemainder);
+    return vec3(minDistance, minRelative);
 }
 
 vec2 voronoi2(in vec2 x) {

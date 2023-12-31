@@ -123,9 +123,22 @@ impl<T: Smoothable> Smoother<T> {
     /// Sets the new target value of the `Smoother`. This will automatically
     /// set its starting value to the current value.
     pub fn set_target_value(&mut self, target_value: T) {
-        self.start_value = self.current_value;
         self.target_value = target_value;
-        self.ramp.reset();
+
+        if self.is_active() {
+            let interp = ilerp(
+                self.start_value.to_f64(),
+                target_value.to_f64(),
+                self.current_value.to_f64(),
+            );
+
+            self.ramp.reset_to(interp);
+        }
+        else {
+            self.ramp.reset();
+        }
+
+        self.start_value = self.current_value;
     }
 
     /// Sets the starting value of the `Smoother` (the value it is

@@ -195,6 +195,7 @@ impl RampAtomic {
     pub fn reset(&self) {
         self.current_value.sr(0.0);
         self.setup();
+        self.compute_step_size();
     }
 
     /// Resets the ramp's internal sample rate.
@@ -222,13 +223,6 @@ impl RampAtomic {
     fn setup(&self) {
         let steps_remaining = self.duration_samples();
         self.steps_remaining.sr(steps_remaining);
-
-        self.step_size.sr(if steps_remaining > 0 {
-            self.compute_step_size()
-        }
-        else {
-            0.0
-        });
     }
 
     /// Computes the total number of steps required to reach the target value
@@ -238,9 +232,14 @@ impl RampAtomic {
     }
 
     /// Computes the size of each step.
-    fn compute_step_size(&self) -> f64 {
-        (RAMP_TARGET - self.current_value.lr())
-            / (self.steps_remaining.lr() as f64)
+    fn compute_step_size(&self) {
+        self.step_size.sr(if self.steps_remaining() > 0 {
+            (RAMP_TARGET - self.current_value.lr())
+                / (self.steps_remaining.lr() as f64)
+        }
+        else {
+            0.0
+        });
     }
 }
 

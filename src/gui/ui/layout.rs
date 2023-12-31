@@ -208,11 +208,12 @@ pub struct ResoBankUILayout {
     pub pan: Rect,
     pub quantize: Rect,
     pub randomise: Rect,
+    pub push: Rect,
 
     pub reso_count: Rect,
     pub cell_jitter: Rect,
     pub cell_count: Rect,
-    pub cell_scatter: Rect,
+    pub field_friction: Rect,
 
     pub mix: Rect,
     pub exciter: Rect,
@@ -228,9 +229,16 @@ impl Default for ResoBankUILayout {
         //     pt2(-540.0 + upper_size, 50.0 + upper_size),
         // );
 
+        let rs_w = main_width_chars(10);
         let reset_rect = Rect::from_xy_wh(
-            pt2(-412.0, 28.0),
-            pt2(main_width_chars(10), MAIN_HEIGHT),
+            pt2(-540.0 + rs_w / 2.0 + 20.0, 28.0),
+            pt2(rs_w, MAIN_HEIGHT),
+        );
+
+        let ps_w = main_width_chars(4);
+        let push_rect = Rect::from_xy_wh(
+            pt2(-284.0 - ps_w / 2.0 - 20.0, 28.0),
+            pt2(ps_w, MAIN_HEIGHT),
         );
 
         let sh_w = main_width_chars(8);
@@ -281,10 +289,10 @@ impl Default for ResoBankUILayout {
             pt2(rc_w, MAIN_HEIGHT),
         );
 
-        let sc_w = main_width_chars(4);
-        let scatter_rect = Rect::from_xy_wh(
-            pt2(-284.0 + sc_w / 2.0 + 10.0, 190.0 + MAIN_HEIGHT / 2.0),
-            pt2(sc_w, MAIN_HEIGHT),
+        let fr_w = main_width_chars(4);
+        let friction_rect = Rect::from_xy_wh(
+            pt2(-284.0 + fr_w / 2.0 + 10.0, 190.0 + MAIN_HEIGHT / 2.0),
+            pt2(fr_w, MAIN_HEIGHT),
         );
 
         let mx_w = main_width_chars(7);
@@ -315,11 +323,12 @@ impl Default for ResoBankUILayout {
             pan: pan_rect,
 
             randomise: reset_rect,
+            push: push_rect,
 
             reso_count: count_rect,
             cell_count: def_rect(),
             cell_jitter: def_rect(),
-            cell_scatter: scatter_rect,
+            field_friction: friction_rect,
 
             mix: mix_rect,
             exciter: exciter_rect,

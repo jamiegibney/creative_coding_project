@@ -332,7 +332,7 @@ impl UIDraw for ContoursGPU {
                     };
 
                     for (px, &br) in guard.pixels_mut().zip(floats.iter()) {
-                        let br = (br * 256.0) as u8;
+                        let br = (br * 255.0) as u8;
                         *px = Rgba([br, br, br, u8::MAX]);
                     }
                 }

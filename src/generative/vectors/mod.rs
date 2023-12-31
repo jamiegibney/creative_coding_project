@@ -1,33 +1,72 @@
 use super::*;
 use crate::{
-    dsp::{filtering::resonator::resonator_bank::ResoBankData, ResonatorBank},
+    dsp::{ResoBankData, ResonatorBank},
     prelude::*,
 };
 use nannou::prelude::*;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex};
+
+const MAX_VELOCITY: f32 = 3.0;
+const MIN_START_VELOCITY: f32 = 1.5;
+
+#[derive(Debug, Clone)]
+pub struct Point {
+    pub pos: Vec2,            // position of the point
+    vel: Vec2,                // velocity of the point - speed and direction
+    deceleration_factor: f32, // how much the point decelerates each frame
+}
+
+impl Point {
+    pub fn set_pos(&mut self, pos: Vec2) {
+        self.pos = pos;
+    }
+
+    pub fn randomize_velocity(&mut self) {
+        self.vel.x = random_range(-MAX_VELOCITY, MAX_VELOCITY) * 0.7;
+        self.vel.y = random_range(-MAX_VELOCITY, MAX_VELOCITY);
+    }
+
+    pub fn randomize_deceleration(&mut self) {
+        self.deceleration_factor = random_range(0.92, 0.99);
+    }
+}
+
+impl Deref for Point {
+    type Target = Vec2;
+
+    fn deref(&self) -> &Self::Target {
+        &self.pos
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Vectors {
-    points: Vec<Vec2>,
+    pub points: Vec<Point>,
     point_radius: f32,
     point_color: Rgba,
-    num_active_points: usize,
+    pub num_active_points: usize,
+    deceleration_scale: f32,
 
     rect: Rect,
 }
 
 impl Vectors {
     pub fn new(num_points: usize, rect: Rect) -> Self {
-        let l = rect.left();
-        let r = rect.right();
-        let b = rect.bottom();
-        let t = rect.top();
+        let mid = rect.xy();
 
         let mut s = Self {
-            points: (0..num_points).map(|_| Vec2::ZERO).collect(),
+            points: (0..num_points)
+                .map(|_| Point {
+                    pos: mid,
+                    vel: Vec2::ZERO,
+                    deceleration_factor: 1.0,
+                })
+                .collect(),
             point_radius: 1.0,
             point_color: Rgba::new(1.0, 1.0, 1.0, 1.0),
             num_active_points: num_points,
+            deceleration_scale: 1.0,
             rect,
         };
 
@@ -101,8 +140,29 @@ impl Vectors {
         let len = self.num_active_points;
 
         for i in 0..len {
-            self.points[i] = self.clamped_vec(random_vector(&self.rect));
+            let pos = self.clamped_vec(random_vector(&self.rect));
+
+            self.points[i].set_pos(pos);
+            self.points[i].randomize_deceleration();
+            self.points[i].randomize_velocity();
         }
+    }
+
+    pub fn push_points(&mut self) {
+        let len = self.num_active_points;
+
+        for i in 0..len {
+            let new_vel = Vec2::new(
+                random_range(-MAX_VELOCITY, MAX_VELOCITY) * 0.7,
+                random_range(-MAX_VELOCITY, MAX_VELOCITY),
+            );
+
+            self.points[i].vel += new_vel;
+        }
+    }
+
+    pub fn set_friction(&mut self, friction: f64) {
+        self.deceleration_scale = (1.0 - friction * 0.1) as f32;
     }
 
     fn clamped_vec(&self, point: Vec2) -> Vec2 {
@@ -123,14 +183,28 @@ impl Vectors {
 
 impl UIDraw for Vectors {
     fn update(&mut self, app: &App, input_data: &InputData) {
-        // todo!()
+        let len = self.num_active_points;
+
+        for i in 0..len {
+            let decel =
+                self.points[i].deceleration_factor * self.deceleration_scale;
+
+            self.points[i].pos =
+                self.clamped_vec(self.points[i].pos + self.points[i].vel);
+
+            self.points[i].vel *= decel;
+
+            if self.points[i].vel.x < 0.04 && self.points[i].vel.y < 0.04 {
+                self.points[i].vel = Vec2::ZERO;
+            }
+        }
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
-        for &point in self.points.iter().take(self.num_active_points) {
+        for point in self.points.iter().take(self.num_active_points) {
             draw.ellipse()
                 .color(self.point_color)
-                .xy(point)
+                .xy(point.pos)
                 .radius(self.point_radius);
         }
     }

@@ -159,7 +159,8 @@ pub fn build_gui_elements(
             .with_contour_range(0.0..=(params.contour_thickness.lr() as f32)),
         smooth_life: SmoothLifeGPU::new(app, mask_rect),
         vectors: Vectors::new(MAX_NUM_RESONATORS, bank_rect)
-            .with_point_radius(4.0),
+            .with_point_radius(3.0)
+            .with_point_color(Rgba::new(1.0, 1.0, 1.0, 0.5)),
 
         pre_spectrum_analyzer,
         post_spectrum_analyzer,

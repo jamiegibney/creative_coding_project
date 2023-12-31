@@ -81,6 +81,7 @@ pub struct Model {
 
     pub bank_rect: Rect,
     pub reso_bank_reset_receiver: Receiver<()>,
+    pub reso_bank_push_receiver: Receiver<()>,
     pub reso_bank_data: triple_buffer::Input<ResoBankData>,
     pub mask_rect: Rect,
     pub mouse_clicked_outside_of_mask: bool,
@@ -90,8 +91,12 @@ pub struct Model {
     pub contours: Option<Arc<RwLock<ContoursGPU>>>,
     /// A SmoothLife simulation.
     pub smooth_life: Option<Arc<RwLock<SmoothLifeGPU>>>,
-    /// A simple vector field.
+    /// A Voronoi noise generator.
+    // pub voronoi: Voronoi,
+    /// A simple vector field for the resonator bank points.
     pub vectors: Vectors,
+    /// The voronoi generator for the resonator bank vector field.
+    pub voronoi_reso_bank: VoronoiGPU,
     /// The line which shows which column is being used as a spectral mask.
     pub mask_scan_line_pos: f64,
     /// The amount to increment the position of the mask scan line each frame.
@@ -159,9 +164,14 @@ impl Model {
 
         let (reso_bank_reset_sender, reso_bank_reset_receiver) = unbounded();
 
+        let (reso_bank_push_sender, reso_bank_push_receiver) = unbounded();
+
         let ui_components = UIComponents::new(&params)
-            .attach_reso_bank_randomise_callback(move |_| {
+            .attach_reso_bank_randomize_callback(move |_| {
                 reso_bank_reset_sender.send(());
+            })
+            .attach_reso_bank_push_callback(move |_| {
+                reso_bank_push_sender.send(());
             })
             .attach_mask_reset_callback(move |_| match gen_algo.lr() {
                 GenerativeAlgo::Contours => {
@@ -179,8 +189,7 @@ impl Model {
                 Arc::clone(&contours),
                 Arc::clone(&smooth_life),
                 &params,
-            )
-            .setup_audio_channels(Arc::clone(&audio_senders));
+            );
 
         let mut low_filter = BiquadFilter::new(sample_rate_ref.lr());
         low_filter.set_params(&BiquadParams {
@@ -236,8 +245,11 @@ impl Model {
             bank_rect,
             mask_rect,
             reso_bank_reset_receiver,
+            reso_bank_push_receiver,
             reso_bank_data,
             spectrum_rect,
+
+            voronoi_reso_bank: VoronoiGPU::new(app, bank_rect),
 
             mouse_clicked_outside_of_mask: false,
 
@@ -355,9 +367,14 @@ impl Model {
         self.vectors.set_num_active_points(
             self.ui_params.reso_bank_resonator_count.lr() as usize,
         );
+        self.vectors
+            .set_friction(self.ui_params.reso_bank_field_friction.lr());
 
         if self.reso_bank_reset_receiver.try_recv().is_ok() {
             self.vectors.randomize_points();
+        }
+        if self.reso_bank_push_receiver.try_recv().is_ok() {
+            self.vectors.push_points();
         }
 
         self.vectors.update(app, &self.input_data);
@@ -366,6 +383,8 @@ impl Model {
             .set_reso_bank_data(self.reso_bank_data.input_buffer());
 
         self.reso_bank_data.publish();
+
+        self.voronoi_reso_bank.copy_from_vectors(&self.vectors);
     }
 
     pub fn update_mask_scan_line_from_mouse(&mut self) {

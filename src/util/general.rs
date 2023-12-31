@@ -88,6 +88,13 @@ pub fn normalise_f32(value: f32, min: f32, max: f32) -> f32 {
     (value - min) / (max - min)
 }
 
+#[inline]
+pub fn dot(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
+    let x = x1 * x2;
+    let y = y1 * y2;
+    x + y
+}
+
 /// Returns a vector of interleaved elements from the input, i.e.
 /// `0.x, 0.y, 1.x, 1.y, ...`
 // TODO: make this an in-place mutation, some kind of sorting algorithm may be faster?
