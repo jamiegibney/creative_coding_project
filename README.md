@@ -9,7 +9,7 @@ The device has three main parts:
 - Post-processing FX, including a simple parametric EQ, distortion, stereo delay, and a compressor. The orange EQ nodes can be dragged with the mouse to control the filters.
 
 ### Keymap
-The project's keymap is as follows:
+The device's keymap is as follows:
 
 ![](./assets/images/keymap.png)
 
@@ -17,7 +17,7 @@ Polyphony is supported.
 
 **Tip**: whilst holding notes, you can shift the octave with either `Z` or `X` to hold the notes in place, acting as a way of sustaining them. Pressing `P` releases the notes.
 
-### Parameter
+### Parameters
 Please see the project's [parameter reference](./parameter_reference.md) for more information on each of the device's parameters.
 
 # Navigating the project's source code
