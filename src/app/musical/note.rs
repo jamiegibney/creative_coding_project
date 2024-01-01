@@ -213,7 +213,7 @@ impl Note {
             Key::A | Key::K => Some(C),
             Key::W | Key::O => Some(Cs),
             Key::S | Key::L => Some(D),
-            Key::E | Key::P => Some(Ds),
+            Key::E => Some(Ds),
             Key::D => Some(E),
             Key::F => Some(F),
             Key::T => Some(Fs),

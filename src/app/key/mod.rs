@@ -4,18 +4,12 @@ use crate::app::audio::VoiceEvent;
 /// Function for handling keypresses.
 pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
     match key {
-        Key::Space => model
+        Key::P => model
             .voice_event_sender
             .send(VoiceEvent::ReleaseAll)
             .unwrap(),
         Key::Z => model.octave.decrease(),
         Key::X => model.octave.increase(),
-        Key::B => model
-            .audio_senders
-            .resonator_bank_reset_pitch
-            .send(())
-            .unwrap(),
-        Key::M => model.audio_senders.spectral_mask_post_fx.send(()).unwrap(),
         Key::R => match model.ui_params.mask_algorithm.lr() {
             GenerativeAlgo::Contours => {
                 // let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
@@ -33,8 +27,15 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
             }
             GenerativeAlgo::Voronoi => {
                 // let mut
+                todo!();
             }
         },
+        Key::Tab => {
+            // reso bank push
+        }
+        Key::Space => {
+            // reso bank reset
+        }
         _ => (),
     };
 

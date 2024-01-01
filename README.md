@@ -8,6 +8,15 @@ The device has three main parts:
 - A spectral filter, which uses a column of pixels to mask audio in the frequency domain. The brighter a pixel is, the louder the magnitude is at its respective frequency. You may drag the "scan line" with the mouse, and each visual algorithm offers some control over its appearance. You may also change the resolution (block size) of the spectral filter.
 - Post-processing FX, including a simple parametric EQ, distortion, stereo delay, and a compressor. The orange EQ nodes can be dragged with the mouse to control the filters.
 
+### Keymap
+The project's keymap is as follows:
+
+![](./keymap.png)
+
+Polyphony is supported. 
+
+**Tip**: whilst holding notes, you can shift the octave with either `Z` or `X` to hold the notes in place, acting as a way of sustaining them. Pressing `P` releases the notes.
+
 # Navigating the project's source code
 > This section is intended for an assessor intending to read through the project.
 
