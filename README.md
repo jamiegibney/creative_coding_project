@@ -1,5 +1,5 @@
 # Creative Coding Project
-![](https://raw.githubusercontent.com/jamiegibney/creative_coding_project/master/screenshot.png?token=GHSAT0AAAAAACKGK324LBWOIAKOSQFVQ7KUZMTDOFA)
+![](./screenshot.png)
 
 This is my Creative Coding submission for University. The project is written in Rust, as well as some shaders written in WGSL.
 

@@ -99,7 +99,7 @@ There are also some more advanced methods used in this project:
         }
     }
     ```
-- "Atomic" types are types which use atomic operations — operations which complete as whole steps. These are used in multi-threaded contexts to prevent different threads from accessing or interrupting half-complete operations.
+- "Atomic" types are types which use atomic operations — operations which are uninterruptible across threads. These are used in multi-threaded contexts to prevent different threads from accessing or interrupting half-complete operations.
 - The `Arc` type is a thread-safe, reference counting pointer. "Arc" stands for "Atomically Reference-Counted". It is used to share data amongst threads without needing to clone the data. However, it does not allow the underlying data to be mutated by default.
 - `Mutex` and `RwLock` are used to provide thread-safe "interior mutability" via a lock, which allows a value to mutated without a mutable reference to it.
 - `RefCell` allows for interior mutability by providing runtime borrow-checking (which is usually performed at compile-time). It is not thread-safe, however.
