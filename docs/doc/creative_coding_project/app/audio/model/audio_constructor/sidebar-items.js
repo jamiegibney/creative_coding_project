@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_GAIN","DEFAULT_SPECTRAL_BLOCK_SIZE","MAX_NUM_RESONATORS"],"fn":["build_audio_model"]};

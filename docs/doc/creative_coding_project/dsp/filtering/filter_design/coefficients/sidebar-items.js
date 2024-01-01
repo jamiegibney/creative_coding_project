@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["FIRCoefficients","IIRCoefficients"],"trait":["Coefficients"]};

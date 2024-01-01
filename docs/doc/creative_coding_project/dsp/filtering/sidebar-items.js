@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BUTTERWORTH_Q"],"enum":["FilterType"],"mod":["biquad","comb","filter_design","first_order","lrf","resonator","simple","svf"],"trait":["Filter"]};

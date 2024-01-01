@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["spectral_filter","stft"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["InterpolationType"],"fn":["cosine","cubic","cubic_catmull","cubic_catmull_vec","cubic_hermite","cubic_hermite_vec","cubic_vec","ilerp","lerp","linear","linear_unclamped"]};

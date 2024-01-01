@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["smooth_soft_clip"],"struct":["Waveshaper"]};

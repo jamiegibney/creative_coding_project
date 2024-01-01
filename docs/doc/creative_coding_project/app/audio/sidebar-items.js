@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DSP_LOAD_AVERAGING_SAMPLES"],"mod":["context","model","process","voice"]};

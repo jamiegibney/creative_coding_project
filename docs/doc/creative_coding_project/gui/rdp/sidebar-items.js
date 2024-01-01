@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["decimate_points","rdp_in_place"]};

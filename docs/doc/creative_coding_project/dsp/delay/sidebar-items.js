@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["delay","ring_buffer","stereo_delay"]};

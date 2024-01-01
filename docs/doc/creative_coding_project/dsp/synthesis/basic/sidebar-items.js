@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["noise_osc","phasor","sine","square","tri"]};

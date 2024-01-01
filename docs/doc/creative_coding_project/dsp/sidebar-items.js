@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["delay","distortion","dynamics","filtering","modulation","oversampling","spectral","synthesis","util"]};

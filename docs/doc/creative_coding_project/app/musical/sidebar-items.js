@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["chord","note","rhythm16","scale"]};
