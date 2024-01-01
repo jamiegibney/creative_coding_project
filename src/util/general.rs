@@ -2,12 +2,6 @@
 
 use super::*;
 
-/// Calculates the modulo-1 value of a floating-point value.
-#[inline]
-pub fn mod1(x: f64) -> f64 {
-    x - x.floor()
-}
-
 /// Calculates the frequency value of the provided MIDI note value.
 #[inline]
 pub fn note_to_freq(note_value: f64) -> f64 {

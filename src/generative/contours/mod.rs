@@ -238,7 +238,7 @@ impl Contours {
 
                 let noise = self.noise.get([x, y, self.z]);
                 let mapped = ((noise + 1.0) / 2.0) * self.num_contours as f64;
-                let px = mod1(mapped);
+                let px = mapped.fract();
 
                 if self.range.contains(&px) {
                     pxl.0 = [0, 0, 0, u8::MAX];
@@ -342,7 +342,7 @@ impl Contours {
         feathered: bool,
     ) -> f64 {
         let mapped = ((noise_value + 1.0) / 2.0) * num_contours as f64;
-        let px = mod1(mapped);
+        let px = mapped.fract();
 
         let min = *range.start();
         let max = *range.end();
