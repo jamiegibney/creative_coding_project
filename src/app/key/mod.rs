@@ -12,29 +12,39 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         Key::X => model.octave.increase(),
         Key::R => match model.ui_params.mask_algorithm.lr() {
             GenerativeAlgo::Contours => {
-                // let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
                 let mut ctr = model.contours.write().unwrap();
 
                 ctr.randomize();
                 drop(ctr);
             }
             GenerativeAlgo::SmoothLife => {
-                // let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
                 let mut sml = model.smooth_life.write().unwrap();
 
                 sml.randomize();
                 drop(sml);
             }
             GenerativeAlgo::Voronoi => {
-                // let mut
-                todo!();
+                let (m_tl, m_br) = (
+                    model.mask_rect.top_left(),
+                    model.mask_rect.bottom_right(),
+                );
+
+                if let Ok(mut guard) = model.voronoi_vectors.write() {
+                    guard.override_points().iter_mut().for_each(|p| {
+                        p.vel.x = random_range(-1.0, 1.0);
+                        p.vel.y = random_range(-1.0, 1.0);
+
+                        p.pos.x = random_range(m_tl.x, m_br.x);
+                        p.pos.y = random_range(m_br.y, m_tl.y);
+                    });
+                }
             }
         },
         Key::Tab => {
-            // reso bank push
+            model.reso_bank_push_sender_key.send(()).unwrap();
         }
         Key::Space => {
-            // reso bank reset
+            model.reso_bank_reset_sender_key.send(()).unwrap();
         }
         _ => (),
     };

@@ -82,7 +82,9 @@ pub struct Model {
 
     pub bank_rect: Rect,
     pub reso_bank_reset_receiver: Receiver<()>,
+    pub reso_bank_reset_sender_key: Sender<()>,
     pub reso_bank_push_receiver: Receiver<()>,
+    pub reso_bank_push_sender_key: Sender<()>,
     pub reso_bank_data: triple_buffer::Input<ResoBankData>,
     pub mask_rect: Rect,
     pub mouse_clicked_outside_of_mask: bool,
@@ -183,8 +185,10 @@ impl Model {
         let gen_algo = Arc::clone(&params.mask_algorithm);
 
         let (reso_bank_reset_sender, reso_bank_reset_receiver) = unbounded();
+        let reso_bank_reset_sender_key = reso_bank_reset_sender.clone();
 
         let (reso_bank_push_sender, reso_bank_push_receiver) = unbounded();
+        let reso_bank_push_sender_key = reso_bank_push_sender.clone();
 
         let voronoi_z = Arc::new(AtomicF64::new(0.0));
 
@@ -282,8 +286,12 @@ impl Model {
 
             bank_rect,
             mask_rect,
+
             reso_bank_reset_receiver,
+            reso_bank_reset_sender_key,
             reso_bank_push_receiver,
+            reso_bank_push_sender_key,
+
             reso_bank_data,
             spectrum_rect,
 
