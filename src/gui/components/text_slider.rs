@@ -373,6 +373,19 @@ impl TextSlider {
         self.raw_value
     }
 
+    /// Sets the output value of the `TextSlider`.
+    pub fn set_value(&mut self, value: f64) {
+        let (min, max) = self.min_max();
+        self.raw_value = normalise(value.clamp(min, max), min, max);
+        self.update_output_value();
+    }
+
+    /// Sets the raw value of the `TextSlider`.
+    pub fn set_value_raw(&mut self, value: f64) {
+        self.raw_value = value.clamp(0.0, 1.0);
+        self.update_output_value();
+    }
+
     /// Returns whether `pos` is contained within the bounding rect of the `TextSlider`.
     pub fn within_bounds(&self, pos: Vec2) -> bool {
         self.rect.contains(pos)
@@ -392,7 +405,7 @@ impl TextSlider {
     }
 
     fn update_output_value(&mut self) {
-        let (min, max) = (*self.output_range.start(), *self.output_range.end());
+        let (min, max) = self.min_max();
         self.output_value = map_range(self.raw_value, 0.0, 1.0, min, max);
         if self.integer_rounding {
             self.output_value = self.output_value.floor();
