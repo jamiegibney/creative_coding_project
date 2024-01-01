@@ -293,9 +293,10 @@ impl ResonatorBank {
             .zip(self.active_pitches.iter_mut())
             .for_each(|(res, p)| {
                 let note = p.next();
+                let freq = note_to_freq(note);
 
-                res.l.set_cutoff(note_to_freq(note).min(nyquist));
-                res.r.set_cutoff(note_to_freq(note).min(nyquist));
+                res.l.set_cutoff(freq.min(nyquist));
+                res.r.set_cutoff(freq.min(nyquist));
             });
 
         for (res, p) in self
@@ -309,9 +310,10 @@ impl ResonatorBank {
             }
 
             let note = p.next();
+            let freq = note_to_freq(note);
 
-            res.l.set_cutoff(note_to_freq(note).min(nyquist));
-            res.r.set_cutoff(note_to_freq(note).min(nyquist));
+            res.l.set_cutoff(freq.min(nyquist));
+            res.r.set_cutoff(freq.min(nyquist));
         }
     }
 

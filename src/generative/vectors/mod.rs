@@ -28,7 +28,7 @@ impl Point {
     }
 
     pub fn randomize_deceleration(&mut self) {
-        self.deceleration_factor = random_range(0.90, 0.98);
+        self.deceleration_factor = random_range(0.90, 0.999);
     }
 
     pub fn contains(&self, pos: Vec2, radius: f32) -> bool {
@@ -173,7 +173,7 @@ impl Vectors {
     }
 
     pub fn set_friction(&mut self, friction: f64) {
-        self.deceleration_scale = (1.0 - friction * 0.09) as f32;
+        self.deceleration_scale = (1.0 - friction * 0.20) as f32;
     }
 
     fn clamped_vec(&self, point: Vec2) -> Vec2 {

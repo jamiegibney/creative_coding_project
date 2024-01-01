@@ -516,6 +516,7 @@ impl UIComponents {
                         ),
                         ..small_value_layout()
                     })
+                    .with_sensitivity(0.007)
                     .with_default_value(60.0) // C4
                     .with_integer_rounding()
                     .with_callback(move |_, value| {
@@ -1080,11 +1081,9 @@ impl UIComponents {
                     .with_label("Master Gain")
                     .with_label_layout(main_label_layout())
                     .with_value_layout(main_value_layout())
-                    .with_output_range(0.0..=3.9811) // -inf to +12
-                    .with_default_value(1.00001)
+                    .with_output_range(-100.0..=18.0) // -inf to +12
+                    .with_default_value(0.0)
                     .with_formatting_callback(|_, val| {
-                        let val = level_to_db(val);
-
                         if val <= -99.9 {
                             return String::from("-inf dB");
                         }
@@ -1116,8 +1115,8 @@ impl UIComponents {
                         out.push_str(" dB");
                         out
                     })
-                    .with_callback(move |_, output_value| {
-                        master_gain.set_target_value(output_value);
+                    .with_callback(move |_, val| {
+                        master_gain.set_target_value(db_to_level(val));
                     })
             },
             pre_fx_gain: {
