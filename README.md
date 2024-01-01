@@ -15,10 +15,12 @@ The device has three main parts:
 ### Documentation
 Not every part of this project is documented, but many useful objects, methods, and functions are. Some files contain step-by-step comments to explain a process, and others provide documentation comments to explain how a certain function or method should be used. Most documentation is intended to make certain modules easier to use for the programmer using them.
 
-Please note that in Rust, `//` comments are only visible in the source code, but `///` comments are "doc comments" which are exposed by many code editors and in the [project's documentation](./docs/doc/creative_coding_project/index.html).
+Please note that in Rust, `//` comments are only visible in the source code, but `///` comments are "doc comments" which are exposed by many code editors and in the project's documentation.
 
-<!-- ##### Viewing the project's documentation in the browser -->
-<!-- You may view the project's auto-generated documentation in your browser by navigating to the `docs/` folder and opening `index.html`. This may provide an easier way to navigate the public parts of the project, but will not document all source code. -->
+##### Viewing the project's documentation in the browser
+Documentation for the project is automatically generated and available in `docs/doc/creative_coding_project/index.html`. To view the pre-generated documentation, download this repository, and open the file above.
+
+Alternatively, if you have `cargo` installed, you may run `cargo docs --open --no-deps --target-dir=docs/` in the source directory to open the documentation. Running `cargo docs --open` also works, but will generate documentation for all dependencies, and may create another folder.
 
 ### Main modules
 This project contains several main modules:
