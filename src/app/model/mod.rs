@@ -329,7 +329,10 @@ impl Model {
             mask_scan_line_pos: 0.0,
             mask_scan_line_increment: 0.1,
 
-            input_data: InputData::default(),
+            input_data: InputData {
+                is_win_focussed: true, // required for the window to be initialised on Windows
+                ..Default::default()
+            },
 
             mask_thread_pool: ThreadPool::build(1)
                 .expect("failed to build mask thread pool"),

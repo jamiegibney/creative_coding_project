@@ -52,20 +52,14 @@ struct Buffer {
 var<storage, read_write> output: Buffer;
 
 [[group(0), binding(1)]]
+var<storage, read_write> diff: Buffer;
+
+[[group(0), binding(2)]]
 var<uniform> state: State;
-
-[[block]]
-struct Grid {
-    data: array<f32, 65536>; // 256 * 256
-};
-
-var<workgroup> grid_diff: Grid;
-var<workgroup> grid_main: Grid;
 
 fn set_grid_main_at(x: u32, y: u32, value: f32) {
     let h = u32(256);
 
-    // grid_main.data[y * h + x] = value;
     output.data[y * h + x] = value;
 
     return;
@@ -73,14 +67,14 @@ fn set_grid_main_at(x: u32, y: u32, value: f32) {
 
 fn get_grid_main_at(x: u32, y: u32) -> f32 {
     let h = u32(256);
-    // return grid_main.data[y * h + x];
+    
     return output.data[y * h + x];
 }
 
 fn set_grid_diff_at(x: u32, y: u32, value: f32) {
     let h = u32(256);
 
-    grid_diff.data[y * h + x] = value;
+    diff.data[y * h + x] = value;
 
     return;
 }
@@ -88,7 +82,7 @@ fn set_grid_diff_at(x: u32, y: u32, value: f32) {
 fn get_grid_diff_at(x: u32, y: u32) -> f32 {
     let h = u32(256);
 
-    return grid_diff.data[y * h + x];
+    return diff.data[y * h + x];
 }
 
 // Smoothlife functions

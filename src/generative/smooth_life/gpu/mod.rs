@@ -26,6 +26,8 @@ struct Compute {
     image_buffer: wgpu::Buffer,
     image_buffer_size: wgpu::BufferAddress,
 
+    diff_buffer: wgpu::Buffer,
+
     state_buffer: wgpu::Buffer,
 
     bind_group: wgpu::BindGroup,
@@ -52,6 +54,13 @@ impl Compute {
             mapped_at_creation: false,
         });
 
+        let diff_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("smoothlife diff buffer"),
+            size: image_buf_size,
+            usage: wgpu::BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        });
+
         // state buffer
         let sml_state = SmoothLifeState::slime(w, h);
         let sml_state_bytes = sml_state.as_bytes();
@@ -65,6 +74,7 @@ impl Compute {
         let bind_group_layout = wgpu::BindGroupLayoutBuilder::new()
             // dynamic storage? / readonly storage?
             .storage_buffer(wgpu::ShaderStages::COMPUTE, false, false)
+            .storage_buffer(wgpu::ShaderStages::COMPUTE, false, false)
             // dynamic uniform?
             .uniform_buffer(wgpu::ShaderStages::COMPUTE, false)
             .build(device);
@@ -72,6 +82,11 @@ impl Compute {
         let bind_group = wgpu::BindGroupBuilder::new()
             .buffer_bytes(
                 &image_buffer,
+                0,
+                Some(std::num::NonZeroU64::new(image_buf_size).unwrap()),
+            )
+            .buffer_bytes(
+                &diff_buffer,
                 0,
                 Some(std::num::NonZeroU64::new(image_buf_size).unwrap()),
             )
@@ -96,6 +111,7 @@ impl Compute {
         Self {
             image_buffer,
             image_buffer_size: image_buf_size,
+            diff_buffer,
             state_buffer,
             bind_group,
             pipeline,
