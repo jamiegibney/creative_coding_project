@@ -53,6 +53,13 @@ pub struct UIParams {
     /// Which spectrograms are drawn.
     pub spectrogram_view: Arc<Atomic<SpectrogramView>>,
 
+    /// The number of Voronoi cells.
+    pub voronoi_cell_count: Arc<AtomicU32>,
+    /// The speed of the Voronoi flow field.
+    pub voronoi_cell_speed: Arc<AtomicF64>,
+    /// The weight of the Voronoi borders and isolines.
+    pub voronoi_border_weight: Arc<AtomicF64>,
+
     // ### RESONATOR BANK ###
     /// The musical scale of the resonator bank.
     pub reso_bank_scale: Arc<Atomic<Scale>>,
@@ -160,6 +167,10 @@ impl Default for UIParams {
                 SmoothLifePreset::default(),
             )),
 
+            voronoi_cell_count: Arc::new(AtomicU32::new(10)),
+            voronoi_cell_speed: Arc::new(AtomicF64::new(0.3)),
+            voronoi_border_weight: Arc::new(AtomicF64::new(0.65)),
+
             spectrogram_resolution: Arc::new(Atomic::new(
                 SpectrogramSize::default(),
             )),
@@ -167,7 +178,7 @@ impl Default for UIParams {
             spectrogram_view: Arc::new(Atomic::new(SpectrogramView::default())),
 
             reso_bank_scale: Arc::new(Atomic::new(Scale::default())),
-            reso_bank_root_note: Arc::new(AtomicU8::new(69)), // A4 (440 Hz)
+            reso_bank_root_note: Arc::new(AtomicU8::new(60)), // C4
             reso_bank_spread: smoother(0.5),
             reso_bank_shift: smoother(0.0),
             reso_bank_inharm: smoother(0.3),

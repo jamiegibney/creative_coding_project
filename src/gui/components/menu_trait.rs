@@ -27,13 +27,14 @@ pub trait MenuEnum: Display + Clone + Copy + Default + Debug {
 
 impl MenuEnum for GenerativeAlgo {
     fn num_variants() -> usize {
-        2
+        3
     }
 
     fn idx(&self) -> usize {
         match self {
             Self::Contours => 0,
             Self::SmoothLife => 1,
+            Self::Voronoi => 2,
         }
     }
 
@@ -41,6 +42,7 @@ impl MenuEnum for GenerativeAlgo {
         match idx {
             0 => Some(Self::Contours),
             1 => Some(Self::SmoothLife),
+            2 => Some(Self::Voronoi),
             _ => None,
         }
     }

@@ -328,7 +328,11 @@ impl ResonatorBank {
                     original,
                     Self::NOTE_MIN,
                     Self::NOTE_MIDDLE,
-                    Self::NOTE_MIN * self.params.freq_spread,
+                    lerp(
+                        Self::NOTE_MIDDLE,
+                        Self::NOTE_MIN,
+                        self.params.freq_spread,
+                    ),
                     Self::NOTE_MIDDLE,
                 )
             }
@@ -338,7 +342,11 @@ impl ResonatorBank {
                     Self::NOTE_MIDDLE,
                     Self::NOTE_MAX,
                     Self::NOTE_MIDDLE,
-                    Self::NOTE_MAX * self.params.freq_spread,
+                    lerp(
+                        Self::NOTE_MIDDLE,
+                        Self::NOTE_MAX,
+                        self.params.freq_spread,
+                    ),
                 )
             } + self.params.freq_shift;
 
@@ -347,7 +355,7 @@ impl ResonatorBank {
                 let quantized = self
                     .params
                     .scale
-                    .quantise_to_scale(spread_shift, self.params.root_note);
+                    .quantize_to_scale(spread_shift, self.params.root_note);
 
                 // apply inharmonic skew
                 active.set_target_value(lerp(

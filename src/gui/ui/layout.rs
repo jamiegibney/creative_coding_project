@@ -60,8 +60,8 @@ impl Default for MaskUILayout {
 
         let al_w = main_width_chars(11);
         let algo_rect = Rect::from_xy_wh(
-            pt2(128.0 + al_w / 2.0 + 10.0, 310.0 - MAIN_HEIGHT - 26.0),
-            pt2(al_w, MAIN_HEIGHT * 2.0),
+            pt2(128.0 + al_w / 2.0 + 10.0, 310.0 - MAIN_HEIGHT * 1.5 - 26.0),
+            pt2(al_w, MAIN_HEIGHT * 3.0),
         );
 
         Self {
@@ -140,6 +140,40 @@ impl Default for SmoothLifeUILayout {
         );
 
         Self { resolution: reso_rect, speed: speed_rect, preset: preset_rect }
+    }
+}
+
+pub struct VoronoiUILayout {
+    pub cell_speed: Rect,
+    pub border_weight: Rect,
+    pub cell_count: Rect,
+}
+
+impl Default for VoronoiUILayout {
+    fn default() -> Self {
+        let sp_w = main_width_chars(6);
+        let speed_rect = Rect::from_xy_wh(
+            pt2(128.0 + sp_w / 2.0 + 10.0, 190.0 + MAIN_HEIGHT / 2.0),
+            pt2(sp_w, MAIN_HEIGHT),
+        );
+
+        let wt_w = main_width_chars(4);
+        let weight_rect = Rect::from_xy_wh(
+            pt2(128.0 + wt_w / 2.0 + 10.0, 120.0 + MAIN_HEIGHT / 2.0),
+            pt2(wt_w, MAIN_HEIGHT),
+        );
+
+        let ct_w = main_width_chars(2);
+        let count_rect = Rect::from_xy_wh(
+            pt2(128.0 + ct_w / 2.0 + 10.0, 50.0 + MAIN_HEIGHT / 2.0),
+            pt2(ct_w, MAIN_HEIGHT),
+        );
+
+        Self {
+            cell_speed: speed_rect,
+            border_weight: weight_rect,
+            cell_count: count_rect,
+        }
     }
 }
 
@@ -567,6 +601,7 @@ pub struct UILayout {
     pub mask_general: MaskUILayout,
     pub contour: ContourUILayout,
     pub smooth_life: SmoothLifeUILayout,
+    pub voronoi: VoronoiUILayout,
     pub spectrogram: SpectrogramUILayout,
     pub reso_bank: ResoBankUILayout,
     pub low_filter: LowFilterUILayout,

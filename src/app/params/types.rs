@@ -10,6 +10,8 @@ pub enum GenerativeAlgo {
     Contours,
     /// A [SmoothLife](https://arxiv.org/abs/1111.1567) simulation.
     SmoothLife,
+    /// A Voronoi noise generator.
+    Voronoi,
 }
 
 impl Display for GenerativeAlgo {
@@ -17,6 +19,7 @@ impl Display for GenerativeAlgo {
         match self {
             Self::Contours => write!(f, "Contours"),
             Self::SmoothLife => write!(f, "Smooth Life"),
+            Self::Voronoi => write!(f, "Voronoi"),
         }
     }
 }

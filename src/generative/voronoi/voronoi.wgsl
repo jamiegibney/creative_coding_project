@@ -34,6 +34,8 @@ var<uniform> points: Points;
 struct State {
     // The number of active cells.
     num_active: u32;
+    // The weight of the Voronoi border and isolines.
+    weight: f32;
     // The image width.
     width: u32;
     // The image height.
@@ -80,9 +82,9 @@ fn voronoi(in: vec2<f32>) -> f32 {
         let relative = in - point;
 
         if (dot(
-            min_relative - relative,
-            min_relative - relative
-        ) > 0.000001) {
+                min_relative - relative,
+                min_relative - relative
+           ) > 0.000001) {
             min_dist = min(
                 min_dist,
                 dot(
@@ -110,9 +112,12 @@ fn main([[builtin(global_invocation_id)]] id: vec3<u32>) {
     let y = u32(id.y);
 
     let voro = voronoi(uv);
+    let output: f32 = voro * (0.5 + 0.9 * sin(mix(465.0, 195.0, state.weight) * voro)) * 1.5 - 0.02;
 
-    let output: f32 = voro * (0.5 + 0.9 * sin(300.0 * voro)) * 1.5 - 0.02;
-    let output: f32 = mix(1.0, output, smoothStep(0.004, 0.009, voro));
+    let min = 0.02 * state.weight;
+    let max = min + 0.005;
+    // let output: f32 = mix(1.0, output, smoothStep(0.004, 0.009, voro));
+    let output: f32 = mix(1.0, output, smoothStep(min, max, voro));
 
     set_output_at(x, y, output);
 

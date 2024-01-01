@@ -11,10 +11,8 @@ const MAX_NUM_POINTS: usize = 32;
 
 mod compute;
 pub mod general;
-pub mod generator;
 
 pub use general::VoronoiGPU;
-// pub use generator::VoronoiGeneratorGPU;
 
 /// 2D point representation compatible with the shader.
 #[repr(C)]
@@ -35,8 +33,8 @@ impl Point {
     }
 
     pub fn sqr_dist(self, other: Self) -> f32 {
-        let dx = self.x - other.x;
         let dy = self.y - other.y;
+        let dx = self.x - other.x;
         dx.mul_add(dx, dy * dy)
     }
 }
@@ -76,6 +74,7 @@ impl Points {
 #[derive(Clone, Copy, Debug)]
 struct VoronoiStateGeneral {
     active_cells: u32,
+    weight: f32,
     width: u32,
     height: u32,
 }

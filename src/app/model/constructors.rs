@@ -106,7 +106,10 @@ pub struct GuiElements {
 
     pub(super) contours: ContoursGPU,
     pub(super) smooth_life: SmoothLifeGPU,
-    pub(super) vectors: Vectors,
+    pub(super) voronoi_mask: VoronoiGPU,
+    pub(super) voronoi_vectors: Vectors,
+
+    pub(super) vectors_reso_bank: Vectors,
 
     pub(super) pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
     pub(super) post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
@@ -158,9 +161,13 @@ pub fn build_gui_elements(
             .with_num_contours(params.contour_count.lr())
             .with_contour_range(0.0..=(params.contour_thickness.lr() as f32)),
         smooth_life: SmoothLifeGPU::new(app, mask_rect),
-        vectors: Vectors::new(MAX_NUM_RESONATORS, bank_rect)
-            .with_point_radius(3.0)
-            .with_point_color(Rgba::new(1.0, 1.0, 1.0, 0.5)),
+        voronoi_mask: VoronoiGPU::new(app, mask_rect),
+        voronoi_vectors: Vectors::new(MAX_NUM_RESONATORS, mask_rect)
+            .with_point_radius(5.0),
+
+        vectors_reso_bank: Vectors::new(MAX_NUM_RESONATORS, bank_rect)
+            .with_point_radius(5.0)
+            .with_point_color(Rgba::new(0.9, 0.4, 0.0, 0.6)),
 
         pre_spectrum_analyzer,
         post_spectrum_analyzer,

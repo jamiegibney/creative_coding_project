@@ -12,7 +12,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     let bank_rect = &model.bank_rect;
     model.voronoi_reso_bank.draw(app, draw, &frame);
-    model.vectors.draw(app, draw, &frame);
+    model.vectors_reso_bank.draw(app, draw, &frame);
 
     let line_weight = 2.0;
 
@@ -33,10 +33,6 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     ) {
         let mut pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
         let spectrum_rect = pre_spectrum.rect();
-        // draw.rect()
-        //     .wh(spectrum_rect.wh())
-        //     .xy(spectrum_rect.xy())
-        //     .color(BLACK);
 
         pre_spectrum.draw(
             draw,
@@ -61,20 +57,15 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     }
 
     match model.ui_params.mask_algorithm.lr() {
-        GenerativeAlgo::Contours => model
-            .contours
-            .as_ref()
-            .unwrap()
-            .read()
-            .unwrap()
-            .draw(app, draw, &frame),
-        GenerativeAlgo::SmoothLife => model
-            .smooth_life
-            .as_ref()
-            .unwrap()
-            .read()
-            .unwrap()
-            .draw(app, draw, &frame),
+        GenerativeAlgo::Contours => {
+            model.contours.read().unwrap().draw(app, draw, &frame);
+        }
+        GenerativeAlgo::SmoothLife => {
+            model.smooth_life.read().unwrap().draw(app, draw, &frame);
+        }
+        GenerativeAlgo::Voronoi => {
+            model.voronoi_mask.read().unwrap().draw(app, draw, &frame);
+        }
     }
 
     let mask_mix = model.ui_params.mask_mix.lr();
@@ -87,10 +78,9 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     }
 
     outline_rect(&model.mask_rect, draw, 2.0);
-
     model.draw_mask_scan_line(draw);
-    model.draw_filter_line(draw);
 
+    model.draw_filter_line(draw);
     outline_rect(&model.spectrum_rect, draw, 2.0);
 
     model.ui_components.draw(app, draw, &frame);

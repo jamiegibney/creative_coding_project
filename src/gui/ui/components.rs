@@ -38,6 +38,10 @@ pub struct UIComponents {
     smoothlife_speed: TextSlider,
     smoothlife_preset: Menu<SmoothLifePreset>,
 
+    voronoi_cell_count: TextSlider,
+    voronoi_cell_speed: TextSlider,
+    voronoi_border_weight: TextSlider,
+
     // ### SPECTROGRAMS ###
     spectrogram_label: Label,
     /// usize
@@ -48,7 +52,7 @@ pub struct UIComponents {
 
     // ### RESONATOR BANK ###
     reso_bank_label: Label,
-    reso_bank_scale: Menu<Scale>,
+    pub reso_bank_scale: Menu<Scale>,
     /// u8
     reso_bank_root_note: TextSlider,
     /// f64
@@ -338,7 +342,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    .with_output_range(0.01..=1.0)
+                    .with_output_range(-1.00..=1.0)
                     .with_value_chars(4)
                     .with_suffix(" x")
                     .with_default_value(contour_speed.lr())
@@ -388,6 +392,57 @@ impl UIComponents {
                     })
                     .with_item_text_layout(main_value_layout())
                     .with_selected_item_text_layout(main_value_layout())
+            },
+
+            voronoi_cell_count: {
+                let cell_count = Arc::clone(&params.voronoi_cell_count);
+                TextSlider::new(10.0, ui_layout.voronoi.cell_count)
+                    .with_label("Count")
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(2.0..=32.0)
+                    .with_integer_rounding()
+                    .with_default_value(cell_count.lr() as f64)
+                    .with_value_chars(2)
+                    .with_callback(move |_, val| {
+                        cell_count.sr(val as u32);
+                    })
+            },
+            voronoi_cell_speed: {
+                let cell_speed = Arc::clone(&params.voronoi_cell_speed);
+                TextSlider::new(0.0, ui_layout.voronoi.cell_speed)
+                    .with_label("Speed")
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(-1.0..=1.0)
+                    .with_default_value(cell_speed.lr())
+                    .with_suffix(" x")
+                    .with_value_chars(4)
+                    .with_callback(move |_, val| {
+                        cell_speed.sr(val);
+                    })
+            },
+            voronoi_border_weight: {
+                let weight = Arc::clone(&params.voronoi_border_weight);
+                TextSlider::new(0.0, ui_layout.voronoi.border_weight)
+                    .with_label("Weight")
+                    .with_label_layout(Layout {
+                        justify: Justify::Left,
+                        ..main_label_layout()
+                    })
+                    .with_value_layout(main_value_layout())
+                    .with_value_chars(4)
+                    .with_output_range(0.01..=1.0)
+                    .with_default_value(weight.lr())
+                    .with_callback(move |_, value| {
+                        weight.sr(value);
+                    })
             },
 
             spectrogram_label: Label::new(ui_layout.spectrogram.label)
@@ -1208,6 +1263,11 @@ impl UIDraw for UIComponents {
                 // self.smoothlife_speed.update(app, input_data);
                 self.smoothlife_preset.update(app, input_data);
             }
+            GenerativeAlgo::Voronoi => {
+                self.voronoi_border_weight.update(app, input_data);
+                self.voronoi_cell_speed.update(app, input_data);
+                self.voronoi_cell_count.update(app, input_data);
+            }
         }
 
         // unused components
@@ -1314,6 +1374,11 @@ impl UIDraw for UIComponents {
                 // self.smoothlife_resolution.draw(app, draw, frame);
                 // self.smoothlife_speed.draw(app, draw, frame);
                 self.smoothlife_preset.draw(app, draw, frame);
+            }
+            GenerativeAlgo::Voronoi => {
+                self.voronoi_cell_speed.draw(app, draw, frame);
+                self.voronoi_border_weight.draw(app, draw, frame);
+                self.voronoi_cell_count.draw(app, draw, frame);
             }
         }
         self.mask_algorithm.draw(app, draw, frame); // menu

@@ -47,6 +47,7 @@ impl ComputeGeneral {
 
         let state = VoronoiStateGeneral {
             active_cells: MAX_NUM_POINTS as u32,
+            weight: 0.3,
             width: w,
             height: h,
         };

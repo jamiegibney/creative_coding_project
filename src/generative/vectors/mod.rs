@@ -13,7 +13,7 @@ const MIN_START_VELOCITY: f32 = 1.5;
 #[derive(Debug, Clone)]
 pub struct Point {
     pub pos: Vec2,            // position of the point
-    vel: Vec2,                // velocity of the point - speed and direction
+    pub vel: Vec2,                // velocity of the point - speed and direction
     deceleration_factor: f32, // how much the point decelerates each frame
 }
 
@@ -28,15 +28,12 @@ impl Point {
     }
 
     pub fn randomize_deceleration(&mut self) {
-        self.deceleration_factor = random_range(0.92, 0.99);
+        self.deceleration_factor = random_range(0.90, 0.98);
     }
-}
 
-impl Deref for Point {
-    type Target = Vec2;
-
-    fn deref(&self) -> &Self::Target {
-        &self.pos
+    pub fn contains(&self, pos: Vec2, radius: f32) -> bool {
+        let size = radius * 2.0;
+        Rect::from_xy_wh(self.pos, pt2(size, size)).contains(pos)
     }
 }
 
@@ -47,6 +44,11 @@ pub struct Vectors {
     point_color: Rgba,
     pub num_active_points: usize,
     deceleration_scale: f32,
+
+    pub can_mouse_interact: bool,
+    points_overriden: bool,
+
+    clicked_idx: Option<usize>,
 
     rect: Rect,
 }
@@ -67,6 +69,9 @@ impl Vectors {
             point_color: Rgba::new(1.0, 1.0, 1.0, 1.0),
             num_active_points: num_points,
             deceleration_scale: 1.0,
+            can_mouse_interact: true,
+            points_overriden: false,
+            clicked_idx: None,
             rect,
         };
 
@@ -89,6 +94,12 @@ impl Vectors {
     pub fn with_num_active_points(mut self, num_points: usize) -> Self {
         self.set_num_active_points(num_points);
         self
+    }
+
+    pub fn override_points(&mut self) -> &mut [Point] {
+        self.points_overriden = true;
+
+        &mut self.points[..self.num_active_points]
     }
 
     pub fn set_point_color(&mut self, color: Rgba) {
@@ -122,8 +133,8 @@ impl Vectors {
         let (l, r, b, t) = self.get_rect_dims();
 
         for i in 0..len {
-            let x = self.points[i].x;
-            let y = self.points[i].y;
+            let x = self.points[i].pos.x;
+            let y = self.points[i].pos.y;
 
             reso_bank_data.pitches[i] = map_f32(
                 y,
@@ -162,7 +173,7 @@ impl Vectors {
     }
 
     pub fn set_friction(&mut self, friction: f64) {
-        self.deceleration_scale = (1.0 - friction * 0.1) as f32;
+        self.deceleration_scale = (1.0 - friction * 0.09) as f32;
     }
 
     fn clamped_vec(&self, point: Vec2) -> Vec2 {
@@ -185,7 +196,40 @@ impl UIDraw for Vectors {
     fn update(&mut self, app: &App, input_data: &InputData) {
         let len = self.num_active_points;
 
+        if self.points_overriden {
+            self.points_overriden = false;
+            return;
+        }
+
+        if !input_data.is_left_clicked {
+            self.clicked_idx = None;
+
+            if self.rect.contains(input_data.mouse_pos) {
+                self.can_mouse_interact = true;
+            }
+        }
+        else if input_data.is_left_clicked
+            && !self.rect.contains(input_data.mouse_pos)
+            && self.clicked_idx.is_none()
+        {
+            self.can_mouse_interact = false;
+        }
+
         for i in 0..len {
+            if self.clicked_idx.is_none()
+                && input_data.is_left_clicked
+                && self.points[i]
+                    .contains(input_data.mouse_pos, self.point_radius)
+            {
+                self.clicked_idx = Some(i);
+            }
+
+            if let Some(idx) = self.clicked_idx {
+                if idx == i && self.can_mouse_interact {
+                    self.points[i].pos = input_data.mouse_pos;
+                }
+            }
+
             let decel =
                 self.points[i].deceleration_factor * self.deceleration_scale;
 

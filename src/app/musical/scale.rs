@@ -37,10 +37,10 @@ impl Scale {
         }
     }
 
-    /// Quantises `note` to its current scale, i.e. snaps it to the nearest
+    /// Quantizes `note` to its current scale, i.e. snaps it to the nearest
     /// possible note within the scale. `root` is only used to find the offset
     /// for this particular scale.
-    pub fn quantise_to_scale(&self, note: f64, root: f64) -> f64 {
+    pub fn quantize_to_scale(&self, note: f64, root: f64) -> f64 {
         // FIXME: need to avoid the output being -1 (if note == 0)
         // start with the root note
         let mut lower = root;
@@ -48,12 +48,7 @@ impl Scale {
         // shift the root note until it is the bottom of the octave
         // containing `note`
         while !(lower..=(lower + 12.0)).contains(&note) {
-            if note > lower {
-                lower += 12.0;
-            }
-            else {
-                lower -= 12.0;
-            }
+            lower += if note > lower { 12.0 } else { -12.0 };
         }
 
         // then get the scale
@@ -81,9 +76,9 @@ struct ScaleValues;
 
 impl ScaleValues {
     pub const MAJOR: [f64; 7] = [0.0, 2.0, 4.0, 5.0, 7.0, 9.0, 11.0];
-    pub const MINOR: [f64; 7] = [0.0, 2.0, 4.0, 5.0, 7.0, 9.0, 11.0];
+    pub const MINOR: [f64; 7] = [0.0, 2.0, 3.0, 5.0, 7.0, 8.0, 10.0];
     pub const MAJ_PENTATONIC: [f64; 5] = [0.0, 2.0, 4.0, 7.0, 9.0];
-    pub const MIN_PENTATONIC: [f64; 5] = [0.0, 2.0, 4.0, 7.0, 9.0];
+    pub const MIN_PENTATONIC: [f64; 5] = [0.0, 3.0, 5.0, 7.0, 10.0];
     pub const CHROMATIC: [f64; 12] =
         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0];
 }

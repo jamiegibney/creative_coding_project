@@ -18,28 +18,23 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         Key::M => model.audio_senders.spectral_mask_post_fx.send(()).unwrap(),
         Key::R => match model.ui_params.mask_algorithm.lr() {
             GenerativeAlgo::Contours => {
-                let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
+                // let mut ctr = model.contours.as_mut().unwrap().write().unwrap();
+                let mut ctr = model.contours.write().unwrap();
 
                 ctr.randomize();
                 drop(ctr);
             }
             GenerativeAlgo::SmoothLife => {
-                let mut sml =
-                    model.smooth_life.as_mut().unwrap().write().unwrap();
+                // let mut sml = model.smooth_life.as_mut().unwrap().write().unwrap();
+                let mut sml = model.smooth_life.write().unwrap();
 
                 sml.randomize();
                 drop(sml);
             }
+            GenerativeAlgo::Voronoi => {
+                // let mut
+            }
         },
-        Key::Q => {
-            model.ui_params.mask_algorithm.sr(
-                match model.ui_params.mask_algorithm.lr() {
-                    GenerativeAlgo::Contours => GenerativeAlgo::SmoothLife,
-                    GenerativeAlgo::SmoothLife => GenerativeAlgo::Contours,
-                },
-            );
-        }
-
         _ => (),
     };
 

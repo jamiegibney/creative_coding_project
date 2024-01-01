@@ -214,6 +214,39 @@ impl SmoothLifeGPU {
             ..self.state_gpu
         };
     }
+
+    fn get_value_bilinear(&self, mut x: f64, mut y: f64) -> f64 {
+        let width = self.rect.w() as f64;
+        let height = self.rect.h() as f64;
+
+        x = x.clamp(0.0, 1.0) * (width - 1.0);
+        y = y.clamp(0.0, 1.0) * (height - 1.0);
+
+        let xt = x.fract();
+        let yt = y.fract();
+
+        let x1 = x.floor() as u32;
+        let x2 = (x1 + 1).min(255);
+        let y1 = y.floor() as u32;
+        let y2 = (y1 + 1).min(255);
+
+        let guard = self
+            .image_buf
+            .lock()
+            .expect("failed to acquire lock on smoothlife image buffer");
+
+        let tl = guard.get_pixel(x1, y1).0[0] as f64 / 255.0;
+        let tr = guard.get_pixel(x2, y1).0[0] as f64 / 255.0;
+        let bl = guard.get_pixel(x1, y2).0[0] as f64 / 255.0;
+        let br = guard.get_pixel(x2, y2).0[0] as f64 / 255.0;
+
+        drop(guard);
+
+        let top = lerp(tl, tr, xt);
+        let bottom = lerp(bl, br, xt);
+
+        lerp(top, bottom, yt)
+    }
 }
 
 impl UIDraw for SmoothLifeGPU {
@@ -330,17 +363,13 @@ impl DrawMask for SmoothLifeGPU {
 
         let sr = unsafe { SAMPLE_RATE };
 
-        if let Ok(guard) = self.image_buf.lock() {
-            for i in 1..mask_len {
-                let bin_hz = SpectralMask::bin_freq(i, mask_len, sr);
-                let y = 1.0 - freq_log_norm(bin_hz, 20.0, sr);
-                let x_px = ((x * 255.0) as u32).min(255);
-                let y_px = ((y * 255.0) as u32).min(255);
+        for i in 1..mask_len {
+            let bin_hz = SpectralMask::bin_freq(i, mask_len, sr);
+            let y = 1.0 - freq_log_norm(bin_hz, 20.0, sr);
 
-                let br = guard.get_pixel(x_px, y_px).0[0];
+            let br = self.get_value_bilinear(x, y);
 
-                mask[i] = br as f64 / 256.0;
-            }
+            mask[i] = br;
         }
     }
 }

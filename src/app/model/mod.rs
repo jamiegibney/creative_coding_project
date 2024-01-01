@@ -1,6 +1,7 @@
 use crate::gui::rdp::rdp_in_place;
 use crate::prelude::interp::linear_unclamped;
 use crossbeam_channel::{unbounded, Receiver, Sender};
+use nannou::noise::{NoiseFn, Perlin};
 use nannou_audio::Stream;
 
 // use nannou_egui::{self, egui, Egui};
@@ -85,16 +86,22 @@ pub struct Model {
     pub reso_bank_data: triple_buffer::Input<ResoBankData>,
     pub mask_rect: Rect,
     pub mouse_clicked_outside_of_mask: bool,
+    pub mask_clicked: bool,
     pub spectrum_rect: Rect,
 
     /// A Perlin noise contour generator.
-    pub contours: Option<Arc<RwLock<ContoursGPU>>>,
+    pub contours: Arc<RwLock<ContoursGPU>>,
     /// A SmoothLife simulation.
-    pub smooth_life: Option<Arc<RwLock<SmoothLifeGPU>>>,
-    /// A Voronoi noise generator.
-    // pub voronoi: Voronoi,
+    pub smooth_life: Arc<RwLock<SmoothLifeGPU>>,
+    /// A Voronoi noise generator used for the spectral mask.
+    pub voronoi_mask: Arc<RwLock<VoronoiGPU>>,
+    /// A vector field used to manage points for the Voronoi mask.
+    pub voronoi_vectors: Arc<RwLock<Vectors>>,
+    pub voronoi_perlin: Perlin,
+    pub voronoi_z: Arc<AtomicF64>,
+
     /// A simple vector field for the resonator bank points.
-    pub vectors: Vectors,
+    pub vectors_reso_bank: Vectors,
     /// The voronoi generator for the resonator bank vector field.
     pub voronoi_reso_bank: VoronoiGPU,
     /// The line which shows which column is being used as a spectral mask.
@@ -147,11 +154,18 @@ impl Model {
             spectrum_rect,
             contours,
             smooth_life,
+            voronoi_mask,
+            mut voronoi_vectors,
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
             dsp_load,
-            vectors,
+            vectors_reso_bank,
         } = build_gui_elements(app, pre_spectrum, post_spectrum, &params);
+
+        voronoi_vectors.override_points().iter_mut().for_each(|p| {
+            p.vel.x = random_range(-1.0, 1.0);
+            p.vel.y = random_range(-1.0, 1.0);
+        });
 
         let audio_senders = Arc::new(audio_senders);
         let audio_senders_cl = Arc::clone(&audio_senders);
@@ -165,6 +179,13 @@ impl Model {
         let (reso_bank_reset_sender, reso_bank_reset_receiver) = unbounded();
 
         let (reso_bank_push_sender, reso_bank_push_receiver) = unbounded();
+
+        let voronoi_z = Arc::new(AtomicF64::new(0.0));
+
+        let voronoi_vectors = Arc::new(RwLock::new(voronoi_vectors));
+        let vv = Arc::clone(&voronoi_vectors);
+
+        let (m_tl, m_br) = (mask_rect.top_left(), mask_rect.bottom_right());
 
         let ui_components = UIComponents::new(&params)
             .attach_reso_bank_randomize_callback(move |_| {
@@ -180,8 +201,19 @@ impl Model {
                     }
                 }
                 GenerativeAlgo::SmoothLife => {
-                    if let Ok(mut guard) = sml.write() {
+                    if let Ok(guard) = sml.read() {
                         guard.randomize();
+                    }
+                }
+                GenerativeAlgo::Voronoi => {
+                    if let Ok(mut guard) = vv.write() {
+                        guard.override_points().iter_mut().for_each(|p| {
+                            p.vel.x = random_range(-1.0, 1.0);
+                            p.vel.y = random_range(-1.0, 1.0);
+
+                            p.pos.x = random_range(m_tl.x, m_br.x);
+                            p.pos.y = random_range(m_br.y, m_tl.y);
+                        });
                     }
                 }
             })
@@ -249,13 +281,19 @@ impl Model {
             reso_bank_data,
             spectrum_rect,
 
-            voronoi_reso_bank: VoronoiGPU::new(app, bank_rect),
-
             mouse_clicked_outside_of_mask: false,
+            mask_clicked: false,
 
-            contours: Some(contours),
-            smooth_life: Some(smooth_life),
-            vectors,
+            contours,
+            smooth_life,
+
+            voronoi_mask: Arc::new(RwLock::new(voronoi_mask)),
+            voronoi_vectors,
+            voronoi_perlin: Perlin::new(),
+            voronoi_z,
+
+            voronoi_reso_bank: VoronoiGPU::new(app, bank_rect),
+            vectors_reso_bank,
 
             low_filter,
             high_filter,
@@ -328,8 +366,8 @@ impl Model {
     /// Draws the spectral mask scan line.
     pub fn draw_mask_scan_line(&self, draw: &Draw) {
         let rect = self.mask_rect();
-        let y_bot = rect.bottom();
-        let y_top = rect.top();
+        let y_top = rect.top() - 1.0;
+        let y_bot = rect.bottom() + 1.0;
 
         let x = map(
             self.mask_scan_line_pos,
@@ -341,7 +379,7 @@ impl Model {
 
         draw.line()
             .points(pt2(x, y_bot), pt2(x, y_top))
-            .weight(4.0)
+            .weight(3.0)
             .color(Rgba::new(0.9, 0.4, 0.0, 0.5));
     }
 
@@ -364,46 +402,100 @@ impl Model {
     }
 
     pub fn update_vectors(&mut self, app: &App) {
-        self.vectors.set_num_active_points(
+        self.vectors_reso_bank.set_num_active_points(
             self.ui_params.reso_bank_resonator_count.lr() as usize,
         );
-        self.vectors
+        self.vectors_reso_bank
             .set_friction(self.ui_params.reso_bank_field_friction.lr());
 
         if self.reso_bank_reset_receiver.try_recv().is_ok() {
-            self.vectors.randomize_points();
+            self.vectors_reso_bank.randomize_points();
         }
         if self.reso_bank_push_receiver.try_recv().is_ok() {
-            self.vectors.push_points();
+            self.vectors_reso_bank.push_points();
         }
 
-        self.vectors.update(app, &self.input_data);
+        self.vectors_reso_bank.update(app, &self.input_data);
 
-        self.vectors
+        self.vectors_reso_bank
             .set_reso_bank_data(self.reso_bank_data.input_buffer());
 
         self.reso_bank_data.publish();
 
-        self.voronoi_reso_bank.copy_from_vectors(&self.vectors);
+        self.voronoi_reso_bank
+            .copy_from_vectors(&self.vectors_reso_bank);
+
+        if self.ui_components.reso_bank_scale.is_open()
+            && self
+                .ui_components
+                .reso_bank_scale
+                .rect()
+                .contains(self.input_data.mouse_pos)
+        {
+            self.vectors_reso_bank.can_mouse_interact = false;
+        }
+    }
+
+    pub fn update_voronoi_vectors(&mut self, app: &App) {
+        let mut guard = self.voronoi_vectors.write().unwrap();
+        guard.set_num_active_points(
+            self.ui_params.voronoi_cell_count.lr() as usize
+        );
+
+        // self.voronoi_z += self.ui_params.voronoi_cell_speed.lr() * 0.01;
+
+        let (l, r) = (self.mask_rect.left(), self.mask_rect.right());
+        let (b, t) = (self.mask_rect.bottom(), self.mask_rect.top());
+        let (w, h) = (self.mask_rect.w(), self.mask_rect.h());
+
+        let points = guard.override_points();
+
+        for point in points {
+            point.pos +=
+                point.vel * self.ui_params.voronoi_cell_speed.lr() as f32 * 3.0;
+
+            if point.pos.x < l {
+                point.vel.x *= -1.0;
+            }
+            if point.pos.x > r {
+                point.vel.x *= -1.0;
+            }
+
+            if point.pos.y < b {
+                point.vel.y *= -1.0;
+            }
+            if point.pos.y > t {
+                point.vel.y *= -1.0;
+            }
+        }
+
+        guard.update(app, &self.input_data);
     }
 
     pub fn update_mask_scan_line_from_mouse(&mut self) {
         if self.input_data.is_left_clicked {
-            if self.mask_rect.contains(self.input_data.mouse_pos) {
+            if self.mask_rect.contains(self.input_data.mouse_pos)
+                || self.mask_clicked
+            {
                 if !self.mouse_clicked_outside_of_mask {
                     let x_pos = self.input_data.mouse_pos.x as f64;
                     let l = self.mask_rect.left() as f64;
                     let r = self.mask_rect.right() as f64;
 
-                    self.mask_scan_line_pos = normalise(x_pos, l, r);
+                    self.mask_scan_line_pos = normalise(x_pos, l, r).fract();
+                    if self.mask_scan_line_pos.is_sign_negative() {
+                        self.mask_scan_line_pos = 1.0 + self.mask_scan_line_pos;
+                    }
                 }
+                self.mask_clicked = true;
             }
-            else {
+            else if !self.mask_clicked {
                 self.mouse_clicked_outside_of_mask = true;
             }
         }
         else {
             self.mouse_clicked_outside_of_mask = false;
+            self.mask_clicked = false;
         }
     }
 

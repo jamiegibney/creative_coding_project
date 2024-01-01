@@ -1,3 +1,5 @@
+use crate::dsp::SpectralMask;
+
 use super::compute::*;
 use super::*;
 use std::mem::size_of;
@@ -28,6 +30,7 @@ impl VoronoiGPU {
             points: Points::new(),
             state: VoronoiStateGeneral {
                 active_cells: MAX_NUM_POINTS as u32,
+                weight: 0.3,
                 width: w,
                 height: h,
             },
@@ -52,11 +55,48 @@ impl VoronoiGPU {
         }
     }
 
+    pub fn set_weight(&mut self, weight: f64) {
+        self.state.weight = weight.clamp(0.0, 1.0) as f32;
+    }
+
     /// Copy the 2D points from `Vectors` into the `Voronoi` generator.
     pub fn copy_from_vectors(&mut self, vectors: &Vectors) {
         self.state.active_cells = vectors.num_active_points as u32;
 
         self.points.copy_from_vectors(vectors);
+    }
+
+    fn get_value_bilinear(&self, mut x: f64, mut y: f64) -> f64 {
+        let width = self.rect.w() as f64;
+        let height = self.rect.h() as f64;
+
+        x = x.clamp(0.0, 1.0) * (width - 1.0);
+        y = y.clamp(0.0, 1.0) * (height - 1.0);
+
+        let xt = x.fract();
+        let yt = y.fract();
+
+        let x1 = x.floor() as u32;
+        let x2 = (x1 + 1).min(255);
+        let y1 = y.floor() as u32;
+        let y2 = (y1 + 1).min(255);
+
+        let guard = self
+            .image_buf
+            .lock()
+            .expect("failed to acquire lock on voronoi image buffer");
+
+        let tl = guard.get_pixel(x1, y1).0[0] as f64 / 255.0;
+        let tr = guard.get_pixel(x2, y1).0[0] as f64 / 255.0;
+        let bl = guard.get_pixel(x1, y2).0[0] as f64 / 255.0;
+        let br = guard.get_pixel(x2, y2).0[0] as f64 / 255.0;
+
+        drop(guard);
+
+        let top = lerp(tl, tr, xt);
+        let bottom = lerp(bl, br, xt);
+
+        lerp(top, bottom, yt)
     }
 }
 
@@ -170,13 +210,26 @@ impl UIDraw for VoronoiGPU {
     }
 }
 
-// principle:
-// - first, iterate through each point and find the closest point to it, and store the indices somewhere
-// - for each pixel, iterate through all points and find the closest
-//  - store the distance (dot product)
-//  - store the relative vector (i.e. current pixel - point, making the pixel the "origin")
-// - then, get the closest point to that point
-//  - if the dot product of (first relative - second relative) is over a threshold output the minimum of:
-//      - the first min distance, or
-//      - the dot product of half the relative vector (min_r - r) and the normalised vector (norm(r - min_r))
-//  - otherwise, output the first distance value
+impl DrawMask for VoronoiGPU {
+    fn column_to_mask(&self, mask: &mut SpectralMask, mask_len: usize, x: f64) {
+        if !(0.0..=1.0).contains(&x) {
+            return;
+        }
+
+        let sr = unsafe { SAMPLE_RATE };
+
+        for i in 1..mask_len {
+            let bin_hz = SpectralMask::bin_freq(i, mask_len, sr);
+            if bin_hz < 20.0 {
+                mask[i] = 0.0;
+                continue;
+            }
+
+            let y = 1.0 - freq_log_norm(bin_hz, 20.0, sr);
+
+            let br = self.get_value_bilinear(x, y);
+
+            mask[i] = br;
+        }
+    }
+}

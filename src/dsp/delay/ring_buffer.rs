@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::util::interp;
 
-const DEFAULT_SMOOTHING_TIME: f64 = 3.0;
+const DEFAULT_SMOOTHING_TIME: f64 = 500.0;
 
 /// A resizable ring buffer which supports interpolation and parameter
 /// smoothing (for delay time).

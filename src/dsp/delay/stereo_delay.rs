@@ -77,7 +77,7 @@ impl Effect for StereoDelay {
         let out_l = self.buffer_l.read();
         let out_r = self.buffer_r.read();
         if self.use_ping_pong {
-            self.buffer_l.push((in_l + out_r) * self.feedback_amount);
+            self.buffer_l.push(in_l + out_r * self.feedback_amount);
             self.buffer_r.push(out_l * self.feedback_amount);
         }
         else {
