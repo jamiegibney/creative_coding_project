@@ -5,7 +5,7 @@ This is my Creative Coding submission for University. The project is written in 
 
 The device has three main parts: 
 - A resonator bank, where the resonators are controlled by a small vector field. The vector field is visualised by orange nodes (which you may drag with the mouse) and Voronoi noise generated from the points.
-- A spectral filter, which uses a column of pixels to mask audio in the frequency domain. The brighter a pixel is, the louder the magnitude is at its respective frequency. You may drag the "scan line" with the mouse, and each visual algorithm offers some control over its appearance. You may also change the resolution (block size) of the spectral filter.
+- A spectral filter, which uses a column of pixels to mask audio in the frequency domain. The brighter a pixel is, the louder the magnitude is at its respective frequency. You may drag the orange "scan line" with the mouse, and each visual algorithm offers some control over its appearance. You may also change the resolution (block size) of the spectral filter.
 - Post-processing FX, including a simple parametric EQ, distortion, stereo delay, and a compressor. The orange EQ nodes can be dragged with the mouse to control the filters.
 
 ### Keymap
@@ -18,7 +18,7 @@ Polyphony is supported.
 **Tip**: whilst holding notes, you can shift the octave with either `Z` or `X` to hold the notes in place, acting as a way of sustaining them. Pressing `P` releases the notes.
 
 # Navigating the project's source code
-> This section is intended for an assessor intending to read through the project.
+> This section is intended for an assessor meaning to read through the project.
 
 ### Documentation
 Not every part of this project is documented, but many useful objects, methods, and functions are. Some files contain step-by-step comments to explain a process, and others provide documentation comments to explain how a certain function or method should be used. Most documentation is intended to make certain modules easier to use for the programmer using them.
