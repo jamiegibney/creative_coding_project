@@ -267,7 +267,7 @@ impl SpectrumAnalyzer {
 /// Transposes an x (horizontal) value within a rectangle to a logarithmically-scaled
 /// frequency value.
 fn xpos_to_freq(rect: &Rect, x: f64) -> f64 {
-    let norm = normalise(x, rect.left() as f64, rect.right() as f64);
+    let norm = normalize(x, rect.left() as f64, rect.right() as f64);
     freq_lin_from_log(norm, MIN_FREQ, MAX_FREQ * 2.0)
 }
 

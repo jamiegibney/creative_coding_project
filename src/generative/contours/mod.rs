@@ -350,20 +350,20 @@ impl Contours {
 
         if feathered {
             if (min..=mid).contains(&px) {
-                xfer::s_curve(normalise(px, min, mid), 0.1)
+                xfer::s_curve(normalize(px, min, mid), 0.1)
             }
             else if (mid..=max).contains(&px) {
-                (xfer::s_curve(1.0 - normalise(px, mid, max), 0.1))
+                (xfer::s_curve(1.0 - normalize(px, mid, max), 0.1))
             }
             else {
                 0.0
             }
         }
         else if (min..=mid).contains(&px) {
-            xfer::s_curve_round(normalise(px, min, mid), 0.97)
+            xfer::s_curve_round(normalize(px, min, mid), 0.97)
         }
         else if (mid..=max).contains(&px) {
-            (1.0 - xfer::s_curve_round(normalise(px, mid, max), -0.97))
+            (1.0 - xfer::s_curve_round(normalize(px, mid, max), -0.97))
         }
         else {
             0.0

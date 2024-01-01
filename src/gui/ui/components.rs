@@ -72,7 +72,7 @@ pub struct UIComponents {
 
     // f64
     reso_bank_mix: TextSlider,
-    exciter_osc: Menu<ExciterOscillator>,
+    pub exciter_osc: Menu<ExciterOscillator>,
 
     // f64
     reso_bank_cell_jitter: TextSlider,
@@ -446,7 +446,7 @@ impl UIComponents {
             },
 
             spectrogram_label: Label::new(ui_layout.spectrogram.label)
-                .with_text("SPECTROGRAMS")
+                .with_text("PARAMETRIC EQ")
                 .with_text_layout(big_label_layout()),
             spectrogram_resolution: {
                 let spectrogram_resolution =
@@ -747,7 +747,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    .with_output_range(3.4868..=111.0762) // 10Hz to 5kHz
+                    .with_output_range(3.4868..=135.075_366) // 10Hz to 20kHz
                     .with_default_value(freq_to_note(
                         low_filter_cutoff.current_value(),
                     ))
@@ -836,7 +836,7 @@ impl UIComponents {
                         ..main_label_layout()
                     })
                     .with_value_layout(main_value_layout())
-                    .with_output_range(55.35..=135.075_366) // 200Hz to 20kHz
+                    .with_output_range(3.4868..=135.075_366) // 200Hz to 20kHz
                     .with_default_value(freq_to_note(
                         high_filter_cutoff.current_value(),
                     ))
@@ -1038,7 +1038,7 @@ impl UIComponents {
                     .with_label_layout(main_label_layout())
                     .with_value_layout(main_value_layout())
                     .with_suffix(":1")
-                    .with_output_range(1.0..=99.9)
+                    .with_output_range(1.0..=20.0)
                     .with_default_value(params.comp_ratio.current_value())
                     .with_value_chars(4)
                     .with_callback(move |_, value| {
@@ -1078,7 +1078,7 @@ impl UIComponents {
                 let master_gain = Arc::clone(&params.master_gain);
                 TextSlider::new(0.0, ui_layout.other.master_gain)
                     .with_sensitivity(0.001)
-                    .with_label("Master Gain")
+                    .with_label("Output Gain")
                     .with_label_layout(main_label_layout())
                     .with_value_layout(main_value_layout())
                     .with_output_range(-100.0..=18.0) // -inf to +12

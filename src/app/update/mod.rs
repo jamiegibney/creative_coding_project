@@ -3,6 +3,11 @@ use std::sync::{Arc, Mutex, RwLock};
 
 pub fn update(app: &App, model: &mut Model, update: Update) {
     model.update_input_data(app, update);
+
+    if !model.input_data.is_win_focussed {
+        return;
+    }
+
     model.update_vectors(app);
     model.increment_mask_scan_line();
     model.update_filters();
@@ -72,4 +77,5 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
     model.voronoi_reso_bank.update(app, &model.input_data);
 
     model.update_filter_line();
+    model.update_filter_nodes(app);
 }

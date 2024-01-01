@@ -4,6 +4,10 @@ use nannou::geom::{path, Path};
 use super::*;
 
 pub fn view(app: &App, model: &Model, frame: Frame) {
+    if !model.input_data.is_win_focussed {
+        return;
+    }
+
     let draw = &app.draw();
     let window = app.main_window();
     draw.background().color(BLACK);
@@ -81,6 +85,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     model.draw_mask_scan_line(draw);
 
     model.draw_filter_line(draw);
+    model.draw_filter_nodes(draw);
     outline_rect(&model.spectrum_rect, draw, 2.0);
 
     model.ui_components.draw(app, draw, &frame);

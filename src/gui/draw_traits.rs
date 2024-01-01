@@ -33,6 +33,9 @@ pub struct InputData {
     pub is_alt_down: bool,
     /// Whether the control modifier is down.
     pub is_ctrl_down: bool,
+
+    /// Whether the window is focussed or not.
+    pub is_win_focussed: bool,
 }
 
 /// Trait for UI components which can be drawn.

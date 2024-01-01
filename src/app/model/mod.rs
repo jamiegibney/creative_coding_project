@@ -1,7 +1,6 @@
 use crate::gui::rdp::rdp_in_place;
 use crate::prelude::interp::linear_unclamped;
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use nannou::noise::{NoiseFn, Perlin};
 use nannou_audio::Stream;
 
 // use nannou_egui::{self, egui, Egui};
@@ -34,6 +33,7 @@ use constructors::*;
 type CallbackTimerRef = Arc<Mutex<Instant>>;
 
 /// The app's model, i.e. its general state.
+#[allow(clippy::struct_excessive_bools)]
 pub struct Model {
     window: Id,
 
@@ -97,7 +97,6 @@ pub struct Model {
     pub voronoi_mask: Arc<RwLock<VoronoiGPU>>,
     /// A vector field used to manage points for the Voronoi mask.
     pub voronoi_vectors: Arc<RwLock<Vectors>>,
-    pub voronoi_perlin: Perlin,
     pub voronoi_z: Arc<AtomicF64>,
 
     /// A simple vector field for the resonator bank points.
@@ -111,6 +110,13 @@ pub struct Model {
 
     pub low_filter: BiquadFilter,
     pub high_filter: BiquadFilter,
+    low_filter_node: Vec2,
+    low_filter_node_is_clicked: bool,
+    high_filter_node: Vec2,
+    high_filter_node_is_clicked: bool,
+    spectrum_is_clicked: bool,
+    pub clicked_outside_of_spectrum: bool,
+
     pub filter_raw_points: Vec<[f64; 2]>,
     pub filter_indices: Vec<usize>,
     pub filter_points: Vec<Vec2>,
@@ -289,7 +295,6 @@ impl Model {
 
             voronoi_mask: Arc::new(RwLock::new(voronoi_mask)),
             voronoi_vectors,
-            voronoi_perlin: Perlin::new(),
             voronoi_z,
 
             voronoi_reso_bank: VoronoiGPU::new(app, bank_rect),
@@ -297,6 +302,13 @@ impl Model {
 
             low_filter,
             high_filter,
+            low_filter_node: Vec2::new(-244.94064, -174.99988),
+            low_filter_node_is_clicked: false,
+            high_filter_node: Vec2::new(-108.400024, -175.00002),
+            high_filter_node_is_clicked: false,
+            spectrum_is_clicked: false,
+            clicked_outside_of_spectrum: false,
+
             filter_raw_points: {
                 let mid = spectrum_rect.mid_left().y;
                 let left = spectrum_rect.left();
@@ -442,8 +454,6 @@ impl Model {
             self.ui_params.voronoi_cell_count.lr() as usize
         );
 
-        // self.voronoi_z += self.ui_params.voronoi_cell_speed.lr() * 0.01;
-
         let (l, r) = (self.mask_rect.left(), self.mask_rect.right());
         let (b, t) = (self.mask_rect.bottom(), self.mask_rect.top());
         let (w, h) = (self.mask_rect.w(), self.mask_rect.h());
@@ -482,7 +492,7 @@ impl Model {
                     let l = self.mask_rect.left() as f64;
                     let r = self.mask_rect.right() as f64;
 
-                    self.mask_scan_line_pos = normalise(x_pos, l, r).fract();
+                    self.mask_scan_line_pos = normalize(x_pos, l, r).fract();
                     if self.mask_scan_line_pos.is_sign_negative() {
                         self.mask_scan_line_pos = 1.0 + self.mask_scan_line_pos;
                     }
@@ -610,6 +620,189 @@ impl Model {
                 .color(Rgb::new(0.08, 0.08, 0.08));
         }
     }
+
+    #[allow(clippy::too_many_lines)]
+    /// Y-pos to Q (and back) conversions found experimenting on Desmos:
+    /// <https://www.desmos.com/calculator/ddgep83pq2>
+    pub fn update_filter_nodes(&mut self, app: &App) {
+        const Q_SCALE_FACTOR: f32 = 3.8206;
+        let q_scale_tanh = -Q_SCALE_FACTOR.tanh();
+
+        if self.ui_components.exciter_osc.is_open() {
+            self.clicked_outside_of_spectrum = true;
+            return;
+        }
+
+        let mp = self.input_data.mouse_pos;
+        let clicked = self.input_data.is_left_clicked;
+        let rect = self.spectrum_rect;
+        let low_rect = Rect::from_xy_wh(self.low_filter_node, pt2(14.0, 14.0));
+        let high_rect =
+            Rect::from_xy_wh(self.high_filter_node, pt2(14.0, 14.0));
+
+        let padded = rect.pad(8.0);
+        let sr = self.sample_rate_ref.lr();
+
+        if clicked {
+            if rect.contains(mp) || self.spectrum_is_clicked {
+                if !self.clicked_outside_of_spectrum {
+                    if (low_rect.contains(mp)
+                        || self.low_filter_node_is_clicked)
+                        && !self.high_filter_node_is_clicked
+                    {
+                        self.low_filter_node =
+                            mp.clamp(padded.bottom_left(), padded.top_right());
+                        self.low_filter_node_is_clicked = true;
+
+                        // frequency
+                        let xpos_norm =
+                            (self.low_filter_node.x - rect.left()) / rect.w();
+                        let freq =
+                            freq_lin_from_log(xpos_norm as f64, 25.0, sr);
+                        self.ui_components
+                            .low_filter_cutoff
+                            .set_value(freq_to_note(freq.clamp(25.0, 20000.0)));
+
+                        // gain
+                        let ypos_norm = normalize_f32(
+                            (self.low_filter_node.y - rect.bottom()) / rect.h(),
+                            0.02962963,
+                            0.97037035,
+                        );
+                        let gain = scale_f32(ypos_norm, -24.0, 24.0);
+                        self.ui_components
+                            .low_filter_gain
+                            .set_value(gain as f64);
+
+                        // q
+                        let q = scale_f32(
+                            1.0 + ((1.0 - ypos_norm) * Q_SCALE_FACTOR).tanh()
+                                / q_scale_tanh,
+                            0.3,
+                            10.0,
+                        );
+                        self.ui_components.low_filter_q.set_value(q as f64);
+                    }
+                    if (high_rect.contains(mp)
+                        || self.high_filter_node_is_clicked)
+                        && !self.low_filter_node_is_clicked
+                    {
+                        self.high_filter_node =
+                            mp.clamp(padded.bottom_left(), padded.top_right());
+                        self.high_filter_node_is_clicked = true;
+
+                        // frequency
+                        let xpos_norm =
+                            (self.high_filter_node.x - rect.left()) / rect.w();
+                        let freq =
+                            freq_lin_from_log(xpos_norm as f64, 25.0, sr);
+                        self.ui_components
+                            .high_filter_cutoff
+                            .set_value(freq_to_note(freq.clamp(25.0, 20000.0)));
+
+                        // gain
+                        let ypos_norm = normalize_f32(
+                            (self.high_filter_node.y - rect.bottom())
+                                / rect.h(),
+                            0.02962963,
+                            0.97037035,
+                        );
+                        let gain = scale_f32(ypos_norm, -24.0, 24.0);
+                        self.ui_components
+                            .high_filter_gain
+                            .set_value(gain as f64);
+
+                        // q
+                        let q = scale_f32(
+                            1.0 + ((1.0 - ypos_norm) * Q_SCALE_FACTOR).tanh()
+                                / q_scale_tanh,
+                            0.3,
+                            10.0,
+                        );
+                        self.ui_components.high_filter_q.set_value(q as f64);
+                    }
+                }
+                self.spectrum_is_clicked = true;
+            }
+            else if !self.spectrum_is_clicked {
+                self.clicked_outside_of_spectrum = true;
+            }
+        }
+        else {
+            self.spectrum_is_clicked = false;
+            self.clicked_outside_of_spectrum = false;
+            self.low_filter_node_is_clicked = false;
+            self.high_filter_node_is_clicked = false;
+        }
+        if clicked && self.clicked_outside_of_spectrum {
+            let low_freq =
+                note_to_freq(self.ui_components.low_filter_cutoff.value());
+
+            self.low_filter_node.x = rect.left()
+                + freq_log_norm(low_freq as f64, 25.0, sr) as f32 * rect.w();
+            if self.ui_components.low_filter_type.enabled() {
+                let gain = self.ui_components.low_filter_gain.value() as f32;
+                let norm = map_f32(gain, -24.0, 24.0, 0.02962963, 0.97037035);
+                self.low_filter_node.y =
+                    map_f32(norm, 0.0, 1.0, rect.bottom(), rect.top());
+            }
+            else {
+                let q = normalize_f32(
+                    self.ui_components.low_filter_q.value() as f32,
+                    0.3,
+                    10.0,
+                );
+                let q_norm =
+                    (q_scale_tanh * (q - 1.0)).atanh() / Q_SCALE_FACTOR;
+                let norm = scale_f32(q_norm, 0.02962963, 0.97037035);
+                self.low_filter_node.y =
+                    map_f32(norm, 1.0, 0.0, rect.bottom(), rect.top());
+            }
+
+            let high_freq =
+                note_to_freq(self.ui_components.high_filter_cutoff.value());
+
+            self.high_filter_node.x = rect.left()
+                + freq_log_norm(high_freq as f64, 25.0, sr) as f32 * rect.w();
+            if self.ui_components.high_filter_type.enabled() {
+                let gain = self.ui_components.high_filter_gain.value() as f32;
+                let norm = map_f32(gain, -24.0, 24.0, 0.02962963, 0.97037035);
+                self.high_filter_node.y =
+                    map_f32(norm, 0.0, 1.0, rect.bottom(), rect.top());
+            }
+            else {
+                let q = normalize_f32(
+                    self.ui_components.high_filter_q.value() as f32,
+                    0.3,
+                    10.0,
+                );
+                let q_norm =
+                    (q_scale_tanh * (q - 1.0)).atanh() / Q_SCALE_FACTOR;
+                let norm = scale_f32(q_norm, 0.02962963, 0.97037035);
+                self.high_filter_node.y =
+                    map_f32(norm, 1.0, 0.0, rect.bottom(), rect.top());
+            }
+
+            self.low_filter_node = self
+                .low_filter_node
+                .clamp(padded.bottom_left(), padded.top_right());
+            self.high_filter_node = self
+                .high_filter_node
+                .clamp(padded.bottom_left(), padded.top_right());
+        }
+    }
+
+    pub fn draw_filter_nodes(&self, draw: &Draw) {
+        draw.ellipse()
+            .xy(self.low_filter_node)
+            .radius(7.0)
+            .color(Rgba::new(0.9, 0.4, 0.0, 0.5));
+
+        draw.ellipse()
+            .xy(self.high_filter_node)
+            .radius(7.0)
+            .color(Rgba::new(0.9, 0.4, 0.0, 0.5));
+    }
 }
 
 fn create_log_lines(rect: &Rect) -> Vec<[Vec2; 2]> {
@@ -629,7 +822,7 @@ fn create_log_lines(rect: &Rect) -> Vec<[Vec2; 2]> {
         .skip(2)
         .take(26)
         .map(|&x| {
-            let norm = normalise(x, 0.0, max);
+            let norm = normalize(x, 0.0, max);
             let x_pos = lerp(lower_x, upper_x, norm) as f32;
 
             [Vec2::new(x_pos, b), Vec2::new(x_pos, t)]

@@ -35,7 +35,7 @@ pub fn map(
     out_min: f64,
     out_max: f64,
 ) -> f64 {
-    scale(normalise(value, in_min, in_max), out_min, out_max)
+    scale(normalize(value, in_min, in_max), out_min, out_max)
 }
 
 /// Maps a value from the provided input range to the provided output range.
@@ -47,7 +47,7 @@ pub fn map_f32(
     out_min: f32,
     out_max: f32,
 ) -> f32 {
-    scale_f32(normalise_f32(value, in_min, in_max), out_min, out_max)
+    scale_f32(normalize_f32(value, in_min, in_max), out_min, out_max)
 }
 
 /// Scales a value to a provided range, assuming it is normalised.
@@ -66,19 +66,19 @@ pub fn scale_f32(value: f32, min: f32, max: f32) -> f32 {
     value.mul_add(max - min, min)
 }
 
-/// Normalises a value from a provided range.
+/// Normalizes a value from a provided range.
 ///
 /// Like `map()`, but with the output range set to `0.0 - 1.0`.
 #[inline]
-pub fn normalise(value: f64, min: f64, max: f64) -> f64 {
+pub fn normalize(value: f64, min: f64, max: f64) -> f64 {
     (value - min) / (max - min)
 }
 
-/// Normalises a value from a provided range.
+/// Normalizes a value from a provided range.
 ///
 /// Like `map()`, but with the output range set to `0.0 - 1.0`.
 #[inline]
-pub fn normalise_f32(value: f32, min: f32, max: f32) -> f32 {
+pub fn normalize_f32(value: f32, min: f32, max: f32) -> f32 {
     (value - min) / (max - min)
 }
 

@@ -16,6 +16,7 @@ pub fn build_window(app: &App, width: u32, height: u32) -> Id {
         .mouse_moved(mouse::mouse_moved)
         .event(event)
         .view(view)
+        .title("Jamie Gibney — Creative Coding Project")
         .build()
         .expect("failed to build app window!")
 }
