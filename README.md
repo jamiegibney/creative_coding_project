@@ -17,6 +17,9 @@ Polyphony is supported.
 
 **Tip**: whilst holding notes, you can shift the octave with either `Z` or `X` to hold the notes in place, acting as a way of sustaining them. Pressing `P` releases the notes.
 
+### Parameter
+Please see the project's [parameter reference](./parameter_reference.md) for more information on each of the device's parameters.
+
 # Navigating the project's source code
 > This section is intended for an assessor meaning to read through the project.
 
