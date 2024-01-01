@@ -1,5 +1,5 @@
 # Creative Coding Project
-![](./screenshot.png)
+![](./assets/images/screenshot.png)
 
 This is my Creative Coding submission for University. The project is written in Rust, as well as some shaders written in WGSL.
 
@@ -11,7 +11,7 @@ The device has three main parts:
 ### Keymap
 The project's keymap is as follows:
 
-![](./keymap.png)
+![](./assets/images/keymap.png)
 
 Polyphony is supported. 
 
