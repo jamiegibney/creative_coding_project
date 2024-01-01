@@ -20,7 +20,15 @@ Please note that in Rust, `//` comments are only visible in the source code, but
 ##### Viewing the project's documentation in the browser
 Documentation for the project is automatically generated and available in `docs/doc/creative_coding_project/index.html`. To view the pre-generated documentation, download this repository, and open the file above.
 
-Alternatively, if you have `cargo` installed, you may run `cargo docs --open --no-deps --target-dir=docs/` in the source directory to open the documentation. Running `cargo docs --open` also works, but will generate documentation for all dependencies, and may create another folder.
+Alternatively, if you have `cargo` installed, you may run 
+```bash
+cargo docs --open --no-deps --target-dir=docs/
+```
+in the source directory to open the documentation. Running 
+```bash
+cargo docs --open
+```
+also works, but will generate documentation for all dependencies, and may create another folder.
 
 ### Main modules
 This project contains several main modules:
