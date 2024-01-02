@@ -17,9 +17,6 @@ icon = [
     "./assets/icons/icon_256.png",
 ]
 
-[profile.release]
-codegen-units = 2
-
 [lib]
 doctest = false
 
