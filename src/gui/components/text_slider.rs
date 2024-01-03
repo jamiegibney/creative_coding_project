@@ -36,6 +36,7 @@ pub struct TextSlider {
 
     is_active: bool,
     can_update: bool,
+    pub needs_redraw: bool,
     state: UIComponentState,
 
     prev_mouse_pos: Option<Vec2>,
@@ -81,6 +82,8 @@ impl TextSlider {
 
             is_active: false,
             can_update: false,
+            needs_redraw: true,
+
             prev_mouse_pos: None,
             state: UIComponentState::Idle,
             drag_sensitivity: 0.004,
@@ -405,6 +408,7 @@ impl TextSlider {
     }
 
     fn update_output_value(&mut self) {
+        self.needs_redraw = true;
         let (min, max) = self.min_max();
         self.output_value = map_range(self.raw_value, 0.0, 1.0, min, max);
         if self.integer_rounding {
@@ -476,6 +480,7 @@ impl UIDraw for TextSlider {
     }
 
     fn update(&mut self, _: &App, input: &InputData) {
+        self.needs_redraw = false;
         // guard against the mouse already being clicked when entering the
         // slider's bounding rect
         if !self.within_bounds(input.mouse_pos) && !self.is_active {
@@ -545,6 +550,10 @@ impl UIDraw for TextSlider {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        if !self.needs_redraw && frame.nth() > 0 {
+            return;
+        }
+
         let (x, y, w, h) = self.rect.x_y_w_h();
         let bl = pt2(x, y);
         let (w2, h2) = (w * 0.5, h * 0.5);
@@ -576,6 +585,16 @@ impl UIDraw for TextSlider {
             .wh(value_rect.wh())
             .color(VALUE)
             .layout(&self.value_layout);
+    }
+
+    fn needs_redraw(&self) -> bool {
+        self.needs_redraw
+    }
+
+    fn force_redraw(&mut self, app: &App, draw: &Draw, frame: &Frame) {
+        self.needs_redraw = true;
+        self.draw(app, draw, frame);
+        self.needs_redraw = false;
     }
 
     fn rect(&self) -> &Rect {

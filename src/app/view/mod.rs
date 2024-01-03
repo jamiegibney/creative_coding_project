@@ -10,22 +10,35 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     let draw = &app.draw();
     let window = app.main_window();
-    draw.background().color(BLACK);
-
-    let V2 { x: _width, y: _height } = WINDOW_SIZE;
-
-    let bank_rect = &model.bank_rect;
-    model.voronoi_reso_bank.draw(app, draw, &frame);
-    model.vectors_reso_bank.draw(app, draw, &frame);
+    let is_first_frame = frame.nth() == 0;
+    if is_first_frame {
+        draw.background().color(BLACK);
+    }
 
     let line_weight = 2.0;
+    let bank_rect = &model.bank_rect;
 
-    outline_rect(bank_rect, draw, line_weight);
+    model.redraw_under_menus(draw, is_first_frame);
 
-    // let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
-    let pre_spectrum_mesh_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
-    // let post_spectrum_line_color = Rgba::new(1.0, 1.0, 1.0, 1.0);
-    let post_spectrum_mesh_color = Rgba::new(0.9, 0.4, 0.0, 0.3);
+    if model.reso_bank_needs_redraw()
+        || model.ui_components.reso_bank_scale.needs_redraw()
+        || model.vectors_reso_bank.can_mouse_interact
+    {
+        // println!("redrawing reso bank");
+        draw.rect()
+            .xy(bank_rect.xy())
+            .wh(bank_rect.wh())
+            .color(BLACK);
+        model.voronoi_reso_bank.draw(app, draw, &frame);
+        model.vectors_reso_bank.draw(app, draw, &frame);
+        outline_rect(bank_rect, draw, line_weight);
+    }
+
+    let spectrum_rect = model.spectrum_rect;
+    draw.rect()
+        .xy(spectrum_rect.xy())
+        .wh(spectrum_rect.wh())
+        .color(BLACK);
 
     model.draw_log_lines(draw);
 
@@ -35,45 +48,38 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PreOnly
     ) {
-        let mut pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
-        let spectrum_rect = pre_spectrum.rect();
-
-        pre_spectrum.draw(
-            draw,
-            Some(pre_spectrum_mesh_color),
-            line_weight,
-            None,
-        );
-
-        drop(pre_spectrum);
+        let mut pre_spectrum =
+            model.pre_spectrum_analyzer.borrow_mut().draw(draw);
     }
 
     if matches!(
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PostOnly
     ) {
-        model.post_spectrum_analyzer.borrow_mut().draw(
-            draw,
-            None,
-            line_weight,
-            Some(post_spectrum_mesh_color),
-        );
+        model.post_spectrum_analyzer.borrow_mut().draw(draw);
     }
 
-    match model.ui_params.mask_algorithm.lr() {
-        GenerativeAlgo::Contours => {
-            model.contours.read().unwrap().draw(app, draw, &frame);
-        }
-        GenerativeAlgo::SmoothLife => {
-            model.smooth_life.read().unwrap().draw(app, draw, &frame);
-        }
-        GenerativeAlgo::Voronoi => {
-            model.voronoi_mask.read().unwrap().draw(app, draw, &frame);
-        }
-    }
+    let mask_rect = model.mask_rect;
+    draw.rect()
+        .xy(mask_rect.xy())
+        .wh(mask_rect.wh() * 1.05)
+        .color(BLACK);
 
     let mask_mix = model.ui_params.mask_mix.lr();
 
+    if !epsilon_eq(mask_mix, 0.0) {
+        match model.ui_params.mask_algorithm.lr() {
+            GenerativeAlgo::Contours => {
+                model.contours.read().unwrap().draw(app, draw, &frame);
+            }
+            GenerativeAlgo::SmoothLife => {
+                model.smooth_life.read().unwrap().draw(app, draw, &frame);
+            }
+            GenerativeAlgo::Voronoi => {
+                model.voronoi_mask.read().unwrap().draw(app, draw, &frame);
+            }
+        }
+    }
     if mask_mix < 1.0 {
         draw.rect()
             .xy(model.mask_rect.xy())
@@ -90,9 +96,9 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     model.ui_components.draw(app, draw, &frame);
 
-    // if the frame fails to draw, we'll just ignore it
+
+    // if the frame fails to draw we'll just ignore it
     let _ = draw.to_frame(app, &frame);
-    // let _ = model.egui.draw_to_frame(&frame);
 }
 
 fn outline_rect(rect: &Rect, draw: &Draw, width: f32) {
@@ -102,14 +108,4 @@ fn outline_rect(rect: &Rect, draw: &Draw, width: f32) {
         .stroke(BG_NON_SELECTED)
         .stroke_weight(width)
         .no_fill();
-
-    // let bl = rect.bottom_left();
-    // let br = rect.bottom_right();
-    // let tl = rect.top_left();
-    // let tr = rect.top_right();
-    //
-    // draw.line().points(bl, br).weight(width).color(GREY);
-    // draw.line().points(br, tr).weight(width).color(GREY);
-    // draw.line().points(tr, tl).weight(width).color(GREY);
-    // draw.line().points(tl, bl).weight(width).color(GREY);
 }

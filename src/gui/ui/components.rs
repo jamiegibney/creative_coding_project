@@ -13,7 +13,7 @@ use triple_buffer::Input;
 pub struct UIComponents {
     // ### SPECTRAL FILTER ###
     mask_label: Label,
-    mask_algorithm: Menu<GenerativeAlgo>,
+    pub mask_algorithm: Menu<GenerativeAlgo>,
     /// float
     mask_scan_line_speed: TextSlider,
     /// toggle
@@ -33,22 +33,22 @@ pub struct UIComponents {
 
     // ### Smooth life algorithm
     /// usize
-    smoothlife_resolution: Menu<SmoothLifeSize>,
+    pub smoothlife_resolution: Menu<SmoothLifeSize>,
     /// float
     smoothlife_speed: TextSlider,
-    smoothlife_preset: Menu<SmoothLifePreset>,
+    pub smoothlife_preset: Menu<SmoothLifePreset>,
 
     voronoi_cell_count: TextSlider,
     voronoi_cell_speed: TextSlider,
     voronoi_border_weight: TextSlider,
 
     // ### SPECTROGRAMS ###
-    spectrogram_label: Label,
+    pub spectrogram_label: Label,
     /// usize
-    spectrogram_resolution: Menu<SpectrogramSize>,
+    pub spectrogram_resolution: Menu<SpectrogramSize>,
     /// float
     spectrogram_timing: TextSlider,
-    spectrogram_view: Menu<SpectrogramView>,
+    pub spectrogram_view: Menu<SpectrogramView>,
 
     // ### RESONATOR BANK ###
     reso_bank_label: Label,
@@ -113,7 +113,7 @@ pub struct UIComponents {
     /// f64 (smoother callback)
     delay_time_ms: TextSlider,
     /// f64 (smoother callback)
-    delay_feedback: TextSlider,
+    pub delay_feedback: TextSlider,
     /// f64 (smoother callback)
     delay_mix: TextSlider,
     /// toggle
@@ -123,7 +123,7 @@ pub struct UIComponents {
     dist_label: Label,
     /// f64 (smoother callback)
     dist_amount: TextSlider,
-    dist_type: Menu<DistortionType>,
+    pub dist_type: Menu<DistortionType>,
 
     // ### Compression
     comp_label: Label,
@@ -1239,6 +1239,18 @@ impl UIComponents {
 
         self
     }
+
+    pub fn draw_labels(&self, app: &App, draw: &Draw, frame: &Frame) {
+        self.mask_label.draw(app, draw, frame);
+        self.spectrogram_label.draw(app, draw, frame);
+        self.reso_bank_label.draw(app, draw, frame);
+        self.low_filter_label.draw(app, draw, frame);
+        self.high_filter_label.draw(app, draw, frame);
+        self.dist_label.draw(app, draw, frame);
+        self.delay_label.draw(app, draw, frame);
+        self.comp_label.draw(app, draw, frame);
+        self.effects_label.draw(app, draw, frame);
+    }
 }
 
 impl UIDraw for UIComponents {
@@ -1255,17 +1267,27 @@ impl UIDraw for UIComponents {
                 self.contour_count.update(app, input_data);
                 self.contour_thickness.update(app, input_data);
                 self.contour_speed.update(app, input_data);
+
+                self.contour_count.needs_redraw = true;
+                self.contour_thickness.needs_redraw = true;
+                self.contour_speed.needs_redraw = true;
             }
             GenerativeAlgo::SmoothLife => {
                 // unused components
                 // self.smoothlife_resolution.update(app, input_data);
                 // self.smoothlife_speed.update(app, input_data);
                 self.smoothlife_preset.update(app, input_data);
+
+                self.smoothlife_preset.needs_redraw = true;
             }
             GenerativeAlgo::Voronoi => {
                 self.voronoi_border_weight.update(app, input_data);
                 self.voronoi_cell_speed.update(app, input_data);
                 self.voronoi_cell_count.update(app, input_data);
+
+                self.voronoi_border_weight.needs_redraw = true;
+                self.voronoi_cell_speed.needs_redraw = true;
+                self.voronoi_cell_count.needs_redraw = true;
             }
         }
 
@@ -1290,6 +1312,9 @@ impl UIDraw for UIComponents {
         self.reso_bank_field_friction.update(app, input_data);
         self.reso_bank_mix.update(app, input_data);
         self.exciter_osc.update(app, input_data);
+        if self.exciter_osc.needs_redraw() {
+            self.spectrogram_label.needs_redraw = true;
+        }
 
         self.low_filter_type.update(app, input_data);
         self.low_filter_cutoff.update(app, input_data);
@@ -1311,13 +1336,16 @@ impl UIDraw for UIComponents {
             self.high_filter_q.update(app, input_data);
         }
 
-        self.dist_amount.update(app, input_data);
-        self.dist_type.update(app, input_data);
-
         self.delay_time_ms.update(app, input_data);
         self.delay_feedback.update(app, input_data);
         self.delay_mix.update(app, input_data);
         self.delay_is_ping_pong.update(app, input_data);
+
+        self.dist_amount.update(app, input_data);
+        self.dist_type.update(app, input_data);
+        if self.dist_type.needs_redraw() {
+            self.delay_feedback.needs_redraw = true;
+        }
 
         self.comp_thresh.update(app, input_data);
         self.comp_ratio.update(app, input_data);
@@ -1329,15 +1357,7 @@ impl UIDraw for UIComponents {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
-        self.mask_label.draw(app, draw, frame);
-        self.spectrogram_label.draw(app, draw, frame);
-        self.reso_bank_label.draw(app, draw, frame);
-        self.low_filter_label.draw(app, draw, frame);
-        self.high_filter_label.draw(app, draw, frame);
-        self.dist_label.draw(app, draw, frame);
-        self.delay_label.draw(app, draw, frame);
-        self.comp_label.draw(app, draw, frame);
-        self.effects_label.draw(app, draw, frame);
+        self.draw_labels(app, draw, frame);
 
         if self.low_filter_type.enabled() {
             self.low_filter_gain.draw(app, draw, frame);
@@ -1357,10 +1377,15 @@ impl UIDraw for UIComponents {
         }
 
         self.mask_scan_line_speed.draw(app, draw, frame);
-        // self.mask_is_post_fx.draw(app, draw, frame);
         self.mask_mix.draw(app, draw, frame);
         self.mask_resolution.draw(app, draw, frame);
         self.mask_reset.draw(app, draw, frame);
+
+        let th_rect = self.contour_thickness.rect();
+        draw.rect()
+            .xy(pt2(213.0, 145.0))
+            .wh(pt2(155.0, 200.0))
+            .color(BLACK);
 
         match self.mask_algorithm.output() {
             GenerativeAlgo::Contours => {
@@ -1373,6 +1398,7 @@ impl UIDraw for UIComponents {
                 // self.smoothlife_resolution.draw(app, draw, frame);
                 // self.smoothlife_speed.draw(app, draw, frame);
                 self.smoothlife_preset.draw(app, draw, frame);
+                self.smoothlife_preset.redraw_label(draw);
             }
             GenerativeAlgo::Voronoi => {
                 self.voronoi_cell_speed.draw(app, draw, frame);
@@ -1424,6 +1450,95 @@ impl UIDraw for UIComponents {
 
         self.pre_fx_gain.draw(app, draw, frame);
         self.master_gain.draw(app, draw, frame);
+    }
+
+    fn force_redraw(&mut self, app: &App, draw: &Draw, frame: &Frame) {
+        if self.low_filter_type.enabled() {
+            self.low_filter_gain.force_redraw(app, draw, frame);
+        }
+        else {
+            self.low_filter_q.force_redraw(app, draw, frame);
+        }
+
+        self.high_filter_type.force_redraw(app, draw, frame);
+        self.high_filter_cutoff.force_redraw(app, draw, frame);
+
+        if self.high_filter_type.enabled() {
+            self.high_filter_gain.force_redraw(app, draw, frame);
+        }
+        else {
+            self.high_filter_q.force_redraw(app, draw, frame);
+        }
+
+        self.mask_scan_line_speed.force_redraw(app, draw, frame);
+        // self.mask_is_post_fx.force_redraw(app, draw, frame);
+        self.mask_mix.force_redraw(app, draw, frame);
+        self.mask_resolution.force_redraw(app, draw, frame);
+        self.mask_reset.force_redraw(app, draw, frame);
+
+        match self.mask_algorithm.output() {
+            GenerativeAlgo::Contours => {
+                self.contour_count.force_redraw(app, draw, frame);
+                self.contour_thickness.force_redraw(app, draw, frame);
+                self.contour_speed.force_redraw(app, draw, frame);
+            }
+            GenerativeAlgo::SmoothLife => {
+                // unused components
+                // self.smoothlife_resolution.force_redraw(app, draw, frame);
+                // self.smoothlife_speed.force_redraw(app, draw, frame);
+                self.smoothlife_preset.force_redraw(app, draw, frame);
+            }
+            GenerativeAlgo::Voronoi => {
+                self.voronoi_cell_speed.force_redraw(app, draw, frame);
+                self.voronoi_border_weight.force_redraw(app, draw, frame);
+                self.voronoi_cell_count.force_redraw(app, draw, frame);
+            }
+        }
+        self.mask_algorithm.force_redraw(app, draw, frame); // menu
+
+        // unused components
+        // self.spectrogram_timing.force_redraw(app, draw, frame);
+        // self.spectrogram_resolution.force_redraw(app, draw, frame); // menu
+        self.spectrogram_view.force_redraw(app, draw, frame); // menu
+
+        self.reso_bank_root_note.force_redraw(app, draw, frame);
+        self.reso_bank_spread.force_redraw(app, draw, frame);
+        self.reso_bank_shift.force_redraw(app, draw, frame);
+        self.reso_bank_inharm.force_redraw(app, draw, frame);
+        self.reso_bank_pan.force_redraw(app, draw, frame);
+        self.reso_bank_quantize.force_redraw(app, draw, frame);
+        self.reso_bank_randomize.force_redraw(app, draw, frame);
+        self.reso_bank_push.force_redraw(app, draw, frame);
+        self.reso_bank_scale.force_redraw(app, draw, frame); // menu
+
+        self.reso_bank_resonator_count
+            .force_redraw(app, draw, frame);
+        // self.reso_bank_cell_count.force_redraw(app, draw, frame);
+        self.reso_bank_cell_jitter.force_redraw(app, draw, frame);
+        self.reso_bank_field_friction.force_redraw(app, draw, frame);
+
+        self.reso_bank_mix.force_redraw(app, draw, frame);
+        self.exciter_osc.force_redraw(app, draw, frame);
+
+        self.low_filter_type.force_redraw(app, draw, frame);
+        self.low_filter_cutoff.force_redraw(app, draw, frame);
+
+        self.dist_amount.force_redraw(app, draw, frame);
+
+        self.delay_time_ms.force_redraw(app, draw, frame);
+        self.delay_feedback.force_redraw(app, draw, frame);
+        self.delay_mix.force_redraw(app, draw, frame);
+        self.delay_is_ping_pong.force_redraw(app, draw, frame);
+
+        self.dist_type.force_redraw(app, draw, frame); // menu
+
+        self.comp_thresh.force_redraw(app, draw, frame);
+        self.comp_ratio.force_redraw(app, draw, frame);
+        self.comp_attack.force_redraw(app, draw, frame);
+        self.comp_release.force_redraw(app, draw, frame);
+
+        self.pre_fx_gain.force_redraw(app, draw, frame);
+        self.master_gain.force_redraw(app, draw, frame);
     }
 
     fn rect(&self) -> &nannou::prelude::Rect {

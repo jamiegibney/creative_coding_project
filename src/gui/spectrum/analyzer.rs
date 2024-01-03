@@ -27,6 +27,9 @@ pub struct SpectrumAnalyzer {
 
     /// The bounding box of the analyzer.
     rect: Rect,
+    line_color: Option<Rgba>,
+    line_weight: f32,
+    mesh_color: Option<Rgba>,
 
     /// A filter for smoothing out the spectrum line.
     filter: FirstOrderFilter,
@@ -55,7 +58,10 @@ impl SpectrumAnalyzer {
         Self {
             spectrum,
 
-            spectrum_averaging: vec![vec![0.0; RESULT_BUFFER_SIZE]; NUM_SPECTRUM_AVERAGES],
+            spectrum_averaging: vec![
+                vec![0.0; RESULT_BUFFER_SIZE];
+                NUM_SPECTRUM_AVERAGES
+            ],
             averaging_write_pos: 0,
 
             averaged_data: vec![0.0; RESULT_BUFFER_SIZE],
@@ -67,9 +73,13 @@ impl SpectrumAnalyzer {
             spectrum_line: vec.iter().map(|p| DVec2::from_slice(p)).collect(),
             indices: (0..vec.len()).collect(),
             rect,
+            line_color: None,
+            line_weight: 2.0,
+            mesh_color: None,
 
             mesh_points: {
-                let mut v: Vec<DVec2> = vec.iter().map(|p| DVec2::from_slice(p)).collect();
+                let mut v: Vec<DVec2> =
+                    vec.iter().map(|p| DVec2::from_slice(p)).collect();
                 // add the extra elements which allow the mesh to be pinned to the
                 // bottom corners.
                 v.push(rect.bottom_right().as_f64());
@@ -88,31 +98,22 @@ impl SpectrumAnalyzer {
         &self.rect
     }
 
-    /// Draws the spectrum. If `None` is passed to either `line_color` or `mesh_color`, those
-    /// parts of the spectum will not be computed, saving processing time. If both are `None`
-    /// (for some reason), then the spectrum visual is not computed.
-    pub fn draw(
-        &mut self,
-        draw: &Draw,
-        line_color: Option<Rgba>,
-        line_weight: f32,
-        mesh_color: Option<Rgba>,
-    ) {
-        if line_color.is_some() || mesh_color.is_some() {
-            self.compute_spectrum();
-        }
-        if let Some(color) = mesh_color {
-            self.draw_mesh(draw, color);
-        }
-        if let Some(color) = line_color {
-            self.draw_line(draw, color, line_weight);
-        }
+    pub fn set_line_weight(&mut self, weight: f32) {
+        self.line_weight = weight;
+    }
+
+    pub fn set_line_color(&mut self, color: Rgba) {
+        self.line_color = Some(color);
+    }
+
+    pub fn set_mesh_color(&mut self, color: Rgba) {
+        self.mesh_color = Some(color);
     }
 
     fn draw_line(&mut self, draw: &Draw, color: Rgba, weight: f32) {
-        draw.polyline()
-            .weight(weight)
-            .points_colored(self.spectrum_line.iter().map(|x| (x.as_f32(), color)));
+        draw.polyline().weight(weight).points_colored(
+            self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
+        );
     }
 
     fn draw_mesh(&mut self, draw: &Draw, color: Rgba) {
@@ -133,7 +134,12 @@ impl SpectrumAnalyzer {
         }
 
         // now we can get the triangulation indices
-        let indices = earcutr::earcut(&interleave_dvec2_to_f64(&self.mesh_points), &[], 2).unwrap();
+        let indices = earcutr::earcut(
+            &interleave_dvec2_to_f64(&self.mesh_points),
+            &[],
+            2,
+        )
+        .unwrap();
 
         // and draw the mesh :D
         draw.mesh().indexed_colored(
@@ -149,7 +155,9 @@ impl SpectrumAnalyzer {
         let left = self.rect.left() as f64;
 
         // first, average the spectrum data...
-        self.average_spectrum_data();
+        if !self.average_spectrum_data() {
+            return;
+        }
 
         // then get an interpolated magnitude value for each point along the curve.
         for (i, pt) in self.interpolated.iter_mut().enumerate() {
@@ -157,7 +165,8 @@ impl SpectrumAnalyzer {
             let x = (i as f64 / width).mul_add(width, left);
 
             // get the frequency bin index and its interpolation value
-            let (idx, interp) = Self::bin_idx_t(xpos_to_freq(&self.rect, x), self.bin_step);
+            let (idx, interp) =
+                Self::bin_idx_t(xpos_to_freq(&self.rect, x), self.bin_step);
 
             // points outside of the working range are set to -inf dB
             if !(1..self.averaged_data.len() - 2).contains(&idx) {
@@ -212,7 +221,12 @@ impl SpectrumAnalyzer {
         self.indices.clear();
     }
 
-    fn average_spectrum_data(&mut self) {
+    /// Returns `true` if a new spectrum was published by the audio thread, and `false` if not.
+    fn average_spectrum_data(&mut self) -> bool {
+        if !self.spectrum.update() {
+            return false;
+        }
+
         // copy the new set of magnitudes to the averaging buffers
         let mags = self.spectrum.read();
         self.spectrum_averaging[self.averaging_write_pos].copy_from_slice(mags);
@@ -235,10 +249,13 @@ impl SpectrumAnalyzer {
                     .sum(),
             );
         }
+
+        true
     }
 
     fn increment_averaging_pos(&mut self) {
-        self.averaging_write_pos = (self.averaging_write_pos + 1) % NUM_SPECTRUM_AVERAGES;
+        self.averaging_write_pos =
+            (self.averaging_write_pos + 1) % NUM_SPECTRUM_AVERAGES;
     }
 
     fn bin_idx_t(freq: f64, step: f64) -> (usize, f64) {
@@ -261,6 +278,21 @@ impl SpectrumAnalyzer {
         let top = self.rect.top() as f64;
 
         (gain * 3.0 + bottom - bottom * 0.3).clamp(bottom, top)
+    }
+
+    pub fn update(&mut self) {
+        if self.line_color.is_some() || self.mesh_color.is_some() {
+            self.compute_spectrum();
+        }
+    }
+
+    pub fn draw(&mut self, draw: &Draw) {
+        if let Some(color) = self.mesh_color {
+            self.draw_mesh(draw, color);
+        }
+        if let Some(color) = self.line_color {
+            self.draw_line(draw, color, self.line_weight);
+        }
     }
 }
 

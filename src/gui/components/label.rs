@@ -6,6 +6,7 @@ pub struct Label {
     text: String,
     text_layout: Layout,
     text_color: Rgb,
+    pub needs_redraw: bool,
 }
 
 impl Label {
@@ -18,6 +19,7 @@ impl Label {
             text: String::from(Self::DEFAULT_TEXT),
             text_layout: default_text_layout(),
             text_color: BIG_LABEL,
+            needs_redraw: false,
         }
     }
 
@@ -67,12 +69,24 @@ impl UIDraw for Label {
         eprintln!("redundant call to Label \"update()\" (as UIDraw) method: Label does not have an update loop!");
     }
 
-    fn draw(&self, _: &App, draw: &Draw, _: &Frame) {
+    fn draw(&self, _: &App, draw: &Draw, frame: &Frame) {
+        if !self.needs_redraw && frame.nth() > 0 {
+            return;
+        }
+
+        let rect = self.rect();
+
+        draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+
         draw.text(&self.text)
             .wh(self.rect.wh())
             .xy(self.rect.xy())
             .color(self.text_color)
             .layout(&self.text_layout);
+    }
+
+    fn needs_redraw(&self) -> bool {
+        self.needs_redraw
     }
 
     fn rect(&self) -> &Rect {

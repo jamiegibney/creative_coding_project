@@ -6,6 +6,7 @@ use nannou::text::Layout;
 ///
 /// It is recommended that you attach a callback to the button if using it
 /// as a trigger.
+#[allow(clippy::struct_excessive_bools)]
 pub struct Button {
     state: UIComponentState,
     label: Option<String>,
@@ -21,6 +22,7 @@ pub struct Button {
     is_toggle: bool,
     enabled: bool,
     can_be_clicked: bool,
+    pub needs_redraw: bool,
 
     rect: Rect,
 
@@ -46,6 +48,7 @@ impl Button {
             is_toggle: true,
             enabled: false,
             can_be_clicked: false,
+            needs_redraw: true,
 
             rect,
 
@@ -186,6 +189,7 @@ impl UIDraw for Button {
     }
 
     fn update(&mut self, _: &App, input_data: &InputData) {
+        self.needs_redraw = true;
         // should the button be updated?
         if !self.should_update(input_data) {
             self.can_be_clicked = false;
@@ -210,6 +214,7 @@ impl UIDraw for Button {
             {
                 self.state = UIComponentState::Clicked;
                 self.enabled = !self.enabled;
+                self.needs_redraw = true;
 
                 if let Some(cb) = &self.callback {
                     cb(self.enabled);
@@ -226,6 +231,8 @@ impl UIDraw for Button {
             if !matches!(self.state, UIComponentState::Clicked) {
                 self.state = UIComponentState::Clicked;
 
+                self.needs_redraw = true;
+
                 if let Some(cb) = &self.callback {
                     cb(true);
                 }
@@ -237,6 +244,10 @@ impl UIDraw for Button {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        if !self.needs_redraw {
+            return;
+        }
+
         let (x, y, w, h) = self.rect.x_y_w_h();
         let rect = self.rect;
 
@@ -252,7 +263,6 @@ impl UIDraw for Button {
 
             let label_rect = rect.pad_bottom(3.5);
 
-            // label
             draw.text(label)
                 .xy(label_rect.xy())
                 .wh(label_rect.wh())
@@ -262,12 +272,14 @@ impl UIDraw for Button {
         else if let Some(label) = self.label.as_ref() {
             let label_rect = rect.shift_y(rect.h() + rect.h() * 0.1);
 
-            // label
-            draw.text(label)
-                .xy(label_rect.xy())
-                .wh(label_rect.wh())
-                .color(LABEL)
-                .layout(&self.label_layout);
+            if frame.nth() == 0 {
+                // label
+                draw.text(label)
+                    .xy(label_rect.xy())
+                    .wh(label_rect.wh())
+                    .color(LABEL)
+                    .layout(&self.label_layout);
+            }
         }
 
         if self.is_toggle {
@@ -296,6 +308,16 @@ impl UIDraw for Button {
                     .layout(&self.disabled_layout);
             }
         }
+    }
+
+    fn needs_redraw(&self) -> bool {
+        self.needs_redraw
+    }
+
+    fn force_redraw(&mut self, app: &App, draw: &Draw, frame: &Frame) {
+        self.needs_redraw = true;
+        self.draw(app, draw, frame);
+        self.needs_redraw = false;
     }
 
     fn rect(&self) -> &Rect {

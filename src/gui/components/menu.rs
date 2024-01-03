@@ -25,6 +25,7 @@ pub struct Menu<E: MenuEnum> {
     was_just_closed: bool,
     can_open: bool,
     can_update_state: bool,
+    pub needs_redraw: bool,
     state: UIComponentState,
 
     callback: Option<Box<dyn Fn(E)>>,
@@ -57,6 +58,8 @@ impl<E: MenuEnum> Menu<E> {
             was_just_closed: false,
             can_open: false,
             can_update_state: false,
+            needs_redraw: true,
+
             state: UIComponentState::Idle,
 
             callback: None,
@@ -182,6 +185,20 @@ impl<E: MenuEnum> Menu<E> {
         self.is_open
     }
 
+    pub fn redraw_label(&self, draw: &Draw) {
+        if let Some(label) = &self.label {
+            let top_rect = &self.item_rects[0];
+            let label_rect =
+                top_rect.shift(pt2(0.0, top_rect.h() + top_rect.h() * 0.1));
+
+            draw.text(label)
+                .xy(label_rect.xy())
+                .wh(label_rect.wh())
+                .layout(&self.label_layout)
+                .color(LABEL);
+        }
+    }
+
     fn reset_to_default(&mut self) {
         self.variant = E::default();
 
@@ -241,6 +258,7 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
     }
 
     fn update(&mut self, _: &App, input: &InputData) {
+        self.needs_redraw = false;
         // guard against the mouse already being clicked when entering the
         // menu's bounding rect
         if !self.item_rects[0].contains(input.mouse_pos) {
@@ -266,6 +284,7 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
             && self.hovered_idx.is_none()
             && input.is_left_clicked
         {
+            self.needs_redraw = true;
             self.is_open = false;
         }
 
@@ -287,6 +306,8 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
 
         // should the selected item change?
         if self.is_open {
+            self.needs_redraw = true;
+
             let btm = self.rect().bottom();
             let win_btm = (-WINDOW_SIZE.y / 2.0) as f32;
             let shift = if btm < win_btm { win_btm - btm } else { 0.0 };
@@ -326,17 +347,23 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
+        if !self.needs_redraw && frame.nth() > 0 {
+            return;
+        }
+
         let top_rect = &self.item_rects[0];
         let label_rect =
             top_rect.shift(pt2(0.0, top_rect.h() + top_rect.h() * 0.1));
 
         // label
-        if let Some(label) = &self.label {
-            draw.text(label)
-                .xy(label_rect.xy())
-                .wh(label_rect.wh())
-                .layout(&self.label_layout)
-                .color(LABEL);
+        if frame.nth() == 0 {
+            if let Some(label) = &self.label {
+                draw.text(label)
+                    .xy(label_rect.xy())
+                    .wh(label_rect.wh())
+                    .layout(&self.label_layout)
+                    .color(LABEL);
+            }
         }
 
         if self.is_open {
@@ -412,6 +439,16 @@ impl<E: MenuEnum> UIDraw for Menu<E> {
                 )
                 .color(VALUE);
         }
+    }
+
+    fn needs_redraw(&self) -> bool {
+        self.needs_redraw
+    }
+
+    fn force_redraw(&mut self, app: &App, draw: &Draw, frame: &Frame) {
+        self.needs_redraw = true;
+        self.draw(app, draw, frame);
+        self.needs_redraw = false;
     }
 
     fn draw_bounding_rect(&self, draw: &Draw) {

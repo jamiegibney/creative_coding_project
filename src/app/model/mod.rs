@@ -86,6 +86,7 @@ pub struct Model {
     pub reso_bank_push_receiver: Receiver<()>,
     pub reso_bank_push_sender_key: Sender<()>,
     pub reso_bank_data: triple_buffer::Input<ResoBankData>,
+
     pub mask_rect: Rect,
     pub mouse_clicked_outside_of_mask: bool,
     pub mask_clicked: bool,
@@ -813,6 +814,81 @@ impl Model {
             .xy(self.high_filter_node)
             .radius(7.0)
             .color(Rgba::new(0.9, 0.4, 0.0, 0.5));
+    }
+
+    pub fn reso_bank_needs_redraw(&self) -> bool {
+        for pt in self
+            .vectors_reso_bank
+            .points
+            .iter()
+            .take(self.vectors_reso_bank.num_active_points)
+        {
+            if pt.vel.x.abs() > f32::EPSILON || pt.vel.y.abs() > f32::EPSILON {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn redraw_under_menus(&self, draw: &Draw, is_first_frame: bool) {
+        let UIComponents {
+            mask_algorithm,
+            mask_resolution,
+            smoothlife_resolution,
+            smoothlife_preset,
+            spectrogram_resolution,
+            spectrogram_view,
+            reso_bank_scale,
+            exciter_osc,
+            spectrogram_label,
+            dist_type,
+            delay_feedback,
+            ..
+        } = &self.ui_components;
+
+        if mask_algorithm.needs_redraw() {
+            let rect = mask_algorithm.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+        }
+
+        if mask_resolution.needs_redraw() {
+            let rect = mask_resolution.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+        }
+
+        if spectrogram_view.needs_redraw() {
+            let rect = spectrogram_view.rect();
+            draw.rect()
+                .xy(rect.xy())
+                .wh(pt2(rect.w(), 160.0))
+                .color(BLACK);
+
+            if !is_first_frame {
+                spectrogram_view.redraw_label(draw);
+            }
+        }
+
+        if reso_bank_scale.needs_redraw() {
+            let rect = reso_bank_scale.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+        }
+
+        if exciter_osc.needs_redraw() {
+            let rect = exciter_osc.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+
+            let label_rect = spectrogram_label.rect();
+            draw.rect()
+                .xy(label_rect.xy())
+                .wh(label_rect.wh())
+                .color(BLACK);
+        }
+
+        if dist_type.needs_redraw() {
+            let rect = dist_type.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+        }
     }
 }
 

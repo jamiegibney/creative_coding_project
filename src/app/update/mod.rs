@@ -30,49 +30,56 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
     // ui components
     model.ui_components.update(app, &model.input_data);
 
-    let pos = model.mask_scan_line_pos;
-    let mask_len = model.ui_params.mask_resolution.lr().value();
+    let mask_mix = model.ui_params.mask_mix.lr();
 
-    match model.ui_params.mask_algorithm.lr() {
-        GenerativeAlgo::Contours => {
-            let mut ctr = model.contours.write().unwrap();
+    if mask_mix > 0.0 {
+        let pos = model.mask_scan_line_pos;
+        let mask_len = model.ui_params.mask_resolution.lr().value();
 
-            ctr.update(app, &model.input_data);
-            ctr.column_to_mask(
-                model.spectral_mask.input_buffer(),
-                mask_len,
-                pos,
-            );
+        match model.ui_params.mask_algorithm.lr() {
+            GenerativeAlgo::Contours => {
+                let mut ctr = model.contours.write().unwrap();
+
+                ctr.update(app, &model.input_data);
+                ctr.column_to_mask(
+                    model.spectral_mask.input_buffer(),
+                    mask_len,
+                    pos,
+                );
+            }
+            GenerativeAlgo::SmoothLife => {
+                let mut sml = model.smooth_life.write().unwrap();
+
+                sml.update(app, &model.input_data);
+                sml.column_to_mask(
+                    model.spectral_mask.input_buffer(),
+                    mask_len,
+                    pos,
+                );
+            }
+            GenerativeAlgo::Voronoi => {
+                model.update_voronoi_vectors(app);
+
+                let mut vrn = model.voronoi_mask.write().unwrap();
+                let vv = model.voronoi_vectors.read().unwrap();
+
+                vrn.copy_from_vectors(&vv);
+                vrn.set_weight(model.ui_params.voronoi_border_weight.lr());
+
+                vrn.update(app, &model.input_data);
+                vrn.column_to_mask(
+                    model.spectral_mask.input_buffer(),
+                    mask_len,
+                    pos,
+                );
+            }
         }
-        GenerativeAlgo::SmoothLife => {
-            let mut sml = model.smooth_life.write().unwrap();
 
-            sml.update(app, &model.input_data);
-            sml.column_to_mask(
-                model.spectral_mask.input_buffer(),
-                mask_len,
-                pos,
-            );
-        }
-        GenerativeAlgo::Voronoi => {
-            model.update_voronoi_vectors(app);
-
-            let mut vrn = model.voronoi_mask.write().unwrap();
-            let vv = model.voronoi_vectors.read().unwrap();
-
-            vrn.copy_from_vectors(&vv);
-            vrn.set_weight(model.ui_params.voronoi_border_weight.lr());
-
-            vrn.update(app, &model.input_data);
-            vrn.column_to_mask(
-                model.spectral_mask.input_buffer(),
-                mask_len,
-                pos,
-            );
-        }
+        model.spectral_mask.publish();
     }
 
-    model.spectral_mask.publish();
+    model.pre_spectrum_analyzer.borrow_mut().update();
+    model.post_spectrum_analyzer.borrow_mut().update();
 
     model.voronoi_reso_bank.update(app, &model.input_data);
 

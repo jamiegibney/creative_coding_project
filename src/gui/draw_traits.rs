@@ -64,6 +64,20 @@ pub trait UIDraw {
         true
     }
 
+    /// An optional method for querying whether the component needs to be
+    /// redrawn or not. Returns true as default.
+    ///
+    /// To defer control to the component, it is recommended that this method is used
+    /// as a return guard in the component's [`draw()`](UIDraw::draw) method.
+    fn needs_redraw(&self) -> bool {
+        true
+    }
+
+    /// An optional method to force the component to redraw.
+    fn force_redraw(&mut self, app: &App, draw: &Draw, frame: &Frame) {
+        self.draw(app, draw, frame)
+    }
+
     /// A method for drawing the component's bounding rect. Useful for debugging.
     ///
     /// By default, this will draw an outline of the rect returned by the

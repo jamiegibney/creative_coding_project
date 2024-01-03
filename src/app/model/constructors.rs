@@ -140,10 +140,20 @@ pub fn build_gui_elements(
     let spectrum_rect =
         Rect::from_corners(pt2(-540.0, -310.0), pt2(128.0, -40.0));
 
-    let pre_spectrum_analyzer =
+    let pre_spectrum_line_color = Rgba::new(0.2, 0.2, 0.2, 1.0);
+    let post_spectrum_mesh_color = Rgba::new(0.9, 0.4, 0.0, 0.3);
+
+    let line_weight = 2.0;
+    let mut pre_spectrum_analyzer =
         RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
-    let post_spectrum_analyzer =
+    pre_spectrum_analyzer
+        .borrow_mut()
+        .set_line_color(pre_spectrum_line_color);
+    let mut post_spectrum_analyzer =
         RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
+    post_spectrum_analyzer
+        .borrow_mut()
+        .set_mesh_color(post_spectrum_mesh_color);
 
     GuiElements {
         bank_rect,
