@@ -1,6 +1,6 @@
 [package]
 name = "creative_coding_project"
-version = "1.0.0"
+version = "1.0.2"
 edition = "2021"
 authors = ["jamiegibney <jamiegibneyuk@gmail.com>"]
 rust-version = "1.74.0"
