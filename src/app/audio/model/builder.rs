@@ -235,6 +235,13 @@ impl AudioModelBuilder {
         self.model.params.low_filter_is_shelf =
             Arc::clone(&ui_params.low_filter_is_shelf);
 
+        // peak filter
+        self.model.params.peak_filter_cutoff =
+            Arc::clone(&ui_params.peak_filter_cutoff);
+        self.model.params.peak_filter_q = Arc::clone(&ui_params.peak_filter_q);
+        self.model.params.peak_filter_gain_db =
+            Arc::clone(&ui_params.peak_filter_gain_db);
+
         // high filter
         self.model.params.high_filter_cutoff =
             Arc::clone(&ui_params.high_filter_cutoff);

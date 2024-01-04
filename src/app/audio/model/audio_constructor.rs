@@ -75,12 +75,17 @@ fn audio_processors(
     spectral_filter.set_block_size(ui_params.mask_resolution.lr().value());
 
     let mut filter_low = st_bq();
+    let mut filter_peak = st_bq();
     let mut filter_high = st_bq();
 
     for ch in 0..2 {
         filter_low[ch].set_type(FilterType::Highpass);
         filter_low[ch].set_freq(ui_params.low_filter_cutoff.current_value());
-        filter_low[ch].set_gain(ui_params.low_filter_gain_db.current_value());
+        filter_low[ch].set_q(ui_params.low_filter_q.current_value());
+
+        filter_peak[ch].set_type(FilterType::Peak);
+        filter_peak[ch].set_freq(ui_params.peak_filter_cutoff.current_value());
+        filter_peak[ch].set_gain(ui_params.peak_filter_gain_db.current_value());
 
         filter_high[ch].set_type(FilterType::Highshelf);
         filter_high[ch].set_freq(ui_params.high_filter_cutoff.current_value());
@@ -149,11 +154,12 @@ fn audio_processors(
 
     AudioProcessors {
         filter_low,
+        filter_peak,
         filter_high,
 
-        filter_hs_2,
-        filter_peak: st_bq(),
-        filter_peak_post: st_bq(),
+        filter_hs_ts: filter_hs_2,
+        filter_pk_ts: st_bq(),
+        filter_peak_ts: st_bq(),
         filter_comb: Box::new([comb.clone(), comb]),
 
         pre_fx_dc_filter: Box::new(std::array::from_fn(|_| {

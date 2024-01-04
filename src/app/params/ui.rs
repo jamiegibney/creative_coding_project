@@ -94,10 +94,18 @@ pub struct UIParams {
     pub low_filter_cutoff: Arc<SmootherAtomic<f64>>,
     /// The Q value of the cut filter.
     pub low_filter_q: Arc<SmootherAtomic<f64>>,
-    /// The gain value of the shelf filter
+    /// The gain value of the shelf filter.
     pub low_filter_gain_db: Arc<SmootherAtomic<f64>>,
     /// Whether the low filter is a shelf filter or not.
     pub low_filter_is_shelf: Arc<AtomicBool>,
+
+    // PEAK
+    /// The cutoff of the filter in Hz.
+    pub peak_filter_cutoff: Arc<SmootherAtomic<f64>>,
+    /// The Q value of the peak filter.
+    pub peak_filter_q: Arc<SmootherAtomic<f64>>,
+    /// The gain value of the peak filter.
+    pub peak_filter_gain_db: Arc<SmootherAtomic<f64>>,
 
     // HIGH-PASS
     /// The cutoff of the high-pass filter in Hz.
@@ -194,6 +202,10 @@ impl Default for UIParams {
             low_filter_q: smoother(BUTTERWORTH_Q),
             low_filter_gain_db: smoother(0.0),
             low_filter_is_shelf: Arc::new(AtomicBool::new(false)),
+
+            peak_filter_cutoff: smoother(1000.0),
+            peak_filter_q: smoother(BUTTERWORTH_Q),
+            peak_filter_gain_db: smoother(0.0),
 
             high_filter_cutoff: smoother(2000.0),
             high_filter_q: smoother(BUTTERWORTH_Q),

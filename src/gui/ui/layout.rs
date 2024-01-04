@@ -420,6 +420,48 @@ impl Default for LowFilterUILayout {
     }
 }
 
+pub struct PeakFilterUILayout {
+    pub label: Rect,
+    pub cutoff_hz: Rect,
+    pub gain: Rect,
+    pub q: Rect,
+}
+
+impl Default for PeakFilterUILayout {
+    fn default() -> Self {
+        let spectrogram_view_pos = pt2(-206.0, -364.0 - MAIN_HEIGHT);
+
+        // let label_rect =
+        let label_rect =
+            Rect::from_xy_wh(pt2(-470.0, -350.0), pt2(100.0, MAIN_HEIGHT));
+
+        let co_w = main_width_chars(9);
+        let cutoff_rect = Rect::from_xy_wh(
+            pt2(-260.0, -364.0),
+            pt2(co_w, MAIN_HEIGHT),
+        );
+
+        let gn_w = main_width_chars(8);
+        let gain_rect = Rect::from_xy_wh(
+            pt2(-68.0, -364.0),
+            pt2(gn_w, MAIN_HEIGHT),
+        );
+
+        let q_w = main_width_chars(4);
+        let q_rect = Rect::from_xy_wh(
+            pt2(96.0, -364.0),
+            pt2(q_w, MAIN_HEIGHT),
+        );
+
+        Self {
+            label: label_rect,
+            cutoff_hz: cutoff_rect,
+            gain: gain_rect,
+            q: q_rect,
+        }
+    }
+}
+
 pub struct HighFilterUILayout {
     pub label: Rect,
     pub f_type: Rect,
@@ -605,6 +647,7 @@ pub struct UILayout {
     pub spectrogram: SpectrogramUILayout,
     pub reso_bank: ResoBankUILayout,
     pub low_filter: LowFilterUILayout,
+    pub peak_filter: PeakFilterUILayout,
     pub high_filter: HighFilterUILayout,
     pub delay: DelayUILayout,
     pub distortion: DistortionUILayout,

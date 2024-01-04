@@ -313,20 +313,23 @@ impl BiquadFilter {
 
     /// Sets the filter coefficients for a peak filter.
     fn set_peak_coefs(&mut self) {
-        let Coefs { a0, a1, a2, b1, b2, .. } = &mut self.coefs;
+        let phi = self.get_phi();
+        let alpha = self.get_alpha(phi);
+
+        let Coefs { a0, a1, a2, b1, b2, b0 } = &mut self.coefs;
         let BiquadParams { freq, gain, q, filter_type } = self.params;
         let sr = &self.sample_rate;
 
-        let phi = (TAU * freq) / sr;
-        let g0 = (util::db_to_level(gain) - 1.0) / 2.0;
-        let g1 = 2.0 / (1.0 + g0);
-        let phi_2q_tan = (phi / (2.0 * q)).tan();
+        let amp = 10.0f64.powf(gain / 40.0);
+        let cos_phi = phi.cos();
 
-        *b2 = g1.mul_add(-phi_2q_tan, 1.0) / g1.mul_add(phi_2q_tan, 1.0);
-        *b1 = -(1.0 + *b2) * phi.cos();
-        *a0 = g0.mul_add(1.0 - *b2, 1.0);
+        *a0 = 1.0 + alpha / amp;
+
+        *b0 = (1.0 + alpha * amp) / *a0;
+        *b1 = (-2.0 * cos_phi) / *a0;
+        *b2 = (1.0 - alpha * amp) / *a0; 
         *a1 = *b1;
-        *a2 = 1.0 + (*b2 - *a0);
+        *a2 = (1.0 - alpha / amp) / *a0;
     }
 
     /// Sets the filter coefficients for a lowpass filter.
@@ -479,16 +482,5 @@ impl BiquadFilter {
         debug_assert!(
             freq.is_sign_positive() && q.is_sign_positive() && freq <= sr / 2.0
         );
-
-        // type-specific assertions
-        match self.params.filter_type {
-            // FT::Lowpass | FT::Highpass => debug_assert!(q >= 0.5f64.sqrt()),
-            FT::Allpass | FT::Peak | FT::Bandpass | FT::Notch => {
-                // for some reason the filter outright dies if this is violated,
-                // hence why this is not a debug assertion
-                assert!(freq < (q * sr) / 4.0);
-            }
-            _ => (),
-        }
     }
 }

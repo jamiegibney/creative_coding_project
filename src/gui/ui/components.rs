@@ -93,6 +93,14 @@ pub struct UIComponents {
     // f64 (smoother callback)
     pub low_filter_gain: TextSlider,
 
+    peak_filter_label: Label,
+    // f64 (smoother callback)
+    pub peak_filter_cutoff: TextSlider,
+    // f64 (smoother callback)
+    pub peak_filter_gain: TextSlider,
+    // f64 (smoother callback)
+    pub peak_filter_q: TextSlider,
+
     // ### High filter
     high_filter_label: Label,
     /// toggle
@@ -723,20 +731,8 @@ impl UIComponents {
                         low_filter_cutoff.set_target_value(note_to_freq(value));
                     })
                     .with_formatting_callback(|raw_value, output_value| {
-                        let val = note_to_freq(output_value);
-
-                        if val < 100.0 {
-                            format!("{val:.2} Hz")
-                        }
-                        else if val < 1000.0 {
-                            format!("{val:.1} Hz")
-                        }
-                        else if val < 10000.0 {
-                            format!("{:.2} kHz", val / 1000.0)
-                        }
-                        else {
-                            format!("{:.1} kHz", val / 1000.0)
-                        }
+                        let freq = note_to_freq(output_value);
+                        format_hz_value(freq)
                     })
             },
             low_filter_q: {
@@ -773,6 +769,61 @@ impl UIComponents {
                     .with_default_value(low_filter_gain.current_value())
                     .with_callback(move |_, value| {
                         low_filter_gain.set_target_value(value);
+                    })
+            },
+
+            peak_filter_label: Label::new(ui_layout.peak_filter.label)
+                .with_text("PEAK FILTER")
+                .with_text_layout(big_label_layout()),
+            peak_filter_cutoff: {
+                let peak_filter_cutoff = Arc::clone(&params.peak_filter_cutoff);
+
+                TextSlider::new(0.0, ui_layout.peak_filter.cutoff_hz)
+                    .with_sensitivity(0.0015)
+                    .with_label("Cutoff")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(3.4868..=135.075_366) // 200Hz to 20kHz
+                    .with_default_value(freq_to_note(
+                        peak_filter_cutoff.current_value(),
+                    ))
+                    .with_callback(move |_, value| {
+                        peak_filter_cutoff
+                            .set_target_value(note_to_freq(value));
+                    })
+                    .with_formatting_callback(|_, output_value| {
+                        let freq = note_to_freq(output_value);
+                        format_hz_value(freq)
+                    })
+            },
+            peak_filter_q: {
+                let peak_filter_q = Arc::clone(&params.peak_filter_q);
+                TextSlider::new(0.0, ui_layout.peak_filter.q)
+                    .with_sensitivity(0.002)
+                    .with_label("Q")
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_value_chars(4)
+                    .with_output_range(0.3..=10.0)
+                    .with_default_value(peak_filter_q.current_value())
+                    .with_callback(move |_, value| {
+                        peak_filter_q.set_target_value(value.recip());
+                    })
+            },
+            peak_filter_gain: {
+                let peak_filter_gain = Arc::clone(&params.peak_filter_gain_db);
+                TextSlider::new(0.0, ui_layout.peak_filter.gain)
+                    .with_sensitivity(0.002)
+                    .with_label("Gain")
+                    .with_positive_value_prefix()
+                    .with_label_layout(main_label_layout())
+                    .with_value_layout(main_value_layout())
+                    .with_output_range(-24.0..=24.0)
+                    .with_value_chars(5)
+                    .with_suffix(" dB")
+                    .with_default_value(peak_filter_gain.current_value())
+                    .with_callback(move |_, value| {
+                        peak_filter_gain.set_target_value(value);
                     })
             },
 
@@ -813,20 +864,8 @@ impl UIComponents {
                             .set_target_value(note_to_freq(value));
                     })
                     .with_formatting_callback(|raw_value, output_value| {
-                        let val = note_to_freq(output_value);
-
-                        if val < 100.0 {
-                            format!("{val:.2} Hz")
-                        }
-                        else if val < 1000.0 {
-                            format!("{val:.1} Hz")
-                        }
-                        else if val < 10000.0 {
-                            format!("{:.2} kHz", val / 1000.0)
-                        }
-                        else {
-                            format!("{:.1} kHz", val / 1000.0)
-                        }
+                        let freq = note_to_freq(output_value);
+                        format_hz_value(freq)
                     })
             },
             high_filter_q: {
@@ -1213,6 +1252,7 @@ impl UIComponents {
         self.spectrogram_label.draw(app, draw, frame);
         self.reso_bank_label.draw(app, draw, frame);
         self.low_filter_label.draw(app, draw, frame);
+        self.peak_filter_label.draw(app, draw, frame);
         self.high_filter_label.draw(app, draw, frame);
         self.dist_label.draw(app, draw, frame);
         self.delay_label.draw(app, draw, frame);
@@ -1225,7 +1265,6 @@ impl UIDraw for UIComponents {
     fn update(&mut self, app: &App, input_data: &InputData) {
         self.mask_algorithm.update(app, input_data);
         self.mask_scan_line_speed.update(app, input_data);
-        // self.mask_is_post_fx.update(app, input_data);
         self.mask_mix.update(app, input_data);
         self.mask_resolution.update(app, input_data);
         self.mask_reset.update(app, input_data);
@@ -1241,9 +1280,6 @@ impl UIDraw for UIComponents {
                 self.contour_speed.needs_redraw = true;
             }
             GenerativeAlgo::SmoothLife => {
-                // unused components
-                // self.smoothlife_resolution.update(app, input_data);
-                // self.smoothlife_speed.update(app, input_data);
                 self.smoothlife_preset.update(app, input_data);
 
                 self.smoothlife_preset.needs_redraw = true;
@@ -1260,9 +1296,7 @@ impl UIDraw for UIComponents {
         }
 
         // unused components
-        // self.spectrogram_resolution.update(app, input_data);
-        // self.spectrogram_timing.update(app, input_data);
-        self.spectrogram_view.update(app, input_data);
+        // self.spectrogram_view.update(app, input_data);
 
         self.reso_bank_scale.update(app, input_data);
         self.reso_bank_root_note.update(app, input_data);
@@ -1320,6 +1354,10 @@ impl UIDraw for UIComponents {
             }
         }
 
+        self.peak_filter_cutoff.update(app, input_data);
+        self.peak_filter_gain.update(app, input_data);
+        self.peak_filter_q.update(app, input_data);
+
         self.delay_time_ms.update(app, input_data);
         self.delay_feedback.update(app, input_data);
         self.delay_mix.update(app, input_data);
@@ -1341,7 +1379,9 @@ impl UIDraw for UIComponents {
     }
 
     fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
-        self.draw_labels(app, draw, frame);
+        if frame.nth() == 0 {
+            self.draw_labels(app, draw, frame);
+        }
 
         if self.low_filter_type.enabled() {
             self.low_filter_gain.draw(app, draw, frame);
@@ -1359,6 +1399,10 @@ impl UIDraw for UIComponents {
         else {
             self.high_filter_q.draw(app, draw, frame);
         }
+
+        self.peak_filter_q.draw(app, draw, frame);
+        self.peak_filter_cutoff.draw(app, draw, frame);
+        self.peak_filter_gain.draw(app, draw, frame);
 
         self.mask_scan_line_speed.draw(app, draw, frame);
         self.mask_mix.draw(app, draw, frame);
@@ -1403,7 +1447,7 @@ impl UIDraw for UIComponents {
         // unused components
         // self.spectrogram_timing.draw(app, draw, frame);
         // self.spectrogram_resolution.draw(app, draw, frame); // menu
-        self.spectrogram_view.draw(app, draw, frame); // menu
+        // self.spectrogram_view.draw(app, draw, frame); // menu
 
         self.reso_bank_root_note.draw(app, draw, frame);
         self.reso_bank_spread.draw(app, draw, frame);
@@ -1442,94 +1486,22 @@ impl UIDraw for UIComponents {
         self.master_gain.draw(app, draw, frame);
     }
 
-    fn force_redraw(&mut self, app: &App, draw: &Draw, frame: &Frame) {
-        if self.low_filter_type.enabled() {
-            self.low_filter_gain.force_redraw(app, draw, frame);
-        }
-        else {
-            self.low_filter_q.force_redraw(app, draw, frame);
-        }
-
-        self.high_filter_type.force_redraw(app, draw, frame);
-        self.high_filter_cutoff.force_redraw(app, draw, frame);
-
-        if self.high_filter_type.enabled() {
-            self.high_filter_gain.force_redraw(app, draw, frame);
-        }
-        else {
-            self.high_filter_q.force_redraw(app, draw, frame);
-        }
-
-        self.mask_scan_line_speed.force_redraw(app, draw, frame);
-        // self.mask_is_post_fx.force_redraw(app, draw, frame);
-        self.mask_mix.force_redraw(app, draw, frame);
-        self.mask_resolution.force_redraw(app, draw, frame);
-        self.mask_reset.force_redraw(app, draw, frame);
-
-        match self.mask_algorithm.output() {
-            GenerativeAlgo::Contours => {
-                self.contour_count.force_redraw(app, draw, frame);
-                self.contour_thickness.force_redraw(app, draw, frame);
-                self.contour_speed.force_redraw(app, draw, frame);
-            }
-            GenerativeAlgo::SmoothLife => {
-                // unused components
-                // self.smoothlife_resolution.force_redraw(app, draw, frame);
-                // self.smoothlife_speed.force_redraw(app, draw, frame);
-                self.smoothlife_preset.force_redraw(app, draw, frame);
-            }
-            GenerativeAlgo::Voronoi => {
-                self.voronoi_cell_speed.force_redraw(app, draw, frame);
-                self.voronoi_border_weight.force_redraw(app, draw, frame);
-                self.voronoi_cell_count.force_redraw(app, draw, frame);
-            }
-        }
-        self.mask_algorithm.force_redraw(app, draw, frame); // menu
-
-        // unused components
-        // self.spectrogram_timing.force_redraw(app, draw, frame);
-        // self.spectrogram_resolution.force_redraw(app, draw, frame); // menu
-        self.spectrogram_view.force_redraw(app, draw, frame); // menu
-
-        self.reso_bank_root_note.force_redraw(app, draw, frame);
-        self.reso_bank_spread.force_redraw(app, draw, frame);
-        self.reso_bank_shift.force_redraw(app, draw, frame);
-        self.reso_bank_inharm.force_redraw(app, draw, frame);
-        self.reso_bank_pan.force_redraw(app, draw, frame);
-        self.reso_bank_quantize.force_redraw(app, draw, frame);
-        self.reso_bank_randomize.force_redraw(app, draw, frame);
-        self.reso_bank_push.force_redraw(app, draw, frame);
-        self.reso_bank_scale.force_redraw(app, draw, frame); // menu
-
-        self.reso_bank_resonator_count
-            .force_redraw(app, draw, frame);
-        self.reso_bank_field_friction.force_redraw(app, draw, frame);
-
-        self.reso_bank_mix.force_redraw(app, draw, frame);
-        self.exciter_osc.force_redraw(app, draw, frame);
-
-        self.low_filter_type.force_redraw(app, draw, frame);
-        self.low_filter_cutoff.force_redraw(app, draw, frame);
-
-        self.dist_amount.force_redraw(app, draw, frame);
-
-        self.delay_time_ms.force_redraw(app, draw, frame);
-        self.delay_feedback.force_redraw(app, draw, frame);
-        self.delay_mix.force_redraw(app, draw, frame);
-        self.delay_is_ping_pong.force_redraw(app, draw, frame);
-
-        self.dist_type.force_redraw(app, draw, frame); // menu
-
-        self.comp_thresh.force_redraw(app, draw, frame);
-        self.comp_ratio.force_redraw(app, draw, frame);
-        self.comp_attack.force_redraw(app, draw, frame);
-        self.comp_release.force_redraw(app, draw, frame);
-
-        self.pre_fx_gain.force_redraw(app, draw, frame);
-        self.master_gain.force_redraw(app, draw, frame);
-    }
-
     fn rect(&self) -> &nannou::prelude::Rect {
         unimplemented!("UIComponents does not have a bounding rect!")
+    }
+}
+
+fn format_hz_value(freq_hz: f64) -> String {
+    if freq_hz < 100.0 {
+        format!("{freq_hz:.2} Hz")
+    }
+    else if freq_hz < 1000.0 {
+        format!("{freq_hz:.1} Hz")
+    }
+    else if freq_hz < 10000.0 {
+        format!("{:.2} kHz", freq_hz / 1000.0)
+    }
+    else {
+        format!("{:.1} kHz", freq_hz / 1000.0)
     }
 }

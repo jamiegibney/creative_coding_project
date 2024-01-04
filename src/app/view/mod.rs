@@ -12,7 +12,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let window = app.main_window();
     let is_first_frame = frame.nth() == 0;
     if is_first_frame {
-        draw.background().color(GREEN);
+        draw.background().color(BLACK);
     }
 
     let line_weight = 2.0;
@@ -80,8 +80,9 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     outline_rect(&model.mask_rect, draw, 2.0);
     model.draw_mask_scan_line(draw);
 
-    model.draw_filter_line(draw);
-    model.draw_filter_nodes(draw);
+    model.eq_display.draw(app, draw, &frame);
+    // model.draw_filter_line(draw);
+    // model.draw_filter_nodes(draw);
     outline_rect(&model.spectrum_rect, draw, 2.0);
 
     // TODO

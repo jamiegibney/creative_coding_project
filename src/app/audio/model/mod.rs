@@ -169,7 +169,9 @@ impl AudioModel {
                 .set_block_size(self.params.mask_resolution.lr().value());
         }
 
-        self.processors.spectral_filter.set_mix(self.params.mask_mix.lr());
+        self.processors
+            .spectral_filter
+            .set_mix(self.params.mask_mix.lr());
     }
 
     pub fn update_spectral_filter_order(&mut self) -> bool {
@@ -252,6 +254,7 @@ impl AudioModel {
     pub fn update_post_fx_processors(&mut self) {
         let AudioProcessors {
             filter_low,  // arr
+            filter_peak, // arr
             filter_high, // arr
 
             stereo_delay,
@@ -427,6 +430,21 @@ impl AudioModel {
             filter_low[1].set_q(q);
         }
 
+        if self.params.peak_filter_cutoff.is_active() {
+            filter_peak[0].set_freq(self.params.peak_filter_cutoff.next());
+            filter_peak[1]
+                .set_freq(self.params.peak_filter_cutoff.current_value());
+        }
+        if self.params.peak_filter_q.is_active() {
+            filter_peak[0].set_q(self.params.peak_filter_q.next());
+            filter_peak[1].set_q(self.params.peak_filter_q.current_value());
+        }
+        if self.params.peak_filter_gain_db.is_active() {
+            filter_peak[0].set_gain(self.params.peak_filter_gain_db.next());
+            filter_peak[1]
+                .set_gain(self.params.peak_filter_gain_db.current_value());
+        }
+
         if self.params.high_filter_cutoff.is_active() {
             filter_high[0].set_freq(self.params.high_filter_cutoff.next());
             filter_high[1]
@@ -452,11 +470,12 @@ impl AudioModel {
 
     pub fn process_filters(&mut self, mut sample: f64, ch_idx: usize) -> f64 {
         sample = self.processors.filter_low[ch_idx].process(sample);
+        sample = self.processors.filter_peak[ch_idx].process(sample);
         sample = self.processors.filter_high[ch_idx].process(sample);
 
         // tone shaping filters
-        sample = self.processors.filter_hs_2[ch_idx].process(sample);
-        sample = self.processors.filter_peak[ch_idx].process(sample);
+        sample = self.processors.filter_hs_ts[ch_idx].process(sample);
+        sample = self.processors.filter_pk_ts[ch_idx].process(sample);
 
         sample
     }

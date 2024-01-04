@@ -46,6 +46,14 @@ pub struct AudioParams {
     /// Whether the low filter is a shelf filter or not.
     pub low_filter_is_shelf: Arc<AtomicBool>,
 
+    // PEAK
+    /// The cutoff of the filter in Hz.
+    pub peak_filter_cutoff: Arc<SmootherAtomic<f64>>,
+    /// The Q value of the peak filter.
+    pub peak_filter_q: Arc<SmootherAtomic<f64>>,
+    /// The gain value of the peak filter.
+    pub peak_filter_gain_db: Arc<SmootherAtomic<f64>>,
+
     /// The cutoff of the high-pass filter in Hz.
     pub high_filter_cutoff: Arc<SmootherAtomic<f64>>,
     /// The Q value of the high-pass filter.

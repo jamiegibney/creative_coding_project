@@ -376,7 +376,8 @@ impl TextSlider {
         self.raw_value
     }
 
-    /// Sets the output value of the `TextSlider`.
+    /// Sets the output value of the `TextSlider`. This will call any attached
+    /// callbacks.
     pub fn set_value(&mut self, value: f64) {
         let (min, max) = self.min_max();
         self.raw_value = normalize(value.clamp(min, max), min, max);

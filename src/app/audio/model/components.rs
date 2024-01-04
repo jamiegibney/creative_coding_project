@@ -11,11 +11,12 @@ use super::*;
 pub struct AudioProcessors {
     // FILTERS
     pub filter_low: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_peak: Box<[BiquadFilter; NUM_CHANNELS]>,
     pub filter_high: Box<[BiquadFilter; NUM_CHANNELS]>,
 
-    pub filter_peak: Box<[BiquadFilter; NUM_CHANNELS]>,
-    pub filter_hs_2: Box<[BiquadFilter; NUM_CHANNELS]>,
-    pub filter_peak_post: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_pk_ts: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_hs_ts: Box<[BiquadFilter; NUM_CHANNELS]>,
+    pub filter_peak_ts: Box<[BiquadFilter; NUM_CHANNELS]>,
 
     pub filter_comb: Box<[IirCombFilter; NUM_CHANNELS]>,
     pub delay: Box<[DryWet<Delay>]>,

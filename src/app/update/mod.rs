@@ -10,7 +10,6 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
 
     model.update_vectors(app);
     model.increment_mask_scan_line();
-    model.update_filters();
 
     // update the mask scan line based on mouse events
     if model.ui_components.mask_resolution.is_open()
@@ -81,6 +80,7 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
     model.pre_spectrum_analyzer.update();
     model.post_spectrum_analyzer.update();
 
-    model.update_filter_line();
-    model.update_filter_nodes(app);
+    model.update_eq(app);
+    // model.update_filter_line();
+    // model.update_filter_nodes(app);
 }

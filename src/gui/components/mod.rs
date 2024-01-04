@@ -3,12 +3,14 @@ pub mod label;
 pub mod menu;
 pub mod menu_trait;
 pub mod text_slider;
+pub mod eq_display;
 
 pub use button::Button;
 pub use label::Label;
 pub use menu::Menu;
 pub use menu_trait::MenuEnum;
 pub use text_slider::TextSlider;
+pub use eq_display::{EQDisplay, EQFilterParams};
 
 use super::colors::*;
 use super::*;
