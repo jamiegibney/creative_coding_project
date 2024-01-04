@@ -104,6 +104,7 @@ pub struct Model {
 
     /// A simple vector field for the resonator bank points.
     pub vectors_reso_bank: Vectors,
+    resonator_count_receiver: Receiver<()>,
     /// The voronoi generator for the resonator bank vector field.
     pub voronoi_reso_bank: VoronoiGPU,
     /// The line which shows which column is being used as a spectral mask.
@@ -198,7 +199,7 @@ impl Model {
 
         let (m_tl, m_br) = (mask_rect.top_left(), mask_rect.bottom_right());
 
-        let ui_components = UIComponents::new(&params)
+        let mut ui_components = UIComponents::new(&params)
             .attach_reso_bank_randomize_callback(move |_| {
                 reso_bank_reset_sender.send(());
             })
@@ -233,6 +234,16 @@ impl Model {
                 Arc::clone(&smooth_life),
                 &params,
             );
+
+        let rb_count = Arc::clone(&params.reso_bank_resonator_count);
+        let (resontor_count_sender, resonator_count_receiver) = unbounded();
+
+        ui_components
+            .reso_bank_resonator_count
+            .set_callback(move |_, val| {
+                rb_count.sr(val as u32);
+                resontor_count_sender.send(()).unwrap();
+            });
 
         let mut low_filter = BiquadFilter::new(sample_rate_ref.lr());
         low_filter.set_params(&BiquadParams {
@@ -308,6 +319,7 @@ impl Model {
 
             voronoi_reso_bank: VoronoiGPU::new(app, bank_rect),
             vectors_reso_bank,
+            resonator_count_receiver,
 
             low_filter,
             high_filter,
@@ -426,9 +438,11 @@ impl Model {
     }
 
     pub fn update_vectors(&mut self, app: &App) {
-        self.vectors_reso_bank.set_num_active_points(
-            self.ui_params.reso_bank_resonator_count.lr() as usize,
-        );
+        let reso_count = self.ui_params.reso_bank_resonator_count.lr() as usize;
+        if reso_count != self.vectors_reso_bank.num_active_points {
+            self.vectors_reso_bank.set_num_active_points(reso_count);
+        }
+
         self.vectors_reso_bank
             .set_friction(self.ui_params.reso_bank_field_friction.lr());
 
@@ -446,8 +460,13 @@ impl Model {
 
         self.reso_bank_data.publish();
 
-        self.voronoi_reso_bank
-            .copy_from_vectors(&self.vectors_reso_bank);
+        // this lazily updates the voronoi lines.
+        if self.reso_bank_needs_redraw() {
+            self.voronoi_reso_bank
+                .copy_from_vectors(&self.vectors_reso_bank);
+
+            self.voronoi_reso_bank.update(app, &self.input_data);
+        }
 
         if self.ui_components.reso_bank_scale.is_open()
             && self
@@ -817,6 +836,13 @@ impl Model {
     }
 
     pub fn reso_bank_needs_redraw(&self) -> bool {
+        if self.ui_components.reso_bank_scale.needs_redraw()
+            || self.vectors_reso_bank.can_mouse_interact
+            || self.resonator_count_receiver.try_recv().is_ok()
+        {
+            return true;
+        }
+
         for pt in self
             .vectors_reso_bank
             .points
@@ -835,7 +861,9 @@ impl Model {
         let UIComponents {
             mask_algorithm,
             mask_resolution,
-            smoothlife_resolution,
+            contour_count,
+            contour_speed,
+            contour_thickness,
             smoothlife_preset,
             spectrogram_resolution,
             spectrogram_view,
@@ -888,6 +916,45 @@ impl Model {
         if dist_type.needs_redraw() {
             let rect = dist_type.rect();
             draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+        }
+    }
+
+    pub fn redraw_filter_sliders(&self, draw: &Draw) {
+        let hf_changed = self.ui_components.high_filter_type.was_just_changed();
+        let lf_changed = self.ui_components.low_filter_type.was_just_changed();
+
+        if hf_changed {
+            let is_shelf = self.ui_components.high_filter_type.enabled();
+            let rect = self.ui_components.high_filter_gain.rect();
+            let h = rect.h();
+            draw.rect()
+                .xy(pt2(rect.x(), rect.y() + h * 0.5))
+                .wh(pt2(rect.w(), rect.h() * 2.0))
+                .color(BLACK);
+
+            if is_shelf {
+                self.ui_components.high_filter_gain.redraw_label(draw);
+            }
+            else {
+                self.ui_components.high_filter_q.redraw_label(draw);
+            }
+        }
+
+        if lf_changed {
+            let is_shelf = self.ui_components.low_filter_type.enabled();
+            let rect = self.ui_components.low_filter_gain.rect();
+            let h = rect.h();
+            draw.rect()
+                .xy(pt2(rect.x(), rect.y() + h * 0.5))
+                .wh(pt2(rect.w(), rect.h() * 2.0))
+                .color(BLACK);
+
+            if is_shelf {
+                self.ui_components.low_filter_gain.redraw_label(draw);
+            }
+            else {
+                self.ui_components.low_filter_q.redraw_label(draw);
+            }
         }
     }
 }

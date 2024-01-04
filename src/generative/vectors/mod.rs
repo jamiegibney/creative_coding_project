@@ -13,7 +13,7 @@ const MIN_START_VELOCITY: f32 = 1.5;
 #[derive(Debug, Clone)]
 pub struct Point {
     pub pos: Vec2,            // position of the point
-    pub vel: Vec2,                // velocity of the point - speed and direction
+    pub vel: Vec2,            // velocity of the point - speed and direction
     deceleration_factor: f32, // how much the point decelerates each frame
 }
 
@@ -208,8 +208,8 @@ impl UIDraw for Vectors {
                 self.can_mouse_interact = true;
             }
         }
-        else if input_data.is_left_clicked
-            && !self.rect.contains(input_data.mouse_pos)
+
+        if !self.rect.contains(input_data.mouse_pos)
             && self.clicked_idx.is_none()
         {
             self.can_mouse_interact = false;

@@ -81,8 +81,6 @@ pub fn update(app: &App, model: &mut Model, update: Update) {
     model.pre_spectrum_analyzer.borrow_mut().update();
     model.post_spectrum_analyzer.borrow_mut().update();
 
-    model.voronoi_reso_bank.update(app, &model.input_data);
-
     model.update_filter_line();
     model.update_filter_nodes(app);
 }

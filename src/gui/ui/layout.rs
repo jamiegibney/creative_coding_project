@@ -203,7 +203,7 @@ pub struct SpectrogramUILayout {
 impl Default for SpectrogramUILayout {
     fn default() -> Self {
         let label_rect =
-            Rect::from_xy_wh(pt2(-206.0, -12.0), pt2(120.0, MAIN_HEIGHT));
+            Rect::from_xy_wh(pt2(-206.0, -12.0), pt2(220.0, MAIN_HEIGHT));
 
         let vw_w = main_width_chars(8);
         let view_rect = Rect::from_xy_wh(

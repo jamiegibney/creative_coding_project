@@ -23,6 +23,7 @@ pub struct Button {
     enabled: bool,
     can_be_clicked: bool,
     pub needs_redraw: bool,
+    was_just_changed: bool,
 
     rect: Rect,
 
@@ -49,6 +50,8 @@ impl Button {
             enabled: false,
             can_be_clicked: false,
             needs_redraw: true,
+
+            was_just_changed: false,
 
             rect,
 
@@ -181,6 +184,12 @@ impl Button {
     pub fn set_callback<F: Fn(bool) + 'static>(&mut self, cb: F) {
         self.callback = Some(Box::new(cb));
     }
+
+    /// Returns `true` if the value of the button was just changed. Only applies to
+    /// toggleable button types.
+    pub fn was_just_changed(&self) -> bool {
+        self.was_just_changed
+    }
 }
 
 impl UIDraw for Button {
@@ -190,6 +199,7 @@ impl UIDraw for Button {
 
     fn update(&mut self, _: &App, input_data: &InputData) {
         self.needs_redraw = true;
+        self.was_just_changed = false;
         // should the button be updated?
         if !self.should_update(input_data) {
             self.can_be_clicked = false;
@@ -219,6 +229,8 @@ impl UIDraw for Button {
                 if let Some(cb) = &self.callback {
                     cb(self.enabled);
                 }
+
+                self.was_just_changed = true;
             }
             else if !left_clicked
                 && matches!(self.state, UIComponentState::Clicked)

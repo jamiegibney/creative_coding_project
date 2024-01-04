@@ -394,6 +394,19 @@ impl TextSlider {
         self.rect.contains(pos)
     }
 
+    pub fn redraw_label(&self, draw: &Draw) {
+        let h = self.rect.h();
+        let label_rect = self.rect.shift(pt2(0.0, h + h * 0.1));
+
+        if let Some(label) = self.label.as_ref() {
+            draw.text(label)
+                .xy(label_rect.xy())
+                .wh(label_rect.wh())
+                .color(LABEL)
+                .layout(&self.label_layout);
+        }
+    }
+
     fn reset_to_default(&mut self) {
         if let Some(default) = self.default_value {
             let (min, max) = self.min_max();
@@ -563,11 +576,13 @@ impl UIDraw for TextSlider {
         let value_rect = self.label.as_ref().map_or_else(
             || self.rect,
             |label| {
-                draw.text(label)
-                    .xy(label_rect.xy())
-                    .wh(label_rect.wh())
-                    .color(LABEL)
-                    .layout(&self.label_layout);
+                if frame.nth() == 0 {
+                    draw.text(label)
+                        .xy(label_rect.xy())
+                        .wh(label_rect.wh())
+                        .color(LABEL)
+                        .layout(&self.label_layout);
+                }
 
                 self.rect
             },

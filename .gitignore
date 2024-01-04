@@ -1,8 +1,6 @@
 /target
 .DS_Store
 Cargo.lock
-/docs/debug
-/docs/.rustc_info.json
-/docs/.rustdoc_fingerprint.json
 /bundles
 /flamegraph.svg
+/docs

@@ -12,27 +12,14 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let window = app.main_window();
     let is_first_frame = frame.nth() == 0;
     if is_first_frame {
-        draw.background().color(BLACK);
+        draw.background().color(GREEN);
     }
 
     let line_weight = 2.0;
     let bank_rect = &model.bank_rect;
 
     model.redraw_under_menus(draw, is_first_frame);
-
-    if model.reso_bank_needs_redraw()
-        || model.ui_components.reso_bank_scale.needs_redraw()
-        || model.vectors_reso_bank.can_mouse_interact
-    {
-        // println!("redrawing reso bank");
-        draw.rect()
-            .xy(bank_rect.xy())
-            .wh(bank_rect.wh())
-            .color(BLACK);
-        model.voronoi_reso_bank.draw(app, draw, &frame);
-        model.vectors_reso_bank.draw(app, draw, &frame);
-        outline_rect(bank_rect, draw, line_weight);
-    }
+    model.redraw_filter_sliders(draw);
 
     let spectrum_rect = model.spectrum_rect;
     draw.rect()
@@ -94,8 +81,22 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     model.draw_filter_nodes(draw);
     outline_rect(&model.spectrum_rect, draw, 2.0);
 
-    model.ui_components.draw(app, draw, &frame);
+    // TODO
+    // I tried to get this to draw lazily, but it seems as though
+    // the voronoi cells update one or two frames after the vectors.
+    // need to look into that further, but for now this just
+    // gets drawn every frame. the voronoi field does get updated
+    // lazily which is where the compute shader is dispatched, so
+    // at least there is some performance saving there.
+    draw.rect()
+        .xy(bank_rect.xy())
+        .wh(bank_rect.wh())
+        .color(BLACK);
+    model.voronoi_reso_bank.draw(app, draw, &frame);
+    model.vectors_reso_bank.draw(app, draw, &frame);
+    outline_rect(bank_rect, draw, line_weight);
 
+    model.ui_components.draw(app, draw, &frame);
 
     // if the frame fails to draw we'll just ignore it
     let _ = draw.to_frame(app, &frame);

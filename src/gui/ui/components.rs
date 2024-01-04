@@ -25,17 +25,17 @@ pub struct UIComponents {
 
     // ### Contour algorithm
     /// u32
-    contour_count: TextSlider,
+    pub contour_count: TextSlider,
     /// float
-    contour_thickness: TextSlider,
+    pub contour_thickness: TextSlider,
     /// float
-    contour_speed: TextSlider,
+    pub contour_speed: TextSlider,
 
     // ### Smooth life algorithm
     /// usize
     pub smoothlife_resolution: Menu<SmoothLifeSize>,
     /// float
-    smoothlife_speed: TextSlider,
+    pub smoothlife_speed: TextSlider,
     pub smoothlife_preset: Menu<SmoothLifePreset>,
 
     voronoi_cell_count: TextSlider,
@@ -79,7 +79,7 @@ pub struct UIComponents {
     // u32
     reso_bank_cell_count: TextSlider,
     // u32
-    reso_bank_resonator_count: TextSlider,
+    pub reso_bank_resonator_count: TextSlider,
     // f64
     reso_bank_field_friction: TextSlider,
 
@@ -647,6 +647,7 @@ impl UIComponents {
                     .with_output_range(8.0..=16.0)
                     .with_default_value(12.0)
                     .with_callback(move |_, value| {
+                        println!("hello mf");
                         cell_count.sr(value as u32);
                     })
             },
@@ -1318,22 +1319,40 @@ impl UIDraw for UIComponents {
 
         self.low_filter_type.update(app, input_data);
         self.low_filter_cutoff.update(app, input_data);
+        let just_changed = self.low_filter_type.was_just_changed();
 
         if self.low_filter_type.enabled() {
             self.low_filter_gain.update(app, input_data);
+
+            if just_changed {
+                self.low_filter_gain.needs_redraw = true;
+            }
         }
         else {
             self.low_filter_q.update(app, input_data);
+
+            if just_changed {
+                self.low_filter_q.needs_redraw = true;
+            }
         }
 
         self.high_filter_type.update(app, input_data);
         self.high_filter_cutoff.update(app, input_data);
+        let just_changed = self.high_filter_type.was_just_changed();
 
         if self.high_filter_type.enabled() {
             self.high_filter_gain.update(app, input_data);
+
+            if just_changed {
+                self.high_filter_gain.needs_redraw = true;
+            }
         }
         else {
             self.high_filter_q.update(app, input_data);
+
+            if just_changed {
+                self.high_filter_q.needs_redraw = true;
+            }
         }
 
         self.delay_time_ms.update(app, input_data);
@@ -1392,6 +1411,10 @@ impl UIDraw for UIComponents {
                 self.contour_count.draw(app, draw, frame);
                 self.contour_thickness.draw(app, draw, frame);
                 self.contour_speed.draw(app, draw, frame);
+
+                self.contour_count.redraw_label(draw);
+                self.contour_thickness.redraw_label(draw);
+                self.contour_speed.redraw_label(draw);
             }
             GenerativeAlgo::SmoothLife => {
                 // unused components
@@ -1404,6 +1427,10 @@ impl UIDraw for UIComponents {
                 self.voronoi_cell_speed.draw(app, draw, frame);
                 self.voronoi_border_weight.draw(app, draw, frame);
                 self.voronoi_cell_count.draw(app, draw, frame);
+
+                self.voronoi_cell_speed.redraw_label(draw);
+                self.voronoi_border_weight.redraw_label(draw);
+                self.voronoi_cell_count.redraw_label(draw);
             }
         }
         self.mask_algorithm.draw(app, draw, frame); // menu
