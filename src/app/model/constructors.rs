@@ -112,8 +112,8 @@ pub struct GuiElements {
 
     pub(super) vectors_reso_bank: Vectors,
 
-    pub(super) pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
-    pub(super) post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
+    pub(super) pre_spectrum_analyzer: SpectrumAnalyzer,
+    pub(super) post_spectrum_analyzer: SpectrumAnalyzer,
 
     pub(super) dsp_load: Option<String>,
 }
@@ -145,14 +145,12 @@ pub fn build_gui_elements(
 
     let line_weight = 2.0;
     let mut pre_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
+        SpectrumAnalyzer::new(pre_spectrum, spectrum_rect);
     pre_spectrum_analyzer
-        .borrow_mut()
         .set_line_color(pre_spectrum_line_color);
     let mut post_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
+        SpectrumAnalyzer::new(post_spectrum, spectrum_rect);
     post_spectrum_analyzer
-        .borrow_mut()
         .set_mesh_color(post_spectrum_mesh_color);
 
     GuiElements {

@@ -78,10 +78,8 @@ pub struct UIParams {
 
     /// The number of active resonators in the bank.
     pub reso_bank_resonator_count: Arc<AtomicU32>,
-    pub reso_bank_cell_count: Arc<AtomicU32>,
-    // pub reso_bank_cell_count_sender: ,
-    pub reso_bank_cell_jitter: Arc<AtomicF64>,
     /// The friction applied to each point in the vector field.
+
     pub reso_bank_field_friction: Arc<AtomicF64>,
 
     /// The dry/wet mix of the resonator bank.
@@ -187,8 +185,6 @@ impl Default for UIParams {
             reso_bank_quantize: Arc::new(AtomicBool::new(true)),
 
             reso_bank_resonator_count: Arc::new(AtomicU32::new(8)),
-            reso_bank_cell_count: Arc::new(AtomicU32::new(12)),
-            reso_bank_cell_jitter: Arc::new(AtomicF64::new(0.1)),
             reso_bank_field_friction: Arc::new(AtomicF64::new(0.5)),
 
             reso_bank_mix: smoother(1.0),

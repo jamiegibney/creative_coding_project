@@ -74,10 +74,6 @@ pub struct UIComponents {
     reso_bank_mix: TextSlider,
     pub exciter_osc: Menu<ExciterOscillator>,
 
-    // f64
-    reso_bank_cell_jitter: TextSlider,
-    // u32
-    reso_bank_cell_count: TextSlider,
     // u32
     pub reso_bank_resonator_count: TextSlider,
     // f64
@@ -635,35 +631,6 @@ impl UIComponents {
                     .with_default_value(8.0)
                     .with_callback(move |_, value| {
                         reso_count.sr(value as u32);
-                    })
-            },
-            reso_bank_cell_count: {
-                let cell_count = Arc::clone(&params.reso_bank_cell_count);
-                TextSlider::new(12.0, ui_layout.reso_bank.cell_count)
-                    .with_label("Cells")
-                    .with_label_layout(main_label_layout())
-                    .with_value_layout(main_value_layout())
-                    .with_integer_rounding()
-                    .with_output_range(8.0..=16.0)
-                    .with_default_value(12.0)
-                    .with_callback(move |_, value| {
-                        println!("hello mf");
-                        cell_count.sr(value as u32);
-                    })
-            },
-            reso_bank_cell_jitter: {
-                let cell_jitter = Arc::clone(&params.reso_bank_cell_jitter);
-                TextSlider::new(0.1, ui_layout.reso_bank.cell_jitter)
-                    .with_label("Jitter")
-                    .with_label_layout(Layout {
-                        justify: Justify::Left,
-                        ..main_label_layout()
-                    })
-                    .with_value_layout(main_value_layout())
-                    .with_default_value(0.1)
-                    .with_value_chars(4)
-                    .with_callback(move |_, value| {
-                        cell_jitter.sr(value);
                     })
             },
             reso_bank_field_friction: {
@@ -1308,8 +1275,6 @@ impl UIDraw for UIComponents {
         self.reso_bank_push.update(app, input_data);
 
         self.reso_bank_resonator_count.update(app, input_data);
-        // self.reso_bank_cell_count.update(app, input_data);
-        self.reso_bank_cell_jitter.update(app, input_data);
         self.reso_bank_field_friction.update(app, input_data);
         self.reso_bank_mix.update(app, input_data);
         self.exciter_osc.update(app, input_data);
@@ -1451,8 +1416,6 @@ impl UIDraw for UIComponents {
         self.reso_bank_scale.draw(app, draw, frame); // menu
 
         self.reso_bank_resonator_count.draw(app, draw, frame);
-        // self.reso_bank_cell_count.draw(app, draw, frame);
-        self.reso_bank_cell_jitter.draw(app, draw, frame);
         self.reso_bank_field_friction.draw(app, draw, frame);
 
         self.reso_bank_mix.draw(app, draw, frame);
@@ -1540,8 +1503,6 @@ impl UIDraw for UIComponents {
 
         self.reso_bank_resonator_count
             .force_redraw(app, draw, frame);
-        // self.reso_bank_cell_count.force_redraw(app, draw, frame);
-        self.reso_bank_cell_jitter.force_redraw(app, draw, frame);
         self.reso_bank_field_friction.force_redraw(app, draw, frame);
 
         self.reso_bank_mix.force_redraw(app, draw, frame);

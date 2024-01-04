@@ -74,9 +74,9 @@ pub struct Model {
 
     // GUI
     /// The pre-FX spectrogram.
-    pub pre_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
+    pub pre_spectrum_analyzer: SpectrumAnalyzer,
     /// The post-FX spectrogram.
-    pub post_spectrum_analyzer: RefCell<SpectrumAnalyzer>,
+    pub post_spectrum_analyzer: SpectrumAnalyzer,
 
     pub ui_components: UIComponents,
 

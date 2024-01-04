@@ -9,14 +9,18 @@ const MIN_FREQ: f64 = 25.0;
 const MAX_FREQ: f64 = 22_050.0;
 
 pub struct SpectrumAnalyzer {
+    /// The distance between each frequency bin.
     bin_step: f64,
 
     /// The spectral data received from a corresponding `SpectrumInput`.
     spectrum: SpectrumOutput,
 
+    /// Buffers of the previously-published spectrograms, which get averaged.
     spectrum_averaging: Vec<Vec<f64>>,
+    /// Write pos for current input spectrum.
     averaging_write_pos: usize,
 
+    /// The currently-averaged spectrum data.
     averaged_data: Vec<f64>,
 
     /// All the interpolated points used for the spectrum.
@@ -27,14 +31,21 @@ pub struct SpectrumAnalyzer {
 
     /// The bounding box of the analyzer.
     rect: Rect,
+    /// Color of the line — this will avoid drawing the line if set to `None`.
     line_color: Option<Rgba>,
+    /// Weight of the line, if drawn.
     line_weight: f32,
+    /// Color of the mesh — this will avoid drawing the mesh if set to `None`.
     mesh_color: Option<Rgba>,
 
     /// A filter for smoothing out the spectrum line.
     filter: FirstOrderFilter,
 
+    /// All the vertices of the mesh.
     mesh_points: Vec<DVec2>,
+    /// All the indices of the mesh.
+    mesh_indices: Vec<usize>,
+    /// The indices used to decimate the spectrum line.
     indices: Vec<usize>,
 }
 
@@ -71,7 +82,6 @@ impl SpectrumAnalyzer {
             interpolated: vec.clone(),
 
             spectrum_line: vec.iter().map(|p| DVec2::from_slice(p)).collect(),
-            indices: (0..vec.len()).collect(),
             rect,
             line_color: None,
             line_weight: 2.0,
@@ -88,6 +98,8 @@ impl SpectrumAnalyzer {
 
                 v
             },
+            mesh_indices: (0..vec.len()).collect(),
+            indices: (0..vec.len()).collect(),
 
             filter,
         }
@@ -110,51 +122,15 @@ impl SpectrumAnalyzer {
         self.mesh_color = Some(color);
     }
 
-    fn draw_line(&mut self, draw: &Draw, color: Rgba, weight: f32) {
-        draw.polyline().weight(weight).points_colored(
-            self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
-        );
-    }
-
-    fn draw_mesh(&mut self, draw: &Draw, color: Rgba) {
-        let br_point = self.rect.bottom_right().as_f64();
-
-        unsafe {
-            let ptr = self.mesh_points.as_mut_ptr();
-            let len = self.spectrum_line.len();
-
-            // we can then truncate the length of the mesh buffer to ignore decimated points.
-            self.mesh_points.set_len(self.spectrum_line.len() + 2);
-
-            // we always ignore the first point as it is set to the bottom-left point.
-            copy_nonoverlapping(self.spectrum_line.as_ptr(), ptr.add(1), len);
-            // but we always need to add the bottom-right point here, as we don't know
-            // how many points were decimated.
-            copy_nonoverlapping(addr_of!(br_point), ptr.add(len + 1), 1);
+    pub fn update(&mut self) {
+        if self.line_color.is_none() && self.mesh_color.is_none() {
+            return;
         }
 
-        // now we can get the triangulation indices
-        let indices = earcutr::earcut(
-            &interleave_dvec2_to_f64(&self.mesh_points),
-            &[],
-            2,
-        )
-        .unwrap();
-
-        // and draw the mesh :D
-        draw.mesh().indexed_colored(
-            self.mesh_points
-                .iter()
-                .map(|x| (x.extend(0.0).as_f32(), color)),
-            indices,
-        );
-    }
-
-    fn compute_spectrum(&mut self) {
         let width = self.width();
         let left = self.rect.left() as f64;
 
-        // first, average the spectrum data...
+        // first, average the spectrum data... (and check if a new spectrum was submitted)
         if !self.average_spectrum_data() {
             return;
         }
@@ -219,6 +195,49 @@ impl SpectrumAnalyzer {
         }
 
         self.indices.clear();
+
+        self.compute_mesh();
+    }
+
+    fn draw_line(&self, draw: &Draw, color: Rgba, weight: f32) {
+        draw.polyline().weight(weight).points_colored(
+            self.spectrum_line.iter().map(|x| (x.as_f32(), color)),
+        );
+    }
+
+    fn compute_mesh(&mut self) {
+        let br_point = self.rect.bottom_right().as_f64();
+
+        unsafe {
+            let ptr = self.mesh_points.as_mut_ptr();
+            let len = self.spectrum_line.len();
+
+            // we can then truncate the length of the mesh buffer to ignore decimated points.
+            self.mesh_points.set_len(self.spectrum_line.len() + 2);
+
+            // we always ignore the first point as it is set to the bottom-left point.
+            copy_nonoverlapping(self.spectrum_line.as_ptr(), ptr.add(1), len);
+            // but we always need to add the bottom-right point here, as we don't know
+            // how many points were decimated.
+            copy_nonoverlapping(addr_of!(br_point), ptr.add(len + 1), 1);
+        }
+
+        // now we can get the triangulation indices
+        self.mesh_indices = earcutr::earcut(
+            &interleave_dvec2_to_f64(&self.mesh_points),
+            &[],
+            2,
+        )
+        .unwrap();
+    }
+
+    fn draw_mesh(&self, draw: &Draw, color: Rgba) {
+        draw.mesh().indexed_colored(
+            self.mesh_points
+                .iter()
+                .map(|x| (x.extend(0.0).as_f32(), color)),
+            self.mesh_indices.iter().copied(),
+        );
     }
 
     /// Returns `true` if a new spectrum was published by the audio thread, and `false` if not.
@@ -279,20 +298,24 @@ impl SpectrumAnalyzer {
 
         (gain * 3.0 + bottom - bottom * 0.3).clamp(bottom, top)
     }
+}
 
-    pub fn update(&mut self) {
-        if self.line_color.is_some() || self.mesh_color.is_some() {
-            self.compute_spectrum();
-        }
+impl UIDraw for SpectrumAnalyzer {
+    fn update(&mut self, app: &App, input_data: &InputData) {
+        self.update();
     }
 
-    pub fn draw(&mut self, draw: &Draw) {
+    fn draw(&self, app: &App, draw: &Draw, frame: &Frame) {
         if let Some(color) = self.mesh_color {
             self.draw_mesh(draw, color);
         }
         if let Some(color) = self.line_color {
             self.draw_line(draw, color, self.line_weight);
         }
+    }
+
+    fn rect(&self) -> &Rect {
+        &self.rect
     }
 }
 

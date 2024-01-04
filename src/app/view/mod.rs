@@ -35,15 +35,18 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PreOnly
     ) {
-        let mut pre_spectrum =
-            model.pre_spectrum_analyzer.borrow_mut().draw(draw);
+        model
+            .pre_spectrum_analyzer
+            .draw(app, draw, &frame);
     }
 
     if matches!(
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PostOnly
     ) {
-        model.post_spectrum_analyzer.borrow_mut().draw(draw);
+        model
+            .post_spectrum_analyzer
+            .draw(app, draw, &frame);
     }
 
     let mask_rect = model.mask_rect;
