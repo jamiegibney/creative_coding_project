@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/gui/spectrum/analyzer.rs`."><title>analyzer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../creative_coding_project/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/gui/spectrum/analyzer.rs`."><title>analyzer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -285,7 +285,66 @@
 <a href="#285" id="285">285</a>
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{process::RESULT_BUFFER_SIZE, <span class="kw-2">*</span>};
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Spectrogram GUI component.
+
+</span><span class="kw">use super</span>::{process::RESULT_BUFFER_SIZE, <span class="kw-2">*</span>};
 <span class="kw">use crate</span>::{dsp::<span class="kw-2">*</span>, gui::rdp::rdp_in_place, prelude::<span class="kw-2">*</span>};
 <span class="kw">use </span>nannou::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>std::ptr::{addr_of, copy_nonoverlapping};
@@ -296,15 +355,19 @@
 <span class="kw">const </span>MAX_FREQ: f64 = <span class="number">22_050.0</span>;
 
 <span class="kw">pub struct </span>SpectrumAnalyzer {
-    bin_step: f64,
+    <span class="doccomment">/// The distance between each frequency bin.
+    </span>bin_step: f64,
 
     <span class="doccomment">/// The spectral data received from a corresponding `SpectrumInput`.
     </span>spectrum: SpectrumOutput,
 
-    spectrum_averaging: Vec&lt;Vec&lt;f64&gt;&gt;,
-    averaging_write_pos: usize,
+    <span class="doccomment">/// Buffers of the previously-published spectrograms, which get averaged.
+    </span>spectrum_averaging: Vec&lt;Vec&lt;f64&gt;&gt;,
+    <span class="doccomment">/// Write pos for current input spectrum.
+    </span>averaging_write_pos: usize,
 
-    averaged_data: Vec&lt;f64&gt;,
+    <span class="doccomment">/// The currently-averaged spectrum data.
+    </span>averaged_data: Vec&lt;f64&gt;,
 
     <span class="doccomment">/// All the interpolated points used for the spectrum.
     </span>interpolated: Vec&lt;[f64; <span class="number">2</span>]&gt;,
@@ -314,12 +377,22 @@
 
     <span class="doccomment">/// The bounding box of the analyzer.
     </span>rect: Rect,
+    <span class="doccomment">/// Color of the line — this will avoid drawing the line if set to `None`.
+    </span>line_color: <span class="prelude-ty">Option</span>&lt;Rgba&gt;,
+    <span class="doccomment">/// Weight of the line, if drawn.
+    </span>line_weight: f32,
+    <span class="doccomment">/// Color of the mesh — this will avoid drawing the mesh if set to `None`.
+    </span>mesh_color: <span class="prelude-ty">Option</span>&lt;Rgba&gt;,
 
     <span class="doccomment">/// A filter for smoothing out the spectrum line.
     </span>filter: FirstOrderFilter,
 
-    mesh_points: Vec&lt;DVec2&gt;,
-    indices: Vec&lt;usize&gt;,
+    <span class="doccomment">/// All the vertices of the mesh.
+    </span>mesh_points: Vec&lt;DVec2&gt;,
+    <span class="doccomment">/// All the indices of the mesh.
+    </span>mesh_indices: Vec&lt;usize&gt;,
+    <span class="doccomment">/// The indices used to decimate the spectrum line.
+    </span>indices: Vec&lt;usize&gt;,
 }
 
 <span class="kw">impl </span>SpectrumAnalyzer {
@@ -342,7 +415,10 @@
         <span class="self">Self </span>{
             spectrum,
 
-            spectrum_averaging: <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="number">0.0</span>; RESULT_BUFFER_SIZE]; NUM_SPECTRUM_AVERAGES],
+            spectrum_averaging: <span class="macro">vec!</span>[
+                <span class="macro">vec!</span>[<span class="number">0.0</span>; RESULT_BUFFER_SIZE];
+                NUM_SPECTRUM_AVERAGES
+            ],
             averaging_write_pos: <span class="number">0</span>,
 
             averaged_data: <span class="macro">vec!</span>[<span class="number">0.0</span>; RESULT_BUFFER_SIZE],
@@ -352,11 +428,14 @@
             interpolated: vec.clone(),
 
             spectrum_line: vec.iter().map(|p| DVec2::from_slice(p)).collect(),
-            indices: (<span class="number">0</span>..vec.len()).collect(),
             rect,
+            line_color: <span class="prelude-val">None</span>,
+            line_weight: <span class="number">2.0</span>,
+            mesh_color: <span class="prelude-val">None</span>,
 
             mesh_points: {
-                <span class="kw">let </span><span class="kw-2">mut </span>v: Vec&lt;DVec2&gt; = vec.iter().map(|p| DVec2::from_slice(p)).collect();
+                <span class="kw">let </span><span class="kw-2">mut </span>v: Vec&lt;DVec2&gt; =
+                    vec.iter().map(|p| DVec2::from_slice(p)).collect();
                 <span class="comment">// add the extra elements which allow the mesh to be pinned to the
                 // bottom corners.
                 </span>v.push(rect.bottom_right().as_f64());
@@ -365,6 +444,8 @@
 
                 v
             },
+            mesh_indices: (<span class="number">0</span>..vec.len()).collect(),
+            indices: (<span class="number">0</span>..vec.len()).collect(),
 
             filter,
         }
@@ -375,68 +456,30 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>.rect
     }
 
-    <span class="doccomment">/// Draws the spectrum. If `None` is passed to either `line_color` or `mesh_color`, those
-    /// parts of the spectum will not be computed, saving processing time. If both are `None`
-    /// (for some reason), then the spectrum visual is not computed.
-    </span><span class="kw">pub fn </span>draw(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        draw: <span class="kw-2">&amp;</span>Draw,
-        line_color: <span class="prelude-ty">Option</span>&lt;Rgba&gt;,
-        line_weight: f32,
-        mesh_color: <span class="prelude-ty">Option</span>&lt;Rgba&gt;,
-    ) {
-        <span class="kw">if </span>line_color.is_some() || mesh_color.is_some() {
-            <span class="self">self</span>.compute_spectrum();
-        }
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(color) = mesh_color {
-            <span class="self">self</span>.draw_mesh(draw, color);
-        }
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(color) = line_color {
-            <span class="self">self</span>.draw_line(draw, color, line_weight);
-        }
+    <span class="kw">pub fn </span>set_line_weight(<span class="kw-2">&amp;mut </span><span class="self">self</span>, weight: f32) {
+        <span class="self">self</span>.line_weight = weight;
     }
 
-    <span class="kw">fn </span>draw_line(<span class="kw-2">&amp;mut </span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw, color: Rgba, weight: f32) {
-        draw.polyline()
-            .weight(weight)
-            .points_colored(<span class="self">self</span>.spectrum_line.iter().map(|x| (x.as_f32(), color)));
+    <span class="kw">pub fn </span>set_line_color(<span class="kw-2">&amp;mut </span><span class="self">self</span>, color: Rgba) {
+        <span class="self">self</span>.line_color = <span class="prelude-val">Some</span>(color);
     }
 
-    <span class="kw">fn </span>draw_mesh(<span class="kw-2">&amp;mut </span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw, color: Rgba) {
-        <span class="kw">let </span>br_point = <span class="self">self</span>.rect.bottom_right().as_f64();
+    <span class="kw">pub fn </span>set_mesh_color(<span class="kw-2">&amp;mut </span><span class="self">self</span>, color: Rgba) {
+        <span class="self">self</span>.mesh_color = <span class="prelude-val">Some</span>(color);
+    }
 
-        <span class="kw">unsafe </span>{
-            <span class="kw">let </span>ptr = <span class="self">self</span>.mesh_points.as_mut_ptr();
-            <span class="kw">let </span>len = <span class="self">self</span>.spectrum_line.len();
-
-            <span class="comment">// we can then truncate the length of the mesh buffer to ignore decimated points.
-            </span><span class="self">self</span>.mesh_points.set_len(<span class="self">self</span>.spectrum_line.len() + <span class="number">2</span>);
-
-            <span class="comment">// we always ignore the first point as it is set to the bottom-left point.
-            </span>copy_nonoverlapping(<span class="self">self</span>.spectrum_line.as_ptr(), ptr.add(<span class="number">1</span>), len);
-            <span class="comment">// but we always need to add the bottom-right point here, as we don&#39;t know
-            // how many points were decimated.
-            </span>copy_nonoverlapping(<span class="macro">addr_of!</span>(br_point), ptr.add(len + <span class="number">1</span>), <span class="number">1</span>);
+    <span class="kw">pub fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">if </span><span class="self">self</span>.line_color.is_none() &amp;&amp; <span class="self">self</span>.mesh_color.is_none() {
+            <span class="kw">return</span>;
         }
 
-        <span class="comment">// now we can get the triangulation indices
-        </span><span class="kw">let </span>indices = earcutr::earcut(<span class="kw-2">&amp;</span>interleave_dvec2_to_f64(<span class="kw-2">&amp;</span><span class="self">self</span>.mesh_points), <span class="kw-2">&amp;</span>[], <span class="number">2</span>).unwrap();
-
-        <span class="comment">// and draw the mesh :D
-        </span>draw.mesh().indexed_colored(
-            <span class="self">self</span>.mesh_points
-                .iter()
-                .map(|x| (x.extend(<span class="number">0.0</span>).as_f32(), color)),
-            indices,
-        );
-    }
-
-    <span class="kw">fn </span>compute_spectrum(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>width = <span class="self">self</span>.width();
         <span class="kw">let </span>left = <span class="self">self</span>.rect.left() <span class="kw">as </span>f64;
 
-        <span class="comment">// first, average the spectrum data...
-        </span><span class="self">self</span>.average_spectrum_data();
+        <span class="comment">// first, average the spectrum data... (and check if a new spectrum was submitted)
+        </span><span class="kw">if </span>!<span class="self">self</span>.average_spectrum_data() {
+            <span class="kw">return</span>;
+        }
 
         <span class="comment">// then get an interpolated magnitude value for each point along the curve.
         </span><span class="kw">for </span>(i, pt) <span class="kw">in </span><span class="self">self</span>.interpolated.iter_mut().enumerate() {
@@ -444,7 +487,8 @@
             </span><span class="kw">let </span>x = (i <span class="kw">as </span>f64 / width).mul_add(width, left);
 
             <span class="comment">// get the frequency bin index and its interpolation value
-            </span><span class="kw">let </span>(idx, interp) = <span class="self">Self</span>::bin_idx_t(xpos_to_freq(<span class="kw-2">&amp;</span><span class="self">self</span>.rect, x), <span class="self">self</span>.bin_step);
+            </span><span class="kw">let </span>(idx, interp) =
+                <span class="self">Self</span>::bin_idx_t(xpos_to_freq(<span class="kw-2">&amp;</span><span class="self">self</span>.rect, x), <span class="self">self</span>.bin_step);
 
             <span class="comment">// points outside of the working range are set to -inf dB
             </span><span class="kw">if </span>!(<span class="number">1</span>..<span class="self">self</span>.averaged_data.len() - <span class="number">2</span>).contains(<span class="kw-2">&amp;</span>idx) {
@@ -497,9 +541,57 @@
         }
 
         <span class="self">self</span>.indices.clear();
+
+        <span class="self">self</span>.compute_mesh();
     }
 
-    <span class="kw">fn </span>average_spectrum_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="kw">fn </span>draw_line(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw, color: Rgba, weight: f32) {
+        draw.polyline().weight(weight).points_colored(
+            <span class="self">self</span>.spectrum_line.iter().map(|x| (x.as_f32(), color)),
+        );
+    }
+
+    <span class="kw">fn </span>compute_mesh(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span>br_point = <span class="self">self</span>.rect.bottom_right().as_f64();
+
+        <span class="kw">unsafe </span>{
+            <span class="kw">let </span>ptr = <span class="self">self</span>.mesh_points.as_mut_ptr();
+            <span class="kw">let </span>len = <span class="self">self</span>.spectrum_line.len();
+
+            <span class="comment">// we can then truncate the length of the mesh buffer to ignore decimated points.
+            </span><span class="self">self</span>.mesh_points.set_len(<span class="self">self</span>.spectrum_line.len() + <span class="number">2</span>);
+
+            <span class="comment">// we always ignore the first point as it is set to the bottom-left point.
+            </span>copy_nonoverlapping(<span class="self">self</span>.spectrum_line.as_ptr(), ptr.add(<span class="number">1</span>), len);
+            <span class="comment">// but we always need to add the bottom-right point here, as we don&#39;t know
+            // how many points were decimated.
+            </span>copy_nonoverlapping(<span class="macro">addr_of!</span>(br_point), ptr.add(len + <span class="number">1</span>), <span class="number">1</span>);
+        }
+
+        <span class="comment">// now we can get the triangulation indices
+        </span><span class="self">self</span>.mesh_indices = earcutr::earcut(
+            <span class="kw-2">&amp;</span>interleave_dvec2_to_f64(<span class="kw-2">&amp;</span><span class="self">self</span>.mesh_points),
+            <span class="kw-2">&amp;</span>[],
+            <span class="number">2</span>,
+        )
+        .unwrap();
+    }
+
+    <span class="kw">fn </span>draw_mesh(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw, color: Rgba) {
+        draw.mesh().indexed_colored(
+            <span class="self">self</span>.mesh_points
+                .iter()
+                .map(|x| (x.extend(<span class="number">0.0</span>).as_f32(), color)),
+            <span class="self">self</span>.mesh_indices.iter().copied(),
+        );
+    }
+
+    <span class="doccomment">/// Returns `true` if a new spectrum was published by the audio thread, and `false` if not.
+    </span><span class="kw">fn </span>average_spectrum_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">if </span>!<span class="self">self</span>.spectrum.update() {
+            <span class="kw">return </span><span class="bool-val">false</span>;
+        }
+
         <span class="comment">// copy the new set of magnitudes to the averaging buffers
         </span><span class="kw">let </span>mags = <span class="self">self</span>.spectrum.read();
         <span class="self">self</span>.spectrum_averaging[<span class="self">self</span>.averaging_write_pos].copy_from_slice(mags);
@@ -522,10 +614,13 @@
                     .sum(),
             );
         }
-    }
+
+        <span class="bool-val">true
+    </span>}
 
     <span class="kw">fn </span>increment_averaging_pos(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.averaging_write_pos = (<span class="self">self</span>.averaging_write_pos + <span class="number">1</span>) % NUM_SPECTRUM_AVERAGES;
+        <span class="self">self</span>.averaging_write_pos =
+            (<span class="self">self</span>.averaging_write_pos + <span class="number">1</span>) % NUM_SPECTRUM_AVERAGES;
     }
 
     <span class="kw">fn </span>bin_idx_t(freq: f64, step: f64) -&gt; (usize, f64) {
@@ -548,6 +643,25 @@
         <span class="kw">let </span>top = <span class="self">self</span>.rect.top() <span class="kw">as </span>f64;
 
         (gain * <span class="number">3.0 </span>+ bottom - bottom * <span class="number">0.3</span>).clamp(bottom, top)
+    }
+}
+
+<span class="kw">impl </span>UIDraw <span class="kw">for </span>SpectrumAnalyzer {
+    <span class="kw">fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App, input_data: <span class="kw-2">&amp;</span>InputData) {
+        <span class="self">self</span>.update();
+    }
+
+    <span class="kw">fn </span>draw(<span class="kw-2">&amp;</span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App, draw: <span class="kw-2">&amp;</span>Draw, frame: <span class="kw-2">&amp;</span>Frame) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(color) = <span class="self">self</span>.mesh_color {
+            <span class="self">self</span>.draw_mesh(draw, color);
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(color) = <span class="self">self</span>.line_color {
+            <span class="self">self</span>.draw_line(draw, color, <span class="self">self</span>.line_weight);
+        }
+    }
+
+    <span class="kw">fn </span>rect(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Rect {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.rect
     }
 }
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/app/model/constructors.rs`."><title>constructors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../creative_coding_project/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/app/model/constructors.rs`."><title>constructors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -191,7 +191,15 @@
 <a href="#191" id="191">191</a>
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::audio_constructor::build_audio_model;
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! App constructors.
+
+</span><span class="kw">use </span><span class="kw">super</span>::audio_constructor::build_audio_model;
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::app::audio::audio_constructor::MAX_NUM_RESONATORS;
 <span class="kw">use </span><span class="kw">crate</span>::dsp::ResoBankData;
@@ -301,14 +309,12 @@
     <span class="kw">pub</span>(<span class="kw">super</span>) contours: ContoursGPU,
     <span class="kw">pub</span>(<span class="kw">super</span>) smooth_life: SmoothLifeGPU,
     <span class="kw">pub</span>(<span class="kw">super</span>) voronoi_mask: VoronoiGPU,
-    <span class="kw">pub</span>(<span class="kw">super</span>) voronoi_vectors: Vectors,
+    <span class="kw">pub</span>(<span class="kw">super</span>) voronoi_vectors: VectorField,
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) vectors_reso_bank: Vectors,
+    <span class="kw">pub</span>(<span class="kw">super</span>) vectors_reso_bank: VectorField,
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) pre_spectrum_analyzer: RefCell&lt;SpectrumAnalyzer&gt;,
-    <span class="kw">pub</span>(<span class="kw">super</span>) post_spectrum_analyzer: RefCell&lt;SpectrumAnalyzer&gt;,
-
-    <span class="kw">pub</span>(<span class="kw">super</span>) dsp_load: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) pre_spectrum_analyzer: SpectrumAnalyzer,
+    <span class="kw">pub</span>(<span class="kw">super</span>) post_spectrum_analyzer: SpectrumAnalyzer,
 }
 
 <span class="kw">pub fn </span>build_gui_elements(
@@ -333,10 +339,18 @@
     <span class="kw">let </span>spectrum_rect =
         Rect::from_corners(pt2(-<span class="number">540.0</span>, -<span class="number">310.0</span>), pt2(<span class="number">128.0</span>, -<span class="number">40.0</span>));
 
-    <span class="kw">let </span>pre_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(pre_spectrum, spectrum_rect));
-    <span class="kw">let </span>post_spectrum_analyzer =
-        RefCell::new(SpectrumAnalyzer::new(post_spectrum, spectrum_rect));
+    <span class="kw">let </span>pre_spectrum_line_color = Rgba::new(<span class="number">0.2</span>, <span class="number">0.2</span>, <span class="number">0.2</span>, <span class="number">1.0</span>);
+    <span class="kw">let </span>post_spectrum_mesh_color = Rgba::new(<span class="number">0.9</span>, <span class="number">0.4</span>, <span class="number">0.0</span>, <span class="number">0.3</span>);
+
+    <span class="kw">let </span>line_weight = <span class="number">2.0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>pre_spectrum_analyzer =
+        SpectrumAnalyzer::new(pre_spectrum, spectrum_rect);
+    pre_spectrum_analyzer
+        .set_line_color(pre_spectrum_line_color);
+    <span class="kw">let </span><span class="kw-2">mut </span>post_spectrum_analyzer =
+        SpectrumAnalyzer::new(post_spectrum, spectrum_rect);
+    post_spectrum_analyzer
+        .set_mesh_color(post_spectrum_mesh_color);
 
     GuiElements {
         bank_rect,
@@ -356,17 +370,15 @@
             .with_contour_range(<span class="number">0.0</span>..=(params.contour_thickness.lr() <span class="kw">as </span>f32)),
         smooth_life: SmoothLifeGPU::new(app, mask_rect),
         voronoi_mask: VoronoiGPU::new(app, mask_rect),
-        voronoi_vectors: Vectors::new(MAX_NUM_RESONATORS, mask_rect)
+        voronoi_vectors: VectorField::new(MAX_NUM_RESONATORS, mask_rect)
             .with_point_radius(<span class="number">5.0</span>),
 
-        vectors_reso_bank: Vectors::new(MAX_NUM_RESONATORS, bank_rect)
+        vectors_reso_bank: VectorField::new(MAX_NUM_RESONATORS, bank_rect)
             .with_point_radius(<span class="number">5.0</span>)
             .with_point_color(Rgba::new(<span class="number">0.9</span>, <span class="number">0.4</span>, <span class="number">0.0</span>, <span class="number">0.6</span>)),
 
         pre_spectrum_analyzer,
         post_spectrum_analyzer,
-
-        dsp_load: <span class="prelude-val">None</span>,
     }
 }
 

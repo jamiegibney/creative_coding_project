@@ -668,6 +668,12 @@ impl Model {
         if dist_type.needs_redraw() {
             let rect = dist_type.rect();
             draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+            // draw behind the feedback label, which also gets redrawn and is slightly
+            // outside of the menu rect
+            draw.rect()
+                .xy(pt2(rect.x() - 40.0, rect.y() - 45.0))
+                .wh(pt2(5.0, 20.0))
+                .color(BLACK);
         }
     }
 

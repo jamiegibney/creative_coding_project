@@ -5,6 +5,7 @@ use nannou::geom::{path, Path};
 
 use super::*;
 
+/// The app's view callback (AKA "draw loop").
 pub fn view(app: &App, model: &Model, frame: Frame) {
     if !model.input_data.is_win_focussed {
         return;
@@ -37,18 +38,14 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PreOnly
     ) {
-        model
-            .pre_spectrum_analyzer
-            .draw(app, draw, &frame);
+        model.pre_spectrum_analyzer.draw(app, draw, &frame);
     }
 
     if matches!(
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PostOnly
     ) {
-        model
-            .post_spectrum_analyzer
-            .draw(app, draw, &frame);
+        model.post_spectrum_analyzer.draw(app, draw, &frame);
     }
 
     let mask_rect = model.mask_rect;
@@ -98,7 +95,9 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         .xy(bank_rect.xy())
         .wh(bank_rect.wh())
         .color(BLACK);
-    model.voronoi_reso_bank.draw(app, draw, &frame);
+    if model.ui_params.reso_bank_resonator_count.lr() > 1 {
+        model.voronoi_reso_bank.draw(app, draw, &frame);
+    }
     model.vectors_reso_bank.draw(app, draw, &frame);
     outline_rect(bank_rect, draw, line_weight);
 

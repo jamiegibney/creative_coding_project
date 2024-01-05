@@ -1464,8 +1464,11 @@ impl UIDraw for UIComponents {
 
         self.reso_bank_resonator_count.draw(app, draw, frame);
         self.reso_bank_field_friction.draw(app, draw, frame);
-
         self.reso_bank_mix.draw(app, draw, frame);
+
+        if self.exciter_osc.needs_redraw() {
+            self.spectrogram_label.draw(app, draw, frame);
+        }
         self.exciter_osc.draw(app, draw, frame);
 
         self.low_filter_type.draw(app, draw, frame);
@@ -1478,6 +1481,9 @@ impl UIDraw for UIComponents {
         self.delay_mix.draw(app, draw, frame);
         self.delay_is_ping_pong.draw(app, draw, frame);
 
+        if self.dist_type.needs_redraw() {
+            self.delay_feedback.redraw_label(draw);
+        }
         self.dist_type.draw(app, draw, frame); // menu
 
         self.comp_thresh.draw(app, draw, frame);

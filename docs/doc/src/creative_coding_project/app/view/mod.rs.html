@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/app/view/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../creative_coding_project/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/app/view/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -113,7 +113,12 @@
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
-</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{gui::colors::<span class="kw-2">*</span>, prelude::xfer::s_curve};
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! The view callback, i.e. &quot;draw loop&quot;.
+
+</span><span class="kw">use crate</span>::{gui::colors::<span class="kw-2">*</span>, prelude::xfer::s_curve};
 <span class="kw">use </span>nannou::geom::{path, Path};
 
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -125,22 +130,22 @@
 
     <span class="kw">let </span>draw = <span class="kw-2">&amp;</span>app.draw();
     <span class="kw">let </span>window = app.main_window();
-    draw.background().color(BLACK);
-
-    <span class="kw">let </span>V2 { x: _width, y: _height } = WINDOW_SIZE;
-
-    <span class="kw">let </span>bank_rect = <span class="kw-2">&amp;</span>model.bank_rect;
-    model.voronoi_reso_bank.draw(app, draw, <span class="kw-2">&amp;</span>frame);
-    model.vectors_reso_bank.draw(app, draw, <span class="kw-2">&amp;</span>frame);
+    <span class="kw">let </span>is_first_frame = frame.nth() == <span class="number">0</span>;
+    <span class="kw">if </span>is_first_frame {
+        draw.background().color(BLACK);
+    }
 
     <span class="kw">let </span>line_weight = <span class="number">2.0</span>;
+    <span class="kw">let </span>bank_rect = <span class="kw-2">&amp;</span>model.bank_rect;
 
-    outline_rect(bank_rect, draw, line_weight);
+    model.redraw_under_menus(draw, is_first_frame);
+    model.redraw_filter_sliders(draw);
 
-    <span class="comment">// let pre_spectrum_mesh_color = Rgba::new(0.8, 0.8, 0.8, 1.0);
-    </span><span class="kw">let </span>pre_spectrum_mesh_color = Rgba::new(<span class="number">0.2</span>, <span class="number">0.2</span>, <span class="number">0.2</span>, <span class="number">1.0</span>);
-    <span class="comment">// let post_spectrum_line_color = Rgba::new(1.0, 1.0, 1.0, 1.0);
-    </span><span class="kw">let </span>post_spectrum_mesh_color = Rgba::new(<span class="number">0.9</span>, <span class="number">0.4</span>, <span class="number">0.0</span>, <span class="number">0.3</span>);
+    <span class="kw">let </span>spectrum_rect = model.spectrum_rect;
+    draw.rect()
+        .xy(spectrum_rect.xy())
+        .wh(spectrum_rect.wh())
+        .color(BLACK);
 
     model.draw_log_lines(draw);
 
@@ -150,45 +155,41 @@
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PreOnly
     ) {
-        <span class="kw">let </span><span class="kw-2">mut </span>pre_spectrum = model.pre_spectrum_analyzer.borrow_mut();
-        <span class="kw">let </span>spectrum_rect = pre_spectrum.rect();
-
-        pre_spectrum.draw(
-            draw,
-            <span class="prelude-val">Some</span>(pre_spectrum_mesh_color),
-            line_weight,
-            <span class="prelude-val">None</span>,
-        );
-
-        drop(pre_spectrum);
+        model
+            .pre_spectrum_analyzer
+            .draw(app, draw, <span class="kw-2">&amp;</span>frame);
     }
 
     <span class="kw">if </span><span class="macro">matches!</span>(
         spectrogram_view,
         SpectrogramView::PrePost | SpectrogramView::PostOnly
     ) {
-        model.post_spectrum_analyzer.borrow_mut().draw(
-            draw,
-            <span class="prelude-val">None</span>,
-            line_weight,
-            <span class="prelude-val">Some</span>(post_spectrum_mesh_color),
-        );
+        model
+            .post_spectrum_analyzer
+            .draw(app, draw, <span class="kw-2">&amp;</span>frame);
     }
 
-    <span class="kw">match </span>model.ui_params.mask_algorithm.lr() {
-        GenerativeAlgo::Contours =&gt; {
-            model.contours.read().unwrap().draw(app, draw, <span class="kw-2">&amp;</span>frame);
-        }
-        GenerativeAlgo::SmoothLife =&gt; {
-            model.smooth_life.read().unwrap().draw(app, draw, <span class="kw-2">&amp;</span>frame);
-        }
-        GenerativeAlgo::Voronoi =&gt; {
-            model.voronoi_mask.read().unwrap().draw(app, draw, <span class="kw-2">&amp;</span>frame);
-        }
-    }
+    <span class="kw">let </span>mask_rect = model.mask_rect;
+    draw.rect()
+        .xy(mask_rect.xy())
+        .wh(mask_rect.wh() * <span class="number">1.05</span>)
+        .color(BLACK);
 
     <span class="kw">let </span>mask_mix = model.ui_params.mask_mix.lr();
 
+    <span class="kw">if </span>!epsilon_eq(mask_mix, <span class="number">0.0</span>) {
+        <span class="kw">match </span>model.ui_params.mask_algorithm.lr() {
+            GenerativeAlgo::Contours =&gt; {
+                model.contours.read().unwrap().draw(app, draw, <span class="kw-2">&amp;</span>frame);
+            }
+            GenerativeAlgo::SmoothLife =&gt; {
+                model.smooth_life.read().unwrap().draw(app, draw, <span class="kw-2">&amp;</span>frame);
+            }
+            GenerativeAlgo::Voronoi =&gt; {
+                model.voronoi_mask.read().unwrap().draw(app, draw, <span class="kw-2">&amp;</span>frame);
+            }
+        }
+    }
     <span class="kw">if </span>mask_mix &lt; <span class="number">1.0 </span>{
         draw.rect()
             .xy(model.mask_rect.xy())
@@ -199,16 +200,31 @@
     outline_rect(<span class="kw-2">&amp;</span>model.mask_rect, draw, <span class="number">2.0</span>);
     model.draw_mask_scan_line(draw);
 
-    model.draw_filter_line(draw);
-    model.draw_filter_nodes(draw);
-    outline_rect(<span class="kw-2">&amp;</span>model.spectrum_rect, draw, <span class="number">2.0</span>);
+    model.eq_display.draw(app, draw, <span class="kw-2">&amp;</span>frame);
+    <span class="comment">// model.draw_filter_line(draw);
+    // model.draw_filter_nodes(draw);
+    </span>outline_rect(<span class="kw-2">&amp;</span>model.spectrum_rect, draw, <span class="number">2.0</span>);
+
+    <span class="comment">// TODO
+    // I tried to get this to draw lazily, but it seems as though
+    // the voronoi cells update one or two frames after the vectors.
+    // need to look into that further, but for now this just
+    // gets drawn every frame. the voronoi field does get updated
+    // lazily which is where the compute shader is dispatched, so
+    // at least there is some performance saving there.
+    </span>draw.rect()
+        .xy(bank_rect.xy())
+        .wh(bank_rect.wh())
+        .color(BLACK);
+    model.voronoi_reso_bank.draw(app, draw, <span class="kw-2">&amp;</span>frame);
+    model.vectors_reso_bank.draw(app, draw, <span class="kw-2">&amp;</span>frame);
+    outline_rect(bank_rect, draw, line_weight);
 
     model.ui_components.draw(app, draw, <span class="kw-2">&amp;</span>frame);
 
-    <span class="comment">// if the frame fails to draw, we&#39;ll just ignore it
+    <span class="comment">// if the frame fails to draw we&#39;ll just ignore it
     </span><span class="kw">let _ </span>= draw.to_frame(app, <span class="kw-2">&amp;</span>frame);
-    <span class="comment">// let _ = model.egui.draw_to_frame(&amp;frame);
-</span>}
+}
 
 <span class="kw">fn </span>outline_rect(rect: <span class="kw-2">&amp;</span>Rect, draw: <span class="kw-2">&amp;</span>Draw, width: f32) {
     draw.rect()
@@ -217,15 +233,5 @@
         .stroke(BG_NON_SELECTED)
         .stroke_weight(width)
         .no_fill();
-
-    <span class="comment">// let bl = rect.bottom_left();
-    // let br = rect.bottom_right();
-    // let tl = rect.top_left();
-    // let tr = rect.top_right();
-    //
-    // draw.line().points(bl, br).weight(width).color(GREY);
-    // draw.line().points(br, tr).weight(width).color(GREY);
-    // draw.line().points(tr, tl).weight(width).color(GREY);
-    // draw.line().points(tl, bl).weight(width).color(GREY);
-</span>}
+}
 </code></pre></div></section></main></body></html>

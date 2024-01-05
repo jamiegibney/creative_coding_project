@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["chorus","flanger","phaser"]};
+window.SIDEBAR_ITEMS = {"mod":["chorus"]};

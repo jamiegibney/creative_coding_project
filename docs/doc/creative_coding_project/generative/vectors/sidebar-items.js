@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Point","Vectors"]};
+window.SIDEBAR_ITEMS = {"struct":["Point","VectorField"]};

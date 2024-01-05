@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/app/model/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../creative_coding_project/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/app/model/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="creative_coding_project" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -777,110 +777,10 @@
 <a href="#777" id="777">777</a>
 <a href="#778" id="778">778</a>
 <a href="#779" id="779">779</a>
-<a href="#780" id="780">780</a>
-<a href="#781" id="781">781</a>
-<a href="#782" id="782">782</a>
-<a href="#783" id="783">783</a>
-<a href="#784" id="784">784</a>
-<a href="#785" id="785">785</a>
-<a href="#786" id="786">786</a>
-<a href="#787" id="787">787</a>
-<a href="#788" id="788">788</a>
-<a href="#789" id="789">789</a>
-<a href="#790" id="790">790</a>
-<a href="#791" id="791">791</a>
-<a href="#792" id="792">792</a>
-<a href="#793" id="793">793</a>
-<a href="#794" id="794">794</a>
-<a href="#795" id="795">795</a>
-<a href="#796" id="796">796</a>
-<a href="#797" id="797">797</a>
-<a href="#798" id="798">798</a>
-<a href="#799" id="799">799</a>
-<a href="#800" id="800">800</a>
-<a href="#801" id="801">801</a>
-<a href="#802" id="802">802</a>
-<a href="#803" id="803">803</a>
-<a href="#804" id="804">804</a>
-<a href="#805" id="805">805</a>
-<a href="#806" id="806">806</a>
-<a href="#807" id="807">807</a>
-<a href="#808" id="808">808</a>
-<a href="#809" id="809">809</a>
-<a href="#810" id="810">810</a>
-<a href="#811" id="811">811</a>
-<a href="#812" id="812">812</a>
-<a href="#813" id="813">813</a>
-<a href="#814" id="814">814</a>
-<a href="#815" id="815">815</a>
-<a href="#816" id="816">816</a>
-<a href="#817" id="817">817</a>
-<a href="#818" id="818">818</a>
-<a href="#819" id="819">819</a>
-<a href="#820" id="820">820</a>
-<a href="#821" id="821">821</a>
-<a href="#822" id="822">822</a>
-<a href="#823" id="823">823</a>
-<a href="#824" id="824">824</a>
-<a href="#825" id="825">825</a>
-<a href="#826" id="826">826</a>
-<a href="#827" id="827">827</a>
-<a href="#828" id="828">828</a>
-<a href="#829" id="829">829</a>
-<a href="#830" id="830">830</a>
-<a href="#831" id="831">831</a>
-<a href="#832" id="832">832</a>
-<a href="#833" id="833">833</a>
-<a href="#834" id="834">834</a>
-<a href="#835" id="835">835</a>
-<a href="#836" id="836">836</a>
-<a href="#837" id="837">837</a>
-<a href="#838" id="838">838</a>
-<a href="#839" id="839">839</a>
-<a href="#840" id="840">840</a>
-<a href="#841" id="841">841</a>
-<a href="#842" id="842">842</a>
-<a href="#843" id="843">843</a>
-<a href="#844" id="844">844</a>
-<a href="#845" id="845">845</a>
-<a href="#846" id="846">846</a>
-<a href="#847" id="847">847</a>
-<a href="#848" id="848">848</a>
-<a href="#849" id="849">849</a>
-<a href="#850" id="850">850</a>
-<a href="#851" id="851">851</a>
-<a href="#852" id="852">852</a>
-<a href="#853" id="853">853</a>
-<a href="#854" id="854">854</a>
-<a href="#855" id="855">855</a>
-<a href="#856" id="856">856</a>
-<a href="#857" id="857">857</a>
-<a href="#858" id="858">858</a>
-<a href="#859" id="859">859</a>
-<a href="#860" id="860">860</a>
-<a href="#861" id="861">861</a>
-<a href="#862" id="862">862</a>
-<a href="#863" id="863">863</a>
-<a href="#864" id="864">864</a>
-<a href="#865" id="865">865</a>
-<a href="#866" id="866">866</a>
-<a href="#867" id="867">867</a>
-<a href="#868" id="868">868</a>
-<a href="#869" id="869">869</a>
-<a href="#870" id="870">870</a>
-<a href="#871" id="871">871</a>
-<a href="#872" id="872">872</a>
-<a href="#873" id="873">873</a>
-<a href="#874" id="874">874</a>
-<a href="#875" id="875">875</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::gui::rdp::rdp_in_place;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::interp::linear_unclamped;
-<span class="kw">use </span>crossbeam_channel::{unbounded, Receiver, Sender};
-<span class="kw">use </span>nannou_audio::Stream;
+</pre></div><pre class="rust"><code><span class="doccomment">//! The whole app&#39;s state.
 
-<span class="comment">// use nannou_egui::{self, egui, Egui};
-
-</span><span class="kw">use </span><span class="kw">super</span>::audio::<span class="kw-2">*</span>;
+</span><span class="kw">use </span><span class="kw">super</span>::audio::audio_constructor;
+<span class="kw">use </span><span class="kw">super</span>::audio::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">super</span>::view::view;
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::app::params::<span class="kw-2">*</span>;
@@ -889,10 +789,13 @@
     ResonatorBankParams, SpectralMask, BUTTERWORTH_Q,
 };
 <span class="kw">use </span><span class="kw">crate</span>::generative::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::gui::spectrum::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::gui::UIComponents;
+<span class="kw">use </span><span class="kw">crate</span>::gui::rdp::rdp_in_place;
+<span class="kw">use </span><span class="kw">crate</span>::gui::{spectrum::<span class="kw-2">*</span>, EQDisplay};
+<span class="kw">use </span><span class="kw">crate</span>::gui::{EQFilterParams, UIComponents};
+<span class="kw">use </span><span class="kw">crate</span>::prelude::interp::linear_unclamped;
+<span class="kw">use </span>crossbeam_channel::{unbounded, Receiver, Sender};
 <span class="kw">use </span>nannou::prelude::WindowId <span class="kw">as </span>Id;
-
+<span class="kw">use </span>nannou_audio::Stream;
 <span class="kw">use </span>std::f64::consts::SQRT_2;
 <span class="kw">use </span>std::{
     cell::RefCell,
@@ -902,67 +805,74 @@
 };
 
 <span class="kw">mod </span>constructors;
-<span class="kw">use </span><span class="kw">super</span>::audio::audio_constructor;
 <span class="kw">use </span>constructors::<span class="kw-2">*</span>;
 
 <span class="kw">type </span>CallbackTimerRef = Arc&lt;Mutex&lt;Instant&gt;&gt;;
 
-<span class="doccomment">/// The app&#39;s model, i.e. its general state.
+<span class="doccomment">/// The app&#39;s model, i.e. its state.
 </span><span class="attr">#[allow(clippy::struct_excessive_bools)]
 </span><span class="kw">pub struct </span>Model {
     window: Id,
 
-    <span class="comment">// pub egui: Egui,
+    <span class="doccomment">/// UI parameters.
     </span><span class="kw">pub </span>ui_params: UIParams,
 
-    <span class="comment">// AUDIO DATA
-    </span><span class="doccomment">/// The CPAL audio stream.
+    <span class="doccomment">/// The CPAL audio stream.
     </span><span class="kw">pub </span>audio_stream: nannou_audio::Stream&lt;AudioModel&gt;,
     <span class="doccomment">/// Channels to send messages directly to the audio thread.
     </span><span class="kw">pub </span>audio_senders: Arc&lt;AudioMessageSenders&gt;,
 
-    <span class="doccomment">/// A thread-safe reference to the mask used for spectral filtering.
-    </span><span class="comment">// pub spectral_mask: Arc&lt;Mutex&lt;SpectralMask&gt;&gt;,
+    <span class="doccomment">/// Input to the spectral mask channel, sent to the audio thread.
     </span><span class="kw">pub </span>spectral_mask: triple_buffer::Input&lt;SpectralMask&gt;,
 
-    <span class="kw">pub </span>voice_event_sender: mpsc::Sender&lt;VoiceEvent&gt;,
+    <span class="doccomment">/// Channel to send voice events (such as killing all voices).
+    </span><span class="kw">pub </span>voice_event_sender: mpsc::Sender&lt;VoiceEvent&gt;,
 
     <span class="doccomment">/// A thread-safe reference to the timer which tracks when the audio callback
     /// was last called.
     </span><span class="kw">pub </span>audio_callback_timer: CallbackTimerRef,
 
-    <span class="doccomment">/// A string showing the (rough) DSP load.
-    </span><span class="kw">pub </span>dsp_load: <span class="prelude-ty">Option</span>&lt;String&gt;,
-
     <span class="doccomment">/// A reference to the sample rate value.
     </span><span class="kw">pub </span>sample_rate_ref: Arc&lt;AtomicF64&gt;,
 
-    <span class="comment">// NOTES
-    </span><span class="doccomment">/// Current octave for note input (via typing keyboard).
+    <span class="doccomment">/// Current octave for note input (via typing keyboard).
     </span><span class="kw">pub </span>octave: Octave,
     <span class="doccomment">/// A thread-safe reference to the note handler.
     </span><span class="kw">pub </span>note_handler: NoteHandlerRef,
     <span class="doccomment">/// A HashMap of the currently-pressed keys.
-    </span><span class="comment">// TODO: this doesn&#39;t register that keys are unpressed when &quot;switching octaves&quot;
-    // (Z and X)
     </span><span class="kw">pub </span>pressed_keys: HashMap&lt;Key, bool&gt;,
 
-    <span class="comment">// GUI
-    </span><span class="doccomment">/// The pre-FX spectrogram.
-    </span><span class="kw">pub </span>pre_spectrum_analyzer: RefCell&lt;SpectrumAnalyzer&gt;,
+    <span class="doccomment">/// The pre-FX spectrogram.
+    </span><span class="kw">pub </span>pre_spectrum_analyzer: SpectrumAnalyzer,
     <span class="doccomment">/// The post-FX spectrogram.
-    </span><span class="kw">pub </span>post_spectrum_analyzer: RefCell&lt;SpectrumAnalyzer&gt;,
+    </span><span class="kw">pub </span>post_spectrum_analyzer: SpectrumAnalyzer,
 
-    <span class="kw">pub </span>ui_components: UIComponents,
+    <span class="doccomment">/// All GUI control components (sliders, menus, buttons, labels...)
+    </span><span class="kw">pub </span>ui_components: UIComponents,
 
-    <span class="kw">pub </span>bank_rect: Rect,
-    <span class="kw">pub </span>reso_bank_reset_receiver: Receiver&lt;()&gt;,
-    <span class="kw">pub </span>reso_bank_push_receiver: Receiver&lt;()&gt;,
-    <span class="kw">pub </span>reso_bank_data: triple_buffer::Input&lt;ResoBankData&gt;,
-    <span class="kw">pub </span>mask_rect: Rect,
-    <span class="kw">pub </span>mouse_clicked_outside_of_mask: bool,
-    <span class="kw">pub </span>mask_clicked: bool,
-    <span class="kw">pub </span>spectrum_rect: Rect,
+    <span class="doccomment">/// The resonator bank bounding rect.
+    </span><span class="kw">pub </span>bank_rect: Rect,
+    <span class="doccomment">/// A receiver for the resonator bank &quot;reset&quot; button.
+    </span><span class="kw">pub </span>reso_bank_reset_receiver: Receiver&lt;()&gt;,
+    <span class="doccomment">/// A sender to allow a keybind to reset the resonator bank.
+    </span><span class="kw">pub </span>reso_bank_reset_sender_key: Sender&lt;()&gt;,
+    <span class="doccomment">/// A receiver for the resonator bank &quot;push&quot; button.
+    </span><span class="kw">pub </span>reso_bank_push_receiver: Receiver&lt;()&gt;,
+    <span class="doccomment">/// A sender to allow a keybind to push the resonator bank.
+    </span><span class="kw">pub </span>reso_bank_push_sender_key: Sender&lt;()&gt;,
+    <span class="doccomment">/// Input to the resonator bank state channel, sent to the audio thread.
+    </span><span class="kw">pub </span>reso_bank_data: triple_buffer::Input&lt;ResoBankData&gt;,
+
+    <span class="doccomment">/// The spectral filter bounding rect.
+    </span><span class="kw">pub </span>mask_rect: Rect,
+    <span class="doccomment">/// Whether the mouse was clicked outside of the spectral filter — used to track
+    /// input events applied to the mask scan line.
+    </span><span class="kw">pub </span>mouse_clicked_outside_of_mask: bool,
+    <span class="doccomment">/// Whether the spectral filter is clicked or not.
+    </span><span class="kw">pub </span>mask_clicked: bool,
+
+    <span class="doccomment">/// The spectrogram/EQ bounding rect.
+    </span><span class="kw">pub </span>spectrum_rect: Rect,
 
     <span class="doccomment">/// A Perlin noise contour generator.
     </span><span class="kw">pub </span>contours: Arc&lt;RwLock&lt;ContoursGPU&gt;&gt;,
@@ -971,11 +881,12 @@
     <span class="doccomment">/// A Voronoi noise generator used for the spectral mask.
     </span><span class="kw">pub </span>voronoi_mask: Arc&lt;RwLock&lt;VoronoiGPU&gt;&gt;,
     <span class="doccomment">/// A vector field used to manage points for the Voronoi mask.
-    </span><span class="kw">pub </span>voronoi_vectors: Arc&lt;RwLock&lt;Vectors&gt;&gt;,
-    <span class="kw">pub </span>voronoi_z: Arc&lt;AtomicF64&gt;,
+    </span><span class="kw">pub </span>voronoi_vectors: Arc&lt;RwLock&lt;VectorField&gt;&gt;,
 
     <span class="doccomment">/// A simple vector field for the resonator bank points.
-    </span><span class="kw">pub </span>vectors_reso_bank: Vectors,
+    </span><span class="kw">pub </span>vectors_reso_bank: VectorField,
+    <span class="doccomment">/// A channel to receive a message when the number of resonators has changed.
+    </span>resonator_count_receiver: Receiver&lt;()&gt;,
     <span class="doccomment">/// The voronoi generator for the resonator bank vector field.
     </span><span class="kw">pub </span>voronoi_reso_bank: VoronoiGPU,
     <span class="doccomment">/// The line which shows which column is being used as a spectral mask.
@@ -983,23 +894,18 @@
     <span class="doccomment">/// The amount to increment the position of the mask scan line each frame.
     </span><span class="kw">pub </span>mask_scan_line_increment: f64,
 
-    <span class="kw">pub </span>low_filter: BiquadFilter,
-    <span class="kw">pub </span>high_filter: BiquadFilter,
-    low_filter_node: Vec2,
-    low_filter_node_is_clicked: bool,
-    high_filter_node: Vec2,
-    high_filter_node_is_clicked: bool,
-    spectrum_is_clicked: bool,
-    <span class="kw">pub </span>clicked_outside_of_spectrum: bool,
+    <span class="doccomment">/// The EQ display — filter nodes and the frequency response line.
+    </span><span class="kw">pub </span>eq_display: EQDisplay,
 
-    <span class="kw">pub </span>filter_raw_points: Vec&lt;[f64; <span class="number">2</span>]&gt;,
-    <span class="kw">pub </span>filter_indices: Vec&lt;usize&gt;,
-    <span class="kw">pub </span>filter_points: Vec&lt;Vec2&gt;,
-    <span class="kw">pub </span>log_lines: Vec&lt;[Vec2; <span class="number">2</span>]&gt;,
+    <span class="doccomment">/// Logarithmic frequency lines drawn in the background of the spectrogram.
+    </span><span class="kw">pub </span>log_lines: Vec&lt;[Vec2; <span class="number">2</span>]&gt;,
 
-    <span class="kw">pub </span>input_data: InputData,
+    <span class="doccomment">/// User input data.
+    </span><span class="kw">pub </span>input_data: InputData,
 
-    <span class="kw">pub </span>mask_thread_pool: ThreadPool,
+    <span class="doccomment">/// The time since the last called to [`update()`], used for calculating the frame
+    /// delta time.
+    </span>last_frame_time: Instant,
 }
 
 <span class="kw">impl </span>Model {
@@ -1039,7 +945,6 @@
             <span class="kw-2">mut </span>voronoi_vectors,
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
-            dsp_load,
             vectors_reso_bank,
         } = build_gui_elements(app, pre_spectrum, post_spectrum, <span class="kw-2">&amp;</span>params);
 
@@ -1058,17 +963,17 @@
         <span class="kw">let </span>gen_algo = Arc::clone(<span class="kw-2">&amp;</span>params.mask_algorithm);
 
         <span class="kw">let </span>(reso_bank_reset_sender, reso_bank_reset_receiver) = unbounded();
+        <span class="kw">let </span>reso_bank_reset_sender_key = reso_bank_reset_sender.clone();
 
         <span class="kw">let </span>(reso_bank_push_sender, reso_bank_push_receiver) = unbounded();
-
-        <span class="kw">let </span>voronoi_z = Arc::new(AtomicF64::new(<span class="number">0.0</span>));
+        <span class="kw">let </span>reso_bank_push_sender_key = reso_bank_push_sender.clone();
 
         <span class="kw">let </span>voronoi_vectors = Arc::new(RwLock::new(voronoi_vectors));
         <span class="kw">let </span>vv = Arc::clone(<span class="kw-2">&amp;</span>voronoi_vectors);
 
         <span class="kw">let </span>(m_tl, m_br) = (mask_rect.top_left(), mask_rect.bottom_right());
 
-        <span class="kw">let </span>ui_components = UIComponents::new(<span class="kw-2">&amp;</span>params)
+        <span class="kw">let </span><span class="kw-2">mut </span>ui_components = UIComponents::new(<span class="kw-2">&amp;</span>params)
             .attach_reso_bank_randomize_callback(<span class="kw">move </span>|<span class="kw">_</span>| {
                 reso_bank_reset_sender.send(());
             })
@@ -1104,6 +1009,16 @@
                 <span class="kw-2">&amp;</span>params,
             );
 
+        <span class="kw">let </span>rb_count = Arc::clone(<span class="kw-2">&amp;</span>params.reso_bank_resonator_count);
+        <span class="kw">let </span>(resontor_count_sender, resonator_count_receiver) = unbounded();
+
+        ui_components
+            .reso_bank_resonator_count
+            .set_callback(<span class="kw">move </span>|<span class="kw">_</span>, val| {
+                rb_count.sr(val <span class="kw">as </span>u32);
+                resontor_count_sender.send(()).unwrap();
+            });
+
         <span class="kw">let </span><span class="kw-2">mut </span>low_filter = BiquadFilter::new(sample_rate_ref.lr());
         low_filter.set_params(<span class="kw-2">&amp;</span>BiquadParams {
             freq: params.low_filter_cutoff.current_value(),
@@ -1135,6 +1050,12 @@
 
             <span class="comment">// egui,
             </span>ui_components,
+            eq_display: EQDisplay::new(
+                spectrum_rect,
+                <span class="kw-2">&amp;</span>params,
+                Arc::clone(<span class="kw-2">&amp;</span>sample_rate_ref),
+            ),
+
             ui_params: params,
 
             audio_stream,
@@ -1157,8 +1078,12 @@
 
             bank_rect,
             mask_rect,
+
             reso_bank_reset_receiver,
+            reso_bank_reset_sender_key,
             reso_bank_push_receiver,
+            reso_bank_push_sender_key,
+
             reso_bank_data,
             spectrum_rect,
 
@@ -1170,50 +1095,24 @@
 
             voronoi_mask: Arc::new(RwLock::new(voronoi_mask)),
             voronoi_vectors,
-            voronoi_z,
 
             voronoi_reso_bank: VoronoiGPU::new(app, bank_rect),
             vectors_reso_bank,
+            resonator_count_receiver,
 
-            low_filter,
-            high_filter,
-            low_filter_node: Vec2::new(-<span class="number">244.94064</span>, -<span class="number">174.99988</span>),
-            low_filter_node_is_clicked: <span class="bool-val">false</span>,
-            high_filter_node: Vec2::new(-<span class="number">108.400024</span>, -<span class="number">175.00002</span>),
-            high_filter_node_is_clicked: <span class="bool-val">false</span>,
-            spectrum_is_clicked: <span class="bool-val">false</span>,
-            clicked_outside_of_spectrum: <span class="bool-val">false</span>,
-
-            filter_raw_points: {
-                <span class="kw">let </span>mid = spectrum_rect.mid_left().y;
-                <span class="kw">let </span>left = spectrum_rect.left();
-                <span class="kw">let </span>right = spectrum_rect.right();
-                <span class="kw">let </span>points = spectrum_rect.w() <span class="kw">as </span>usize;
-
-                (<span class="number">0</span>..spectrum_rect.w() <span class="kw">as </span>usize)
-                    .map(|i| {
-                        <span class="kw">let </span>x_pos = left <span class="kw">as </span>f64 + i <span class="kw">as </span>f64;
-                        [x_pos, mid <span class="kw">as </span>f64]
-                    })
-                    .collect()
-            },
-            filter_points: <span class="macro">vec!</span>[Vec2::ZERO; spectrum_rect.w() <span class="kw">as </span>usize],
-            filter_indices: <span class="macro">vec!</span>[<span class="number">0</span>; spectrum_rect.w() <span class="kw">as </span>usize],
             log_lines: create_log_lines(<span class="kw-2">&amp;</span>spectrum_rect),
 
             mask_scan_line_pos: <span class="number">0.0</span>,
             mask_scan_line_increment: <span class="number">0.1</span>,
 
             input_data: InputData {
-                is_win_focussed: <span class="bool-val">true</span>, <span class="comment">// required for the window to be initialised on Windows
+                is_win_focussed: <span class="bool-val">true</span>, <span class="comment">// required for the window to be initialized on Windows
                 </span>..Default::default()
             },
 
-            mask_thread_pool: ThreadPool::build(<span class="number">1</span>)
-                .expect(<span class="string">&quot;failed to build mask thread pool&quot;</span>),
-
-            dsp_load,
             sample_rate_ref,
+
+            last_frame_time: Instant::now(),
         }
     }
 
@@ -1233,7 +1132,7 @@
         })
     }
 
-    <span class="doccomment">/// Increments the internal position of the mask scan line.
+    <span class="doccomment">/// Increments the position of the mask scan line.
     </span><span class="kw">pub fn </span>increment_mask_scan_line(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>increment = <span class="self">self</span>.ui_params.mask_scan_line_speed.lr();
         <span class="self">self</span>.mask_scan_line_pos += increment * <span class="self">self</span>.input_data.delta_time;
@@ -1274,10 +1173,10 @@
     }
 
     <span class="doccomment">/// Updates the model&#39;s input data.
-    </span><span class="kw">pub fn </span>update_input_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App, update: Update) {
-        <span class="comment">// self.egui.set_elapsed_time(update.since_start);
-
-        </span><span class="self">self</span>.input_data.delta_time = update.since_last.as_secs_f64();
+    </span><span class="kw">pub fn </span>update_input_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App) {
+        <span class="self">self</span>.input_data.delta_time =
+            <span class="self">self</span>.last_frame_time.elapsed().as_secs_f64();
+        <span class="self">self</span>.last_frame_time = Instant::now();
         <span class="self">self</span>.input_data.mouse_pos = app.mouse.position();
         <span class="comment">// mouse scroll delta is updated in the event() callback
 
@@ -1291,10 +1190,13 @@
         <span class="self">self</span>.input_data.is_ctrl_down = modifers.ctrl();
     }
 
-    <span class="kw">pub fn </span>update_vectors(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App) {
-        <span class="self">self</span>.vectors_reso_bank.set_num_active_points(
-            <span class="self">self</span>.ui_params.reso_bank_resonator_count.lr() <span class="kw">as </span>usize,
-        );
+    <span class="doccomment">/// Updates the resonator bank vector field.
+    </span><span class="kw">pub fn </span>update_reso_bank_vector_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App) {
+        <span class="kw">let </span>reso_count = <span class="self">self</span>.ui_params.reso_bank_resonator_count.lr() <span class="kw">as </span>usize;
+        <span class="kw">if </span>reso_count != <span class="self">self</span>.vectors_reso_bank.num_active_points {
+            <span class="self">self</span>.vectors_reso_bank.set_num_active_points(reso_count);
+        }
+
         <span class="self">self</span>.vectors_reso_bank
             .set_friction(<span class="self">self</span>.ui_params.reso_bank_field_friction.lr());
 
@@ -1312,8 +1214,13 @@
 
         <span class="self">self</span>.reso_bank_data.publish();
 
-        <span class="self">self</span>.voronoi_reso_bank
-            .copy_from_vectors(<span class="kw-2">&amp;</span><span class="self">self</span>.vectors_reso_bank);
+        <span class="comment">// this lazily updates the voronoi lines.
+        </span><span class="kw">if </span><span class="self">self</span>.reso_bank_needs_redraw() {
+            <span class="self">self</span>.voronoi_reso_bank
+                .copy_from_vectors(<span class="kw-2">&amp;</span><span class="self">self</span>.vectors_reso_bank);
+
+            <span class="self">self</span>.voronoi_reso_bank.update(app, <span class="kw-2">&amp;</span><span class="self">self</span>.input_data);
+        }
 
         <span class="kw">if </span><span class="self">self</span>.ui_components.reso_bank_scale.is_open()
             &amp;&amp; <span class="self">self
@@ -1326,7 +1233,8 @@
         }
     }
 
-    <span class="kw">pub fn </span>update_voronoi_vectors(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App) {
+    <span class="doccomment">/// Updates the vector field used for the Voronoi noise spectral mask.
+    </span><span class="kw">pub fn </span>update_voronoi_vectors(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App) {
         <span class="kw">let </span><span class="kw-2">mut </span>guard = <span class="self">self</span>.voronoi_vectors.write().unwrap();
         guard.set_num_active_points(
             <span class="self">self</span>.ui_params.voronoi_cell_count.lr() <span class="kw">as </span>usize
@@ -1360,7 +1268,8 @@
         guard.update(app, <span class="kw-2">&amp;</span><span class="self">self</span>.input_data);
     }
 
-    <span class="kw">pub fn </span>update_mask_scan_line_from_mouse(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="doccomment">/// Updates the mask scan line based on user mouse input.
+    </span><span class="kw">pub fn </span>update_mask_scan_line_from_mouse(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">if </span><span class="self">self</span>.input_data.is_left_clicked {
             <span class="kw">if </span><span class="self">self</span>.mask_rect.contains(<span class="self">self</span>.input_data.mouse_pos)
                 || <span class="self">self</span>.mask_clicked
@@ -1387,110 +1296,75 @@
         }
     }
 
-    <span class="kw">pub fn </span>update_filters(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>low_filter_is_shelf = <span class="self">self</span>.ui_components.low_filter_type.enabled();
-        <span class="self">self</span>.low_filter.set_params(<span class="kw-2">&amp;</span>BiquadParams {
-            freq: note_to_freq(<span class="self">self</span>.ui_components.low_filter_cutoff.value()),
-            gain: <span class="self">self</span>.ui_components.low_filter_gain.value(),
-            q: <span class="kw">if </span>low_filter_is_shelf {
-                SQRT_2
-            }
-            <span class="kw">else </span>{
-                <span class="self">self</span>.ui_components.low_filter_q.value().recip()
-            },
-            filter_type: <span class="kw">if </span>low_filter_is_shelf {
-                FilterType::Lowshelf
-            }
-            <span class="kw">else </span>{
-                FilterType::Highpass
-            },
-        });
+    <span class="doccomment">/// Updates the EQ GUI.
+    </span><span class="kw">pub fn </span>update_eq(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App) {
+        <span class="kw">if </span><span class="self">self</span>.ui_components.exciter_osc.is_open() {
+            <span class="self">self</span>.eq_display.clicked_outside_of_spectrum = <span class="bool-val">true</span>;
+            <span class="kw">return</span>;
+        }
 
-        <span class="kw">let </span>high_filter_is_shelf =
-            <span class="self">self</span>.ui_components.high_filter_type.enabled();
+        <span class="self">self</span>.eq_display.update(app, <span class="kw-2">&amp;</span><span class="self">self</span>.input_data);
 
-        <span class="self">self</span>.high_filter.set_params(<span class="kw-2">&amp;</span>BiquadParams {
-            freq: note_to_freq(<span class="self">self</span>.ui_components.high_filter_cutoff.value()),
-            gain: <span class="self">self</span>.ui_components.high_filter_gain.value(),
-            q: <span class="kw">if </span>high_filter_is_shelf {
-                SQRT_2
-            }
-            <span class="kw">else </span>{
-                <span class="self">self</span>.ui_components.high_filter_q.value().recip()
-            },
-            filter_type: <span class="kw">if </span>high_filter_is_shelf {
-                FilterType::Highshelf
-            }
-            <span class="kw">else </span>{
-                FilterType::Lowpass
-            },
-        });
-
-        <span class="self">self</span>.low_filter.process(<span class="number">0.0</span>);
-        <span class="self">self</span>.high_filter.process(<span class="number">0.0</span>);
-    }
-
-    <span class="attr">#[allow(clippy::many_single_char_names)]
-    </span><span class="kw">pub fn </span>update_filter_line(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>sr = <span class="self">self</span>.sample_rate_ref.lr();
-        <span class="kw">let </span>(l, r) = (
-            <span class="self">self</span>.spectrum_rect.left() <span class="kw">as </span>f64,
-            <span class="self">self</span>.spectrum_rect.right() <span class="kw">as </span>f64,
-        );
-        <span class="kw">let </span>(b, t) = (
-            <span class="self">self</span>.spectrum_rect.bottom() <span class="kw">as </span>f64,
-            <span class="self">self</span>.spectrum_rect.top() <span class="kw">as </span>f64,
-        );
-        <span class="kw">let </span>w = <span class="self">self</span>.spectrum_rect.w() <span class="kw">as </span>f64;
-        <span class="kw">let </span>half_height = <span class="self">self</span>.spectrum_rect.h() <span class="kw">as </span>f64 * <span class="number">0.5</span>; <span class="comment">// marks +- 30 db
-        </span><span class="kw">let </span>mid = <span class="self">self</span>.spectrum_rect.mid_left().y <span class="kw">as </span>f64;
-
-        <span class="kw">for </span>(i, point) <span class="kw">in </span><span class="self">self</span>.filter_raw_points.iter_mut().enumerate().skip(<span class="number">1</span>)
+        <span class="comment">// if the eq is being updated, update the ui components
+        </span><span class="kw">if </span><span class="self">self</span>.input_data.is_left_clicked
+            &amp;&amp; (<span class="self">self</span>.spectrum_rect.contains(<span class="self">self</span>.input_data.mouse_pos)
+                || <span class="self">self</span>.eq_display.spectrum_is_clicked)
+            &amp;&amp; !<span class="self">self</span>.eq_display.clicked_outside_of_spectrum
         {
-            <span class="kw">let </span>x = i <span class="kw">as </span>f64 / w;
-            <span class="kw">let </span>freq = freq_lin_from_log(x, <span class="number">25.0</span>, sr);
-            <span class="kw">let </span>scaled = map(freq, <span class="number">0.0</span>, sr * <span class="number">0.5</span>, <span class="number">0.0</span>, PI_F64);
+            <span class="kw">let </span>EQFilterParams { cutoff, gain, q } =
+                <span class="self">self</span>.eq_display.low_filter_params;
 
-            <span class="kw">let </span>mag_db = <span class="self">self</span>.low_filter.response_at(scaled)
-                + <span class="self">self</span>.high_filter.response_at(scaled);
+            <span class="self">self</span>.ui_components
+                .low_filter_cutoff
+                .set_value(freq_to_note(cutoff));
+            <span class="self">self</span>.ui_components.low_filter_gain.set_value(gain);
+            <span class="self">self</span>.ui_components.low_filter_q.set_value(q.recip());
 
-            point[<span class="number">1</span>] = (mid
-                + map(mag_db, -<span class="number">30.0</span>, <span class="number">30.0</span>, -half_height, half_height))
-            .clamp(b, t);
+            <span class="kw">let </span>EQFilterParams { cutoff, gain, q } =
+                <span class="self">self</span>.eq_display.peak_filter_params;
+            <span class="self">self</span>.ui_components
+                .peak_filter_cutoff
+                .set_value(freq_to_note(cutoff));
+            <span class="self">self</span>.ui_components.peak_filter_gain.set_value(gain);
+            <span class="self">self</span>.ui_components.peak_filter_q.set_value(q.recip());
+
+            <span class="kw">let </span>EQFilterParams { cutoff, gain, q } =
+                <span class="self">self</span>.eq_display.high_filter_params;
+            <span class="self">self</span>.ui_components
+                .high_filter_cutoff
+                .set_value(freq_to_note(cutoff));
+            <span class="self">self</span>.ui_components.high_filter_gain.set_value(gain);
+            <span class="self">self</span>.ui_components.high_filter_q.set_value(q.recip());
         }
+        <span class="comment">// otherwise if a ui parameter is being changed, set the eq params
+        </span><span class="kw">else if </span><span class="self">self</span>.input_data.is_left_clicked
+            &amp;&amp; <span class="self">self</span>.eq_display.clicked_outside_of_spectrum
+        {
+            <span class="self">self</span>.eq_display.low_filter_params.cutoff =
+                note_to_freq(<span class="self">self</span>.ui_components.low_filter_cutoff.value());
+            <span class="self">self</span>.eq_display.low_filter_params.gain =
+                <span class="self">self</span>.ui_components.low_filter_gain.value();
+            <span class="self">self</span>.eq_display.low_filter_params.q =
+                <span class="self">self</span>.ui_components.low_filter_q.value().recip();
 
-        <span class="comment">// copy second point to first, as the first is ignored.
-        </span><span class="self">self</span>.filter_raw_points[<span class="number">0</span>][<span class="number">1</span>] = <span class="self">self</span>.filter_raw_points[<span class="number">1</span>][<span class="number">1</span>];
+            <span class="self">self</span>.eq_display.peak_filter_params.cutoff =
+                note_to_freq(<span class="self">self</span>.ui_components.peak_filter_cutoff.value());
+            <span class="self">self</span>.eq_display.peak_filter_params.gain =
+                <span class="self">self</span>.ui_components.peak_filter_gain.value();
+            <span class="self">self</span>.eq_display.peak_filter_params.q =
+                <span class="self">self</span>.ui_components.peak_filter_q.value().recip();
 
-        <span class="comment">// decimate redundant points — this reduces the number of points to be drawn by
-        // over 10 times.
-        </span>rdp_in_place(
-            <span class="self">self</span>.filter_raw_points.as_slice(),
-            <span class="kw-2">&amp;mut </span><span class="self">self</span>.filter_indices,
-            <span class="number">0.2</span>,
-        );
-
-        <span class="kw">let </span>len = <span class="self">self</span>.filter_indices.len();
-
-        <span class="kw">unsafe </span>{
-            <span class="self">self</span>.filter_points.set_len(len);
-        }
-
-        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..len {
-            <span class="kw">let </span>point = <span class="self">self</span>.filter_raw_points[<span class="self">self</span>.filter_indices[i]];
-            <span class="self">self</span>.filter_points[i] =
-                Vec2::from([point[<span class="number">0</span>] <span class="kw">as </span>f32, point[<span class="number">1</span>] <span class="kw">as </span>f32]);
+            <span class="self">self</span>.eq_display.high_filter_params.cutoff =
+                note_to_freq(<span class="self">self</span>.ui_components.high_filter_cutoff.value());
+            <span class="self">self</span>.eq_display.high_filter_params.gain =
+                <span class="self">self</span>.ui_components.high_filter_gain.value();
+            <span class="self">self</span>.eq_display.high_filter_params.q =
+                <span class="self">self</span>.ui_components.high_filter_q.value().recip();
         }
     }
 
-    <span class="kw">pub fn </span>draw_filter_line(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw) {
-        draw.polyline()
-            .weight(<span class="number">2.0</span>)
-            .points(<span class="self">self</span>.filter_points.iter().copied())
-            .color(Rgba::new(<span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">0.08</span>));
-    }
-
-    <span class="kw">pub fn </span>draw_log_lines(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw) {
+    <span class="doccomment">/// Draws the spectrogram log lines.
+    </span><span class="kw">pub fn </span>draw_log_lines(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw) {
         <span class="kw">for </span>line <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.log_lines {
             draw.line()
                 .points(line[<span class="number">0</span>], line[<span class="number">1</span>])
@@ -1499,191 +1373,126 @@
         }
     }
 
-    <span class="attr">#[allow(clippy::too_many_lines)]
-    </span><span class="doccomment">/// Y-pos to Q (and back) conversions found experimenting on Desmos:
-    /// &lt;https://www.desmos.com/calculator/ddgep83pq2&gt;
-    </span><span class="kw">pub fn </span>update_filter_nodes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, app: <span class="kw-2">&amp;</span>App) {
-        <span class="kw">const </span>Q_SCALE_FACTOR: f32 = <span class="number">3.8206</span>;
-        <span class="kw">let </span>q_scale_tanh = -Q_SCALE_FACTOR.tanh();
-
-        <span class="kw">if </span><span class="self">self</span>.ui_components.exciter_osc.is_open() {
-            <span class="self">self</span>.clicked_outside_of_spectrum = <span class="bool-val">true</span>;
-            <span class="kw">return</span>;
+    <span class="doccomment">/// Determins whether the resonator bank needs to be redrawn.
+    ///
+    /// TODO: for some reason the resonator bank vector field and voronoi noise
+    /// do not update immediately, and it seems like the voronoi generator updates
+    /// a frame or two (or three?) later. For now, this method is just used to determine
+    /// whether to update the voronoi generator each frame, and not when to draw it.
+    </span><span class="kw">pub fn </span>reso_bank_needs_redraw(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">if </span><span class="self">self</span>.ui_components.reso_bank_scale.needs_redraw()
+            || <span class="self">self</span>.vectors_reso_bank.can_mouse_interact
+            || <span class="self">self</span>.resonator_count_receiver.try_recv().is_ok()
+        {
+            <span class="kw">return </span><span class="bool-val">true</span>;
         }
 
-        <span class="kw">let </span>mp = <span class="self">self</span>.input_data.mouse_pos;
-        <span class="kw">let </span>clicked = <span class="self">self</span>.input_data.is_left_clicked;
-        <span class="kw">let </span>rect = <span class="self">self</span>.spectrum_rect;
-        <span class="kw">let </span>low_rect = Rect::from_xy_wh(<span class="self">self</span>.low_filter_node, pt2(<span class="number">14.0</span>, <span class="number">14.0</span>));
-        <span class="kw">let </span>high_rect =
-            Rect::from_xy_wh(<span class="self">self</span>.high_filter_node, pt2(<span class="number">14.0</span>, <span class="number">14.0</span>));
-
-        <span class="kw">let </span>padded = rect.pad(<span class="number">8.0</span>);
-        <span class="kw">let </span>sr = <span class="self">self</span>.sample_rate_ref.lr();
-
-        <span class="kw">if </span>clicked {
-            <span class="kw">if </span>rect.contains(mp) || <span class="self">self</span>.spectrum_is_clicked {
-                <span class="kw">if </span>!<span class="self">self</span>.clicked_outside_of_spectrum {
-                    <span class="kw">if </span>(low_rect.contains(mp)
-                        || <span class="self">self</span>.low_filter_node_is_clicked)
-                        &amp;&amp; !<span class="self">self</span>.high_filter_node_is_clicked
-                    {
-                        <span class="self">self</span>.low_filter_node =
-                            mp.clamp(padded.bottom_left(), padded.top_right());
-                        <span class="self">self</span>.low_filter_node_is_clicked = <span class="bool-val">true</span>;
-
-                        <span class="comment">// frequency
-                        </span><span class="kw">let </span>xpos_norm =
-                            (<span class="self">self</span>.low_filter_node.x - rect.left()) / rect.w();
-                        <span class="kw">let </span>freq =
-                            freq_lin_from_log(xpos_norm <span class="kw">as </span>f64, <span class="number">25.0</span>, sr);
-                        <span class="self">self</span>.ui_components
-                            .low_filter_cutoff
-                            .set_value(freq_to_note(freq.clamp(<span class="number">25.0</span>, <span class="number">20000.0</span>)));
-
-                        <span class="comment">// gain
-                        </span><span class="kw">let </span>ypos_norm = normalize_f32(
-                            (<span class="self">self</span>.low_filter_node.y - rect.bottom()) / rect.h(),
-                            <span class="number">0.02962963</span>,
-                            <span class="number">0.97037035</span>,
-                        );
-                        <span class="kw">let </span>gain = scale_f32(ypos_norm, -<span class="number">24.0</span>, <span class="number">24.0</span>);
-                        <span class="self">self</span>.ui_components
-                            .low_filter_gain
-                            .set_value(gain <span class="kw">as </span>f64);
-
-                        <span class="comment">// q
-                        </span><span class="kw">let </span>q = scale_f32(
-                            <span class="number">1.0 </span>+ ((<span class="number">1.0 </span>- ypos_norm) * Q_SCALE_FACTOR).tanh()
-                                / q_scale_tanh,
-                            <span class="number">0.3</span>,
-                            <span class="number">10.0</span>,
-                        );
-                        <span class="self">self</span>.ui_components.low_filter_q.set_value(q <span class="kw">as </span>f64);
-                    }
-                    <span class="kw">if </span>(high_rect.contains(mp)
-                        || <span class="self">self</span>.high_filter_node_is_clicked)
-                        &amp;&amp; !<span class="self">self</span>.low_filter_node_is_clicked
-                    {
-                        <span class="self">self</span>.high_filter_node =
-                            mp.clamp(padded.bottom_left(), padded.top_right());
-                        <span class="self">self</span>.high_filter_node_is_clicked = <span class="bool-val">true</span>;
-
-                        <span class="comment">// frequency
-                        </span><span class="kw">let </span>xpos_norm =
-                            (<span class="self">self</span>.high_filter_node.x - rect.left()) / rect.w();
-                        <span class="kw">let </span>freq =
-                            freq_lin_from_log(xpos_norm <span class="kw">as </span>f64, <span class="number">25.0</span>, sr);
-                        <span class="self">self</span>.ui_components
-                            .high_filter_cutoff
-                            .set_value(freq_to_note(freq.clamp(<span class="number">25.0</span>, <span class="number">20000.0</span>)));
-
-                        <span class="comment">// gain
-                        </span><span class="kw">let </span>ypos_norm = normalize_f32(
-                            (<span class="self">self</span>.high_filter_node.y - rect.bottom())
-                                / rect.h(),
-                            <span class="number">0.02962963</span>,
-                            <span class="number">0.97037035</span>,
-                        );
-                        <span class="kw">let </span>gain = scale_f32(ypos_norm, -<span class="number">24.0</span>, <span class="number">24.0</span>);
-                        <span class="self">self</span>.ui_components
-                            .high_filter_gain
-                            .set_value(gain <span class="kw">as </span>f64);
-
-                        <span class="comment">// q
-                        </span><span class="kw">let </span>q = scale_f32(
-                            <span class="number">1.0 </span>+ ((<span class="number">1.0 </span>- ypos_norm) * Q_SCALE_FACTOR).tanh()
-                                / q_scale_tanh,
-                            <span class="number">0.3</span>,
-                            <span class="number">10.0</span>,
-                        );
-                        <span class="self">self</span>.ui_components.high_filter_q.set_value(q <span class="kw">as </span>f64);
-                    }
-                }
-                <span class="self">self</span>.spectrum_is_clicked = <span class="bool-val">true</span>;
-            }
-            <span class="kw">else if </span>!<span class="self">self</span>.spectrum_is_clicked {
-                <span class="self">self</span>.clicked_outside_of_spectrum = <span class="bool-val">true</span>;
+        <span class="kw">for </span>pt <span class="kw">in </span><span class="self">self
+            </span>.vectors_reso_bank
+            .points
+            .iter()
+            .take(<span class="self">self</span>.vectors_reso_bank.num_active_points)
+        {
+            <span class="kw">if </span>pt.vel.x.abs() &gt; f32::EPSILON || pt.vel.y.abs() &gt; f32::EPSILON {
+                <span class="kw">return </span><span class="bool-val">true</span>;
             }
         }
-        <span class="kw">else </span>{
-            <span class="self">self</span>.spectrum_is_clicked = <span class="bool-val">false</span>;
-            <span class="self">self</span>.clicked_outside_of_spectrum = <span class="bool-val">false</span>;
-            <span class="self">self</span>.low_filter_node_is_clicked = <span class="bool-val">false</span>;
-            <span class="self">self</span>.high_filter_node_is_clicked = <span class="bool-val">false</span>;
+
+        <span class="bool-val">false
+    </span>}
+
+    <span class="doccomment">/// Redraws components under expanded when required.
+    </span><span class="kw">pub fn </span>redraw_under_menus(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw, is_first_frame: bool) {
+        <span class="kw">let </span>UIComponents {
+            mask_algorithm,
+            mask_resolution,
+            contour_count,
+            contour_speed,
+            contour_thickness,
+            smoothlife_preset,
+            reso_bank_scale,
+            exciter_osc,
+            spectrogram_label,
+            dist_type,
+            delay_feedback,
+            ..
+        } = <span class="kw-2">&amp;</span><span class="self">self</span>.ui_components;
+
+        <span class="kw">if </span>mask_algorithm.needs_redraw() {
+            <span class="kw">let </span>rect = mask_algorithm.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
         }
-        <span class="kw">if </span>clicked &amp;&amp; <span class="self">self</span>.clicked_outside_of_spectrum {
-            <span class="kw">let </span>low_freq =
-                note_to_freq(<span class="self">self</span>.ui_components.low_filter_cutoff.value());
 
-            <span class="self">self</span>.low_filter_node.x = rect.left()
-                + freq_log_norm(low_freq <span class="kw">as </span>f64, <span class="number">25.0</span>, sr) <span class="kw">as </span>f32 * rect.w();
-            <span class="kw">if </span><span class="self">self</span>.ui_components.low_filter_type.enabled() {
-                <span class="kw">let </span>gain = <span class="self">self</span>.ui_components.low_filter_gain.value() <span class="kw">as </span>f32;
-                <span class="kw">let </span>norm = map_f32(gain, -<span class="number">24.0</span>, <span class="number">24.0</span>, <span class="number">0.02962963</span>, <span class="number">0.97037035</span>);
-                <span class="self">self</span>.low_filter_node.y =
-                    map_f32(norm, <span class="number">0.0</span>, <span class="number">1.0</span>, rect.bottom(), rect.top());
-            }
-            <span class="kw">else </span>{
-                <span class="kw">let </span>q = normalize_f32(
-                    <span class="self">self</span>.ui_components.low_filter_q.value() <span class="kw">as </span>f32,
-                    <span class="number">0.3</span>,
-                    <span class="number">10.0</span>,
-                );
-                <span class="kw">let </span>q_norm =
-                    (q_scale_tanh * (q - <span class="number">1.0</span>)).atanh() / Q_SCALE_FACTOR;
-                <span class="kw">let </span>norm = scale_f32(q_norm, <span class="number">0.02962963</span>, <span class="number">0.97037035</span>);
-                <span class="self">self</span>.low_filter_node.y =
-                    map_f32(norm, <span class="number">1.0</span>, <span class="number">0.0</span>, rect.bottom(), rect.top());
-            }
+        <span class="kw">if </span>mask_resolution.needs_redraw() {
+            <span class="kw">let </span>rect = mask_resolution.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+        }
 
-            <span class="kw">let </span>high_freq =
-                note_to_freq(<span class="self">self</span>.ui_components.high_filter_cutoff.value());
+        <span class="kw">if </span>reso_bank_scale.needs_redraw() {
+            <span class="kw">let </span>rect = reso_bank_scale.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
+        }
 
-            <span class="self">self</span>.high_filter_node.x = rect.left()
-                + freq_log_norm(high_freq <span class="kw">as </span>f64, <span class="number">25.0</span>, sr) <span class="kw">as </span>f32 * rect.w();
-            <span class="kw">if </span><span class="self">self</span>.ui_components.high_filter_type.enabled() {
-                <span class="kw">let </span>gain = <span class="self">self</span>.ui_components.high_filter_gain.value() <span class="kw">as </span>f32;
-                <span class="kw">let </span>norm = map_f32(gain, -<span class="number">24.0</span>, <span class="number">24.0</span>, <span class="number">0.02962963</span>, <span class="number">0.97037035</span>);
-                <span class="self">self</span>.high_filter_node.y =
-                    map_f32(norm, <span class="number">0.0</span>, <span class="number">1.0</span>, rect.bottom(), rect.top());
-            }
-            <span class="kw">else </span>{
-                <span class="kw">let </span>q = normalize_f32(
-                    <span class="self">self</span>.ui_components.high_filter_q.value() <span class="kw">as </span>f32,
-                    <span class="number">0.3</span>,
-                    <span class="number">10.0</span>,
-                );
-                <span class="kw">let </span>q_norm =
-                    (q_scale_tanh * (q - <span class="number">1.0</span>)).atanh() / Q_SCALE_FACTOR;
-                <span class="kw">let </span>norm = scale_f32(q_norm, <span class="number">0.02962963</span>, <span class="number">0.97037035</span>);
-                <span class="self">self</span>.high_filter_node.y =
-                    map_f32(norm, <span class="number">1.0</span>, <span class="number">0.0</span>, rect.bottom(), rect.top());
-            }
+        <span class="kw">if </span>exciter_osc.needs_redraw() {
+            <span class="kw">let </span>rect = exciter_osc.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
 
-            <span class="self">self</span>.low_filter_node = <span class="self">self
-                </span>.low_filter_node
-                .clamp(padded.bottom_left(), padded.top_right());
-            <span class="self">self</span>.high_filter_node = <span class="self">self
-                </span>.high_filter_node
-                .clamp(padded.bottom_left(), padded.top_right());
+            <span class="kw">let </span>label_rect = spectrogram_label.rect();
+            draw.rect()
+                .xy(label_rect.xy())
+                .wh(label_rect.wh())
+                .color(BLACK);
+        }
+
+        <span class="kw">if </span>dist_type.needs_redraw() {
+            <span class="kw">let </span>rect = dist_type.rect();
+            draw.rect().xy(rect.xy()).wh(rect.wh()).color(BLACK);
         }
     }
 
-    <span class="kw">pub fn </span>draw_filter_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw) {
-        draw.ellipse()
-            .xy(<span class="self">self</span>.low_filter_node)
-            .radius(<span class="number">7.0</span>)
-            .color(Rgba::new(<span class="number">0.9</span>, <span class="number">0.4</span>, <span class="number">0.0</span>, <span class="number">0.5</span>));
+    <span class="doccomment">/// Redraws the filter text sliders when filter types are changed.
+    </span><span class="kw">pub fn </span>redraw_filter_sliders(<span class="kw-2">&amp;</span><span class="self">self</span>, draw: <span class="kw-2">&amp;</span>Draw) {
+        <span class="kw">let </span>hf_changed = <span class="self">self</span>.ui_components.high_filter_type.was_just_changed();
+        <span class="kw">let </span>lf_changed = <span class="self">self</span>.ui_components.low_filter_type.was_just_changed();
 
-        draw.ellipse()
-            .xy(<span class="self">self</span>.high_filter_node)
-            .radius(<span class="number">7.0</span>)
-            .color(Rgba::new(<span class="number">0.9</span>, <span class="number">0.4</span>, <span class="number">0.0</span>, <span class="number">0.5</span>));
+        <span class="kw">if </span>hf_changed {
+            <span class="kw">let </span>is_shelf = <span class="self">self</span>.ui_components.high_filter_type.enabled();
+            <span class="kw">let </span>rect = <span class="self">self</span>.ui_components.high_filter_gain.rect();
+            <span class="kw">let </span>h = rect.h();
+            draw.rect()
+                .xy(pt2(rect.x(), rect.y() + h * <span class="number">0.5</span>))
+                .wh(pt2(rect.w(), rect.h() * <span class="number">2.0</span>))
+                .color(BLACK);
+
+            <span class="kw">if </span>is_shelf {
+                <span class="self">self</span>.ui_components.high_filter_gain.redraw_label(draw);
+            }
+            <span class="kw">else </span>{
+                <span class="self">self</span>.ui_components.high_filter_q.redraw_label(draw);
+            }
+        }
+
+        <span class="kw">if </span>lf_changed {
+            <span class="kw">let </span>is_shelf = <span class="self">self</span>.ui_components.low_filter_type.enabled();
+            <span class="kw">let </span>rect = <span class="self">self</span>.ui_components.low_filter_gain.rect();
+            <span class="kw">let </span>h = rect.h();
+            draw.rect()
+                .xy(pt2(rect.x(), rect.y() + h * <span class="number">0.5</span>))
+                .wh(pt2(rect.w(), rect.h() * <span class="number">2.0</span>))
+                .color(BLACK);
+
+            <span class="kw">if </span>is_shelf {
+                <span class="self">self</span>.ui_components.low_filter_gain.redraw_label(draw);
+            }
+            <span class="kw">else </span>{
+                <span class="self">self</span>.ui_components.low_filter_q.redraw_label(draw);
+            }
+        }
     }
 }
 
-<span class="kw">fn </span>create_log_lines(rect: <span class="kw-2">&amp;</span>Rect) -&gt; Vec&lt;[Vec2; <span class="number">2</span>]&gt; {
+<span class="doccomment">/// Computes the position of each log line in the spectrogram.
+</span><span class="kw">fn </span>create_log_lines(rect: <span class="kw-2">&amp;</span>Rect) -&gt; Vec&lt;[Vec2; <span class="number">2</span>]&gt; {
     <span class="kw">let </span>(w, h) = (rect.w() <span class="kw">as </span>f64, rect.h() <span class="kw">as </span>f64);
     <span class="kw">let </span>(l, r) = (rect.left() <span class="kw">as </span>f64, rect.right() <span class="kw">as </span>f64);
     <span class="kw">let </span>(b, t) = (rect.bottom(), rect.top());
@@ -1708,8 +1517,7 @@
         .collect()
 }
 
-<span class="doccomment">/// Log values intended to represent the logarithmic
-/// scaling from 10 Hz to 30 kHz.
+<span class="doccomment">/// Log values intended to represent the logarithmic scaling from 10 Hz to 30 kHz.
 </span><span class="attr">#[allow(
     clippy::unreadable_literal,
     clippy::excessive_precision,
