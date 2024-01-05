@@ -8,6 +8,8 @@ The device has three main parts:
 - A spectral filter, which uses a column of pixels to mask audio in the frequency domain. The brighter a pixel is, the louder the magnitude is at its respective frequency. You may drag the orange "scan line" with the mouse, and each visual algorithm offers some control over its appearance. You may also change the resolution (block size) of the spectral filter.
 - Post-processing FX, including a simple parametric EQ, distortion, stereo delay, and a compressor. The orange EQ nodes can be dragged with the mouse to control the filters.
 
+You can find the latest build at the [releases](https://github.com/jamiegibney/creative_coding_project/releases) page.
+
 ### Keymap
 The device's keymap is as follows:
 
