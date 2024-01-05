@@ -1,3 +1,5 @@
+//! GUI parameters.
+
 pub mod ui;
 pub mod types;
 pub use ui::*;

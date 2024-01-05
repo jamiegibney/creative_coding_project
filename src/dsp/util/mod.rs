@@ -1,3 +1,5 @@
+//! DSP utility types.
+
 pub mod dry_wet;
 pub mod effect_trait;
 pub mod stereo_wrapper;

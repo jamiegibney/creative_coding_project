@@ -1,3 +1,5 @@
+//! GPU compute state for the Voronoi algorithm.
+
 use super::*;
 use std::mem::size_of;
 

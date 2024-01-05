@@ -1,3 +1,5 @@
+//! Signal waveshaping.
+
 use std::ops::RangeInclusive;
 
 use super::*;

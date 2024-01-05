@@ -1,3 +1,5 @@
+//! Resonator bank with musical features.
+
 use super::*;
 use crate::dsp::*;
 use crate::prelude::*;

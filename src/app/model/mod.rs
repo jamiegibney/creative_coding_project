@@ -1,10 +1,6 @@
-use crate::gui::rdp::rdp_in_place;
-use crate::prelude::interp::linear_unclamped;
-use crossbeam_channel::{unbounded, Receiver, Sender};
-use nannou_audio::Stream;
+//! The whole app's state.
 
-// use nannou_egui::{self, egui, Egui};
-
+use super::audio::audio_constructor;
 use super::audio::*;
 use super::view::view;
 use super::*;
@@ -14,10 +10,13 @@ use crate::dsp::{
     ResonatorBankParams, SpectralMask, BUTTERWORTH_Q,
 };
 use crate::generative::*;
+use crate::gui::rdp::rdp_in_place;
 use crate::gui::{spectrum::*, EQDisplay};
 use crate::gui::{EQFilterParams, UIComponents};
+use crate::prelude::interp::linear_unclamped;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use nannou::prelude::WindowId as Id;
-
+use nannou_audio::Stream;
 use std::f64::consts::SQRT_2;
 use std::{
     cell::RefCell,
@@ -27,69 +26,73 @@ use std::{
 };
 
 mod constructors;
-use super::audio::audio_constructor;
 use constructors::*;
 
 type CallbackTimerRef = Arc<Mutex<Instant>>;
 
-/// The app's model, i.e. its general state.
+/// The app's model, i.e. its state.
 #[allow(clippy::struct_excessive_bools)]
 pub struct Model {
     window: Id,
 
-    // pub egui: Egui,
+    /// UI parameters.
     pub ui_params: UIParams,
 
-    // AUDIO DATA
     /// The CPAL audio stream.
     pub audio_stream: nannou_audio::Stream<AudioModel>,
     /// Channels to send messages directly to the audio thread.
     pub audio_senders: Arc<AudioMessageSenders>,
 
-    /// A thread-safe reference to the mask used for spectral filtering.
-    // pub spectral_mask: Arc<Mutex<SpectralMask>>,
+    /// Input to the spectral mask channel, sent to the audio thread.
     pub spectral_mask: triple_buffer::Input<SpectralMask>,
 
+    /// Channel to send voice events (such as killing all voices).
     pub voice_event_sender: mpsc::Sender<VoiceEvent>,
 
     /// A thread-safe reference to the timer which tracks when the audio callback
     /// was last called.
     pub audio_callback_timer: CallbackTimerRef,
 
-    /// A string showing the (rough) DSP load.
-    pub dsp_load: Option<String>,
-
     /// A reference to the sample rate value.
     pub sample_rate_ref: Arc<AtomicF64>,
 
-    // NOTES
     /// Current octave for note input (via typing keyboard).
     pub octave: Octave,
     /// A thread-safe reference to the note handler.
     pub note_handler: NoteHandlerRef,
     /// A HashMap of the currently-pressed keys.
-    // TODO: this doesn't register that keys are unpressed when "switching octaves"
-    // (Z and X)
     pub pressed_keys: HashMap<Key, bool>,
 
-    // GUI
     /// The pre-FX spectrogram.
     pub pre_spectrum_analyzer: SpectrumAnalyzer,
     /// The post-FX spectrogram.
     pub post_spectrum_analyzer: SpectrumAnalyzer,
 
+    /// All GUI control components (sliders, menus, buttons, labels...)
     pub ui_components: UIComponents,
 
+    /// The resonator bank bounding rect.
     pub bank_rect: Rect,
+    /// A receiver for the resonator bank "reset" button.
     pub reso_bank_reset_receiver: Receiver<()>,
+    /// A sender to allow a keybind to reset the resonator bank.
     pub reso_bank_reset_sender_key: Sender<()>,
+    /// A receiver for the resonator bank "push" button.
     pub reso_bank_push_receiver: Receiver<()>,
+    /// A sender to allow a keybind to push the resonator bank.
     pub reso_bank_push_sender_key: Sender<()>,
+    /// Input to the resonator bank state channel, sent to the audio thread.
     pub reso_bank_data: triple_buffer::Input<ResoBankData>,
 
+    /// The spectral filter bounding rect.
     pub mask_rect: Rect,
+    /// Whether the mouse was clicked outside of the spectral filter — used to track
+    /// input events applied to the mask scan line.
     pub mouse_clicked_outside_of_mask: bool,
+    /// Whether the spectral filter is clicked or not.
     pub mask_clicked: bool,
+
+    /// The spectrogram/EQ bounding rect.
     pub spectrum_rect: Rect,
 
     /// A Perlin noise contour generator.
@@ -99,11 +102,11 @@ pub struct Model {
     /// A Voronoi noise generator used for the spectral mask.
     pub voronoi_mask: Arc<RwLock<VoronoiGPU>>,
     /// A vector field used to manage points for the Voronoi mask.
-    pub voronoi_vectors: Arc<RwLock<Vectors>>,
-    pub voronoi_z: Arc<AtomicF64>,
+    pub voronoi_vectors: Arc<RwLock<VectorField>>,
 
     /// A simple vector field for the resonator bank points.
-    pub vectors_reso_bank: Vectors,
+    pub vectors_reso_bank: VectorField,
+    /// A channel to receive a message when the number of resonators has changed.
     resonator_count_receiver: Receiver<()>,
     /// The voronoi generator for the resonator bank vector field.
     pub voronoi_reso_bank: VoronoiGPU,
@@ -112,13 +115,18 @@ pub struct Model {
     /// The amount to increment the position of the mask scan line each frame.
     pub mask_scan_line_increment: f64,
 
+    /// The EQ display — filter nodes and the frequency response line.
     pub eq_display: EQDisplay,
 
+    /// Logarithmic frequency lines drawn in the background of the spectrogram.
     pub log_lines: Vec<[Vec2; 2]>,
 
+    /// User input data.
     pub input_data: InputData,
 
-    pub mask_thread_pool: ThreadPool,
+    /// The time since the last called to [`update()`], used for calculating the frame
+    /// delta time.
+    last_frame_time: Instant,
 }
 
 impl Model {
@@ -158,7 +166,6 @@ impl Model {
             mut voronoi_vectors,
             pre_spectrum_analyzer,
             post_spectrum_analyzer,
-            dsp_load,
             vectors_reso_bank,
         } = build_gui_elements(app, pre_spectrum, post_spectrum, &params);
 
@@ -181,8 +188,6 @@ impl Model {
 
         let (reso_bank_push_sender, reso_bank_push_receiver) = unbounded();
         let reso_bank_push_sender_key = reso_bank_push_sender.clone();
-
-        let voronoi_z = Arc::new(AtomicF64::new(0.0));
 
         let voronoi_vectors = Arc::new(RwLock::new(voronoi_vectors));
         let vv = Arc::clone(&voronoi_vectors);
@@ -311,7 +316,6 @@ impl Model {
 
             voronoi_mask: Arc::new(RwLock::new(voronoi_mask)),
             voronoi_vectors,
-            voronoi_z,
 
             voronoi_reso_bank: VoronoiGPU::new(app, bank_rect),
             vectors_reso_bank,
@@ -323,15 +327,13 @@ impl Model {
             mask_scan_line_increment: 0.1,
 
             input_data: InputData {
-                is_win_focussed: true, // required for the window to be initialised on Windows
+                is_win_focussed: true, // required for the window to be initialized on Windows
                 ..Default::default()
             },
 
-            mask_thread_pool: ThreadPool::build(1)
-                .expect("failed to build mask thread pool"),
-
-            dsp_load,
             sample_rate_ref,
+
+            last_frame_time: Instant::now(),
         }
     }
 
@@ -351,7 +353,7 @@ impl Model {
         })
     }
 
-    /// Increments the internal position of the mask scan line.
+    /// Increments the position of the mask scan line.
     pub fn increment_mask_scan_line(&mut self) {
         let increment = self.ui_params.mask_scan_line_speed.lr();
         self.mask_scan_line_pos += increment * self.input_data.delta_time;
@@ -392,10 +394,10 @@ impl Model {
     }
 
     /// Updates the model's input data.
-    pub fn update_input_data(&mut self, app: &App, update: Update) {
-        // self.egui.set_elapsed_time(update.since_start);
-
-        self.input_data.delta_time = update.since_last.as_secs_f64();
+    pub fn update_input_data(&mut self, app: &App) {
+        self.input_data.delta_time =
+            self.last_frame_time.elapsed().as_secs_f64();
+        self.last_frame_time = Instant::now();
         self.input_data.mouse_pos = app.mouse.position();
         // mouse scroll delta is updated in the event() callback
 
@@ -409,7 +411,8 @@ impl Model {
         self.input_data.is_ctrl_down = modifers.ctrl();
     }
 
-    pub fn update_vectors(&mut self, app: &App) {
+    /// Updates the resonator bank vector field.
+    pub fn update_reso_bank_vector_field(&mut self, app: &App) {
         let reso_count = self.ui_params.reso_bank_resonator_count.lr() as usize;
         if reso_count != self.vectors_reso_bank.num_active_points {
             self.vectors_reso_bank.set_num_active_points(reso_count);
@@ -451,6 +454,7 @@ impl Model {
         }
     }
 
+    /// Updates the vector field used for the Voronoi noise spectral mask.
     pub fn update_voronoi_vectors(&mut self, app: &App) {
         let mut guard = self.voronoi_vectors.write().unwrap();
         guard.set_num_active_points(
@@ -485,6 +489,7 @@ impl Model {
         guard.update(app, &self.input_data);
     }
 
+    /// Updates the mask scan line based on user mouse input.
     pub fn update_mask_scan_line_from_mouse(&mut self) {
         if self.input_data.is_left_clicked {
             if self.mask_rect.contains(self.input_data.mouse_pos)
@@ -512,6 +517,7 @@ impl Model {
         }
     }
 
+    /// Updates the EQ GUI.
     pub fn update_eq(&mut self, app: &App) {
         if self.ui_components.exciter_osc.is_open() {
             self.eq_display.clicked_outside_of_spectrum = true;
@@ -578,13 +584,7 @@ impl Model {
         }
     }
 
-    /* pub fn draw_filter_line(&self, draw: &Draw) {
-        draw.polyline()
-            .weight(2.0)
-            .points(self.filter_points.iter().copied())
-            .color(Rgba::new(1.0, 1.0, 1.0, 0.08));
-    } */
-
+    /// Draws the spectrogram log lines.
     pub fn draw_log_lines(&self, draw: &Draw) {
         for line in &self.log_lines {
             draw.line()
@@ -594,189 +594,12 @@ impl Model {
         }
     }
 
-    // #[allow(clippy::too_many_lines)]
-    // /// Y-pos to Q (and back) conversions found experimenting on Desmos:
-    // /// <https://www.desmos.com/calculator/ddgep83pq2>
-    // pub fn update_filter_nodes(&mut self, app: &App) {
-    //     const Q_SCALE_FACTOR: f32 = 3.8206;
-    //     let q_scale_tanh = -Q_SCALE_FACTOR.tanh();
-    //
-    //     if self.ui_components.exciter_osc.is_open() {
-    //         self.clicked_outside_of_spectrum = true;
-    //         return;
-    //     }
-    //
-    //     let mp = self.input_data.mouse_pos;
-    //     let clicked = self.input_data.is_left_clicked;
-    //     let rect = self.spectrum_rect;
-    //     let low_rect = Rect::from_xy_wh(self.low_filter_node, pt2(14.0, 14.0));
-    //     let high_rect =
-    //         Rect::from_xy_wh(self.high_filter_node, pt2(14.0, 14.0));
-    //
-    //     let padded = rect.pad(8.0);
-    //     let sr = self.sample_rate_ref.lr();
-    //
-    //     if clicked {
-    //         if rect.contains(mp) || self.spectrum_is_clicked {
-    //             if !self.clicked_outside_of_spectrum {
-    //                 if (low_rect.contains(mp)
-    //                     || self.low_filter_node_is_clicked)
-    //                     && !self.high_filter_node_is_clicked
-    //                 {
-    //                     self.low_filter_node =
-    //                         mp.clamp(padded.bottom_left(), padded.top_right());
-    //                     self.low_filter_node_is_clicked = true;
-    //
-    //                     // frequency
-    //                     let xpos_norm =
-    //                         (self.low_filter_node.x - rect.left()) / rect.w();
-    //                     let freq =
-    //                         freq_lin_from_log(xpos_norm as f64, 25.0, sr);
-    //                     self.ui_components
-    //                         .low_filter_cutoff
-    //                         .set_value(freq_to_note(freq.clamp(25.0, 20000.0)));
-    //
-    //                     // gain
-    //                     let ypos_norm = normalize_f32(
-    //                         (self.low_filter_node.y - rect.bottom()) / rect.h(),
-    //                         0.02962963,
-    //                         0.97037035,
-    //                     );
-    //                     let gain = scale_f32(ypos_norm, -24.0, 24.0);
-    //                     self.ui_components
-    //                         .low_filter_gain
-    //                         .set_value(gain as f64);
-    //
-    //                     // q
-    //                     let q = scale_f32(
-    //                         1.0 + ((1.0 - ypos_norm) * Q_SCALE_FACTOR).tanh()
-    //                             / q_scale_tanh,
-    //                         0.3,
-    //                         10.0,
-    //                     );
-    //                     self.ui_components.low_filter_q.set_value(q as f64);
-    //                 }
-    //                 if (high_rect.contains(mp)
-    //                     || self.high_filter_node_is_clicked)
-    //                     && !self.low_filter_node_is_clicked
-    //                 {
-    //                     self.high_filter_node =
-    //                         mp.clamp(padded.bottom_left(), padded.top_right());
-    //                     self.high_filter_node_is_clicked = true;
-    //
-    //                     // frequency
-    //                     let xpos_norm =
-    //                         (self.high_filter_node.x - rect.left()) / rect.w();
-    //                     let freq =
-    //                         freq_lin_from_log(xpos_norm as f64, 25.0, sr);
-    //                     self.ui_components
-    //                         .high_filter_cutoff
-    //                         .set_value(freq_to_note(freq.clamp(25.0, 20000.0)));
-    //
-    //                     // gain
-    //                     let ypos_norm = normalize_f32(
-    //                         (self.high_filter_node.y - rect.bottom())
-    //                             / rect.h(),
-    //                         0.02962963,
-    //                         0.97037035,
-    //                     );
-    //                     let gain = scale_f32(ypos_norm, -24.0, 24.0);
-    //                     self.ui_components
-    //                         .high_filter_gain
-    //                         .set_value(gain as f64);
-    //
-    //                     // q
-    //                     let q = scale_f32(
-    //                         1.0 + ((1.0 - ypos_norm) * Q_SCALE_FACTOR).tanh()
-    //                             / q_scale_tanh,
-    //                         0.3,
-    //                         10.0,
-    //                     );
-    //                     self.ui_components.high_filter_q.set_value(q as f64);
-    //                 }
-    //             }
-    //             self.spectrum_is_clicked = true;
-    //         }
-    //         else if !self.spectrum_is_clicked {
-    //             self.clicked_outside_of_spectrum = true;
-    //         }
-    //     }
-    //     else {
-    //         self.spectrum_is_clicked = false;
-    //         self.clicked_outside_of_spectrum = false;
-    //         self.low_filter_node_is_clicked = false;
-    //         self.high_filter_node_is_clicked = false;
-    //     }
-    //     if clicked && self.clicked_outside_of_spectrum {
-    //         let low_freq =
-    //             note_to_freq(self.ui_components.low_filter_cutoff.value());
-    //
-    //         self.low_filter_node.x = rect.left()
-    //             + freq_log_norm(low_freq as f64, 25.0, sr) as f32 * rect.w();
-    //         if self.ui_components.low_filter_type.enabled() {
-    //             let gain = self.ui_components.low_filter_gain.value() as f32;
-    //             let norm = map_f32(gain, -24.0, 24.0, 0.02962963, 0.97037035);
-    //             self.low_filter_node.y =
-    //                 map_f32(norm, 0.0, 1.0, rect.bottom(), rect.top());
-    //         }
-    //         else {
-    //             let q = normalize_f32(
-    //                 self.ui_components.low_filter_q.value() as f32,
-    //                 0.3,
-    //                 10.0,
-    //             );
-    //             let q_norm =
-    //                 (q_scale_tanh * (q - 1.0)).atanh() / Q_SCALE_FACTOR;
-    //             let norm = scale_f32(q_norm, 0.02962963, 0.97037035);
-    //             self.low_filter_node.y =
-    //                 map_f32(norm, 1.0, 0.0, rect.bottom(), rect.top());
-    //         }
-    //
-    //         let high_freq =
-    //             note_to_freq(self.ui_components.high_filter_cutoff.value());
-    //
-    //         self.high_filter_node.x = rect.left()
-    //             + freq_log_norm(high_freq as f64, 25.0, sr) as f32 * rect.w();
-    //         if self.ui_components.high_filter_type.enabled() {
-    //             let gain = self.ui_components.high_filter_gain.value() as f32;
-    //             let norm = map_f32(gain, -24.0, 24.0, 0.02962963, 0.97037035);
-    //             self.high_filter_node.y =
-    //                 map_f32(norm, 0.0, 1.0, rect.bottom(), rect.top());
-    //         }
-    //         else {
-    //             let q = normalize_f32(
-    //                 self.ui_components.high_filter_q.value() as f32,
-    //                 0.3,
-    //                 10.0,
-    //             );
-    //             let q_norm =
-    //                 (q_scale_tanh * (q - 1.0)).atanh() / Q_SCALE_FACTOR;
-    //             let norm = scale_f32(q_norm, 0.02962963, 0.97037035);
-    //             self.high_filter_node.y =
-    //                 map_f32(norm, 1.0, 0.0, rect.bottom(), rect.top());
-    //         }
-    //
-    //         self.low_filter_node = self
-    //             .low_filter_node
-    //             .clamp(padded.bottom_left(), padded.top_right());
-    //         self.high_filter_node = self
-    //             .high_filter_node
-    //             .clamp(padded.bottom_left(), padded.top_right());
-    //     }
-    // }
-
-    // pub fn draw_filter_nodes(&self, draw: &Draw) {
-    //     draw.ellipse()
-    //         .xy(self.low_filter_node)
-    //         .radius(7.0)
-    //         .color(Rgba::new(0.9, 0.4, 0.0, 0.5));
-    //
-    //     draw.ellipse()
-    //         .xy(self.high_filter_node)
-    //         .radius(7.0)
-    //         .color(Rgba::new(0.9, 0.4, 0.0, 0.5));
-    // }
-
+    /// Determins whether the resonator bank needs to be redrawn.
+    ///
+    /// TODO: for some reason the resonator bank vector field and voronoi noise
+    /// do not update immediately, and it seems like the voronoi generator updates
+    /// a frame or two (or three?) later. For now, this method is just used to determine
+    /// whether to update the voronoi generator each frame, and not when to draw it.
     pub fn reso_bank_needs_redraw(&self) -> bool {
         if self.ui_components.reso_bank_scale.needs_redraw()
             || self.vectors_reso_bank.can_mouse_interact
@@ -799,6 +622,7 @@ impl Model {
         false
     }
 
+    /// Redraws components under expanded when required.
     pub fn redraw_under_menus(&self, draw: &Draw, is_first_frame: bool) {
         let UIComponents {
             mask_algorithm,
@@ -847,6 +671,7 @@ impl Model {
         }
     }
 
+    /// Redraws the filter text sliders when filter types are changed.
     pub fn redraw_filter_sliders(&self, draw: &Draw) {
         let hf_changed = self.ui_components.high_filter_type.was_just_changed();
         let lf_changed = self.ui_components.low_filter_type.was_just_changed();
@@ -887,6 +712,7 @@ impl Model {
     }
 }
 
+/// Computes the position of each log line in the spectrogram.
 fn create_log_lines(rect: &Rect) -> Vec<[Vec2; 2]> {
     let (w, h) = (rect.w() as f64, rect.h() as f64);
     let (l, r) = (rect.left() as f64, rect.right() as f64);
@@ -912,8 +738,7 @@ fn create_log_lines(rect: &Rect) -> Vec<[Vec2; 2]> {
         .collect()
 }
 
-/// Log values intended to represent the logarithmic
-/// scaling from 10 Hz to 30 kHz.
+/// Log values intended to represent the logarithmic scaling from 10 Hz to 30 kHz.
 #[allow(
     clippy::unreadable_literal,
     clippy::excessive_precision,

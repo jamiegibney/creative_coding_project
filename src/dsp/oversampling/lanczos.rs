@@ -1,3 +1,5 @@
+//! Oversampling driven by Lanczos resampling.
+
 use crate::prelude::lanczos_kernel;
 use std::sync::Arc;
 

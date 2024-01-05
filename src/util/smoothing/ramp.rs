@@ -1,3 +1,5 @@
+//! Non-atomic linear segment generator.
+
 use super::smoothable_types::Smoothable;
 use crate::prelude::*;
 

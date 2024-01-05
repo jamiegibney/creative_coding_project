@@ -1,3 +1,5 @@
+//! Key-press/release callbacks.
+
 use super::*;
 use crate::app::audio::VoiceEvent;
 

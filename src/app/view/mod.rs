@@ -1,3 +1,5 @@
+//! The view callback, i.e. "draw loop".
+
 use crate::{gui::colors::*, prelude::xfer::s_curve};
 use nannou::geom::{path, Path};
 

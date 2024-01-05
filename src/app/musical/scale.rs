@@ -1,3 +1,5 @@
+//! Musical scale representations.
+
 use bytemuck::NoUninit;
 use std::fmt::Display;
 

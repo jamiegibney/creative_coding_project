@@ -1,4 +1,5 @@
 //! Generic enum for audio generators.
+
 use super::*;
 
 /// All the types of signal generators available.

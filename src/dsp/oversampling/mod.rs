@@ -1,3 +1,5 @@
+//! Oversampling types and implementation.
+
 use super::*;
 use crate::prelude::*;
 

@@ -1,3 +1,5 @@
+//! DC-offset filter.
+
 use super::*;
 use crate::dsp::{BiquadFilter, Effect};
 use crate::prelude::*;

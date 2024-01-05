@@ -1,6 +1,6 @@
 //! Revised biquad filter using the [direct form 1](https://en.wikipedia.org/wiki/Digital_biquad_filter#Transposed_direct_forms:~:text=%5Bedit%5D-,Direct%20form,-1%5Bedit).
 //!
-//! Lowpass, highpass, lowshelf, and highshelf coefficients are taken from the
+//! Coefficient equations taken from the 
 //! [Audio EQ Cookbook by Robert Bristow-Johnson](https://www.w3.org/TR/audio-eq-cookbook/).
 
 #![allow(clippy::module_name_repetitions)]
@@ -10,6 +10,7 @@ use std::f64::consts::{FRAC_1_SQRT_2, PI, TAU};
 use util::{db_to_level, level_to_db};
 use FilterType as FT;
 
+/// Filter coefficients.
 #[derive(Debug, Clone, Copy)]
 struct Coefs {
     /// INPUT side
@@ -61,7 +62,7 @@ impl Default for BiquadParams {
 
 /// A biquad filter implementation, which offers all of the filter types
 /// available in `FilterType`.
-/// This is based on the [transposed direct form 2](https://en.wikipedia.org/wiki/Digital_biquad_filter#Transposed_direct_forms)
+/// This is based on the [transposed direct form 1](https://en.wikipedia.org/wiki/Digital_biquad_filter#Transposed_direct_forms:~:text=%5Bedit%5D-,Direct%20form,-1%5Bedit)
 /// implementation.
 ///
 /// Its parameters are stored internally as a `BiquadParams`, which can be passed
@@ -465,10 +466,12 @@ impl BiquadFilter {
         *a2 = 1.0;
     }
 
+    /// Convenience method for obtaining the value of "phi".
     fn get_phi(&self) -> f64 {
         TAU * (self.params.freq / self.sample_rate)
     }
 
+    /// Convenience method for obtaining the value of "alpha".
     fn get_alpha(&self, phi: f64) -> f64 {
         (phi.sin()) / 2.0 * self.params.q
     }

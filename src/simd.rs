@@ -1,3 +1,5 @@
+//! Unused SIMD types and methods.
+
 use nannou_audio::Buffer;
 use std::ops::{Add, Mul, Sub};
 use wide::{f32x4, f32x8, f64x2, f64x4};

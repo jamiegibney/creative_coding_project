@@ -1,14 +1,17 @@
+//! The update callback, for mutating state each frame. Not for drawing.
+
 use super::*;
 use std::sync::{Arc, Mutex, RwLock};
 
+/// The app's update callback for updating state.
 pub fn update(app: &App, model: &mut Model, update: Update) {
-    model.update_input_data(app, update);
+    model.update_input_data(app);
 
     if !model.input_data.is_win_focussed {
         return;
     }
 
-    model.update_vectors(app);
+    model.update_reso_bank_vector_field(app);
     model.increment_mask_scan_line();
 
     // update the mask scan line based on mouse events

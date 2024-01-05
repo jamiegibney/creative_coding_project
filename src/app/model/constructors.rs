@@ -1,3 +1,5 @@
+//! App constructors.
+
 use super::audio_constructor::build_audio_model;
 use super::*;
 use crate::app::audio::audio_constructor::MAX_NUM_RESONATORS;
@@ -108,14 +110,12 @@ pub struct GuiElements {
     pub(super) contours: ContoursGPU,
     pub(super) smooth_life: SmoothLifeGPU,
     pub(super) voronoi_mask: VoronoiGPU,
-    pub(super) voronoi_vectors: Vectors,
+    pub(super) voronoi_vectors: VectorField,
 
-    pub(super) vectors_reso_bank: Vectors,
+    pub(super) vectors_reso_bank: VectorField,
 
     pub(super) pre_spectrum_analyzer: SpectrumAnalyzer,
     pub(super) post_spectrum_analyzer: SpectrumAnalyzer,
-
-    pub(super) dsp_load: Option<String>,
 }
 
 pub fn build_gui_elements(
@@ -171,17 +171,15 @@ pub fn build_gui_elements(
             .with_contour_range(0.0..=(params.contour_thickness.lr() as f32)),
         smooth_life: SmoothLifeGPU::new(app, mask_rect),
         voronoi_mask: VoronoiGPU::new(app, mask_rect),
-        voronoi_vectors: Vectors::new(MAX_NUM_RESONATORS, mask_rect)
+        voronoi_vectors: VectorField::new(MAX_NUM_RESONATORS, mask_rect)
             .with_point_radius(5.0),
 
-        vectors_reso_bank: Vectors::new(MAX_NUM_RESONATORS, bank_rect)
+        vectors_reso_bank: VectorField::new(MAX_NUM_RESONATORS, bank_rect)
             .with_point_radius(5.0)
             .with_point_color(Rgba::new(0.9, 0.4, 0.0, 0.6)),
 
         pre_spectrum_analyzer,
         post_spectrum_analyzer,
-
-        dsp_load: None,
     }
 }
 

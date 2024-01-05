@@ -1,3 +1,5 @@
+//! Musical chord representations. Unused in this project.
+
 use crate::prelude::*;
 
 const MAX: usize = NUM_VOICES as usize;

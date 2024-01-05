@@ -1,3 +1,5 @@
+//! Lanczos resampling stage.
+
 // TODO there is massive potential to parallelise these operations, namely the
 // loop which calls the convolution algorithm. Using an FFT to convolve is likely
 // not worthwhile for such a small data set (the kernel is only convolved with

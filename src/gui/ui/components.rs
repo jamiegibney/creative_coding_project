@@ -1,3 +1,5 @@
+//! The model of GUI components used by the app.
+
 use super::*;
 use crate::app::audio::AudioMessageSenders;
 use crate::dsp::{ResonatorBankParams, SpectralMask};
@@ -10,6 +12,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
 use triple_buffer::Input;
 
+/// All the UI components for the device.
 pub struct UIComponents {
     // ### SPECTRAL FILTER ###
     mask_label: Label,

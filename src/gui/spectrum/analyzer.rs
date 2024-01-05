@@ -1,3 +1,5 @@
+//! Spectrogram GUI component.
+
 use super::{process::RESULT_BUFFER_SIZE, *};
 use crate::{dsp::*, gui::rdp::rdp_in_place, prelude::*};
 use nannou::prelude::*;

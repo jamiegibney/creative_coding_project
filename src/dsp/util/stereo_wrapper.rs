@@ -1,3 +1,5 @@
+//! A wrapper around two mono `impl `[`Effect`] types with stereo utilities.
+
 use super::Effect;
 
 /// A simple wrapper around two mono `Effect` objects.

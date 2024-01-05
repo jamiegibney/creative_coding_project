@@ -1,3 +1,5 @@
+//! Simple vector field.
+
 use super::*;
 use crate::{
     dsp::{ResoBankData, ResonatorBank},
@@ -10,6 +12,7 @@ use std::sync::{Arc, Mutex};
 const MAX_VELOCITY: f32 = 3.0;
 const MIN_START_VELOCITY: f32 = 1.5;
 
+/// A single point within the vector field.
 #[derive(Debug, Clone)]
 pub struct Point {
     pub pos: Vec2,            // position of the point
@@ -18,33 +21,45 @@ pub struct Point {
 }
 
 impl Point {
+    /// Sets the position of the point.
     pub fn set_pos(&mut self, pos: Vec2) {
         self.pos = pos;
     }
 
+    /// Randomises the velocity of the point.
     pub fn randomize_velocity(&mut self) {
         self.vel.x = random_range(-MAX_VELOCITY, MAX_VELOCITY) * 0.7;
         self.vel.y = random_range(-MAX_VELOCITY, MAX_VELOCITY);
     }
 
+    /// Randomises the deceleration factor of the point.
     pub fn randomize_deceleration(&mut self) {
         self.deceleration_factor = random_range(0.90, 0.999);
     }
 
+    /// Returns whether the point contains `pos`.
     pub fn contains(&self, pos: Vec2, radius: f32) -> bool {
         let size = radius * 2.0;
         Rect::from_xy_wh(self.pos, pt2(size, size)).contains(pos)
     }
 }
 
+/// A simple vector field, i.e. a field of two-dimensional points.
+///
+/// This is used to manipulate points for the Voronoi noise algorithms,
+/// and control the parameters of the resonator bank.
 #[derive(Debug, Clone)]
-pub struct Vectors {
+pub struct VectorField {
+    /// The buffer of points in the field.
     pub points: Vec<Point>,
     point_radius: f32,
     point_color: Rgba,
+
+    /// The number of currently active vectors.
     pub num_active_points: usize,
     deceleration_scale: f32,
 
+    /// Whether the mouse can interact with the field or not.
     pub can_mouse_interact: bool,
     points_overriden: bool,
 
@@ -53,7 +68,8 @@ pub struct Vectors {
     rect: Rect,
 }
 
-impl Vectors {
+impl VectorField {
+    /// Creates a new, default `VectorField`.
     pub fn new(num_points: usize, rect: Rect) -> Self {
         let mid = rect.xy();
 
@@ -80,42 +96,51 @@ impl Vectors {
         s
     }
 
+    /// Sets the color of points in the field.
     pub fn with_point_color(mut self, color: Rgba) -> Self {
         self.set_point_color(color);
         self
     }
 
+    /// Sets the radius of each point.
     pub fn with_point_radius(mut self, radius: f32) -> Self {
         self.set_point_radius(radius);
         self.randomize_points();
         self
     }
 
+    /// Sets the initial number of active points.
     pub fn with_num_active_points(mut self, num_points: usize) -> Self {
         self.set_num_active_points(num_points);
         self
     }
 
+    /// Returns a mutable reference to the points in the field, and overrides them
+    /// from being updated for the next call to [`update()`](UIDraw::update).
     pub fn override_points(&mut self) -> &mut [Point] {
         self.points_overriden = true;
 
         &mut self.points[..self.num_active_points]
     }
 
+    /// Sets the color to draw each point with.
     pub fn set_point_color(&mut self, color: Rgba) {
         self.point_color = color;
     }
 
+    /// Sets the radius of each point.
     pub fn set_point_radius(&mut self, radius: f32) {
         if radius.is_sign_positive() {
             self.point_radius = radius;
         }
     }
 
+    /// Sets the number of active points in the field.
     pub fn set_num_active_points(&mut self, num_points: usize) {
         self.num_active_points = num_points.min(self.points.len());
     }
 
+    /// Mutates a `ResoBankData` from a Mutex.
     pub fn set_reso_bank_data_mutex(
         &self,
         reso_bank_data: &Arc<Mutex<ResoBankData>>,
@@ -125,6 +150,7 @@ impl Vectors {
         }
     }
 
+    /// Mutates a `ResoBankData` from a mutable reference.
     pub fn set_reso_bank_data(&self, reso_bank_data: &mut ResoBankData) {
         let len = self
             .num_active_points
@@ -147,6 +173,7 @@ impl Vectors {
         }
     }
 
+    /// Randomizes all points in the field.
     pub fn randomize_points(&mut self) {
         let len = self.num_active_points;
 
@@ -159,6 +186,7 @@ impl Vectors {
         }
     }
 
+    /// Applies a force to each point in the field.
     pub fn push_points(&mut self) {
         let len = self.num_active_points;
 
@@ -172,8 +200,10 @@ impl Vectors {
         }
     }
 
+    /// Sets how aggressively each point decelerates.
     pub fn set_friction(&mut self, friction: f64) {
-        self.deceleration_scale = (1.0 - friction * 0.20) as f32;
+        self.deceleration_scale =
+            (1.0 - friction.clamp(0.0, 1.0) * 0.20) as f32;
     }
 
     fn clamped_vec(&self, point: Vec2) -> Vec2 {
@@ -192,7 +222,7 @@ impl Vectors {
     }
 }
 
-impl UIDraw for Vectors {
+impl UIDraw for VectorField {
     fn update(&mut self, app: &App, input_data: &InputData) {
         let len = self.num_active_points;
 

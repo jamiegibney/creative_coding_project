@@ -1,5 +1,6 @@
-//! Voronoi (Worley) noise algorithms.
-use crate::generative::Vectors;
+//! Voronoi noise types and implementation.
+
+use crate::generative::VectorField;
 use crate::prelude::*;
 use nannou::image::{ImageBuffer, Rgba};
 use nannou::prelude::*;
@@ -50,7 +51,7 @@ impl Points {
         Self { points: [Point::from_vec2(Vec2::ZERO); MAX_NUM_POINTS] }
     }
 
-    pub fn copy_from_vectors(&mut self, vectors: &Vectors) {
+    pub fn copy_from_vectors(&mut self, vectors: &VectorField) {
         debug_assert!(vectors.points.capacity() >= MAX_NUM_POINTS);
         let tr = vectors.rect().top_right();
 

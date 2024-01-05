@@ -1,4 +1,5 @@
 //! Module for time domain filters.
+
 use dyn_clone::DynClone;
 use std::fmt::Debug;
 pub const BUTTERWORTH_Q: f64 = std::f64::consts::FRAC_1_SQRT_2;

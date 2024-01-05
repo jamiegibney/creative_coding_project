@@ -1,3 +1,5 @@
+//! Atomic value smoother.
+
 #![allow(clippy::should_implement_trait)]
 use super::ramp_atomic::RampAtomic;
 use super::*;

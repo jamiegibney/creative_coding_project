@@ -1,3 +1,5 @@
+//! Note events.
+
 use crate::prelude::*;
 use std::collections::VecDeque as Deque;
 

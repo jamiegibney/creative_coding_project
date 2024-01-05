@@ -1,3 +1,5 @@
+//! GUI component setup and layout.
+
 #![allow(clippy::struct_excessive_bools)]
 use super::*;
 

@@ -1,3 +1,5 @@
+//! Distortion processors.
+
 use super::*;
 
 pub mod decimation;

@@ -1,5 +1,7 @@
+//! Audio processing callback.
+
 use crate::{
-    dsp::filtering::comb::distortion::waveshaper::smooth_soft_clip,
+    dsp::*,
     prelude::xfer::{s_curve_linear_centre, s_curve_round},
 };
 
@@ -13,7 +15,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     // This works by breaking down the buffer into smaller discrete blocks.
     // For each block, it first processes incoming note events, which are
-    // obtained from the `NoteHandler`. The block size is set to min({samples
+    // obtained from the `VoiceHandler`. The block size is set to min({samples
     // remaining in buffer}, `MAX_BLOCK_SIZE`, {next event index - block start
     // index}).
 
@@ -21,7 +23,7 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     let audio_is_idle = audio.is_idle();
     let buffer_len = buffer.len_frames();
 
-    // best not to block at all here - if the NoteHandler lock can't be
+    // best not to block at all here - if the VoiceHandler lock can't be
     // obtained, then the note events won't be processed for this buffer.
     // let mut note_handler_guard = context.note_handler.try_lock().ok();
     // let mut next_event =
@@ -98,48 +100,12 @@ pub fn process(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         block_end = (block_end + MAX_BLOCK_SIZE).min(buffer_len);
     }
 
-    // drop(note_handler_guard);
-
     // audio effects/processors
     process_fx(audio, buffer);
-
-    // print_dsp_load(audio, dsp_start);
     callback_timer(audio);
 }
 
-// /// Captures the audio buffer pre-FX, then sends it to a separate thread to
-// /// compute a spectrum.
-// ///
-// /// Paired with the below `compute_post_spectrum()` function, processing the
-// /// audio spectra on separate threads **enormously** reduces the DSP load.
-// /// Some quick benchmarking showed a load reduction of around *one order of
-// /// magnitude* on the audio thread. Vroom.
-// fn compute_pre_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
-//     // copy the buffer pre-fx to the audio model
-//     audio.pre_buffer_cache.try_lock().map_or((), |mut guard| {
-//         for i in 0..buffer.len() {
-//             guard[i] = buffer[i];
-//         }
-//     });
-//
-//     // then compute the pre-fx spectrum on a separate thread
-//     audio.compute_pre_spectrum();
-// }
-//
-// /// Captures the audio buffer post-FX, then sends it to a separate thread to
-// /// compute a spectrum.
-// fn compute_post_fx_spectrum(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
-//     // copy the buffer post-fx to the audio model
-//     audio.post_buffer_cache.try_lock().map_or((), |mut guard| {
-//         for i in 0..buffer.len() {
-//             guard[i] = buffer[i];
-//         }
-//     });
-//
-//     // then compute the post-fx spectrum on a separate thread
-//     audio.compute_post_spectrum();
-// }
-
+/// Sets the audio callback timer.
 fn callback_timer(audio: &AudioModel) {
     // the chance of not being able to acquire the lock is very small here,
     // but because this is the audio thread, it's preferable to not block at
@@ -166,7 +132,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     // set spectral filter
     audio.update_spectral_filter();
 
-    let process_reso_bank =
+    let should_process_reso_bank =
         audio.params.reso_bank_mix.current_value() > f64::EPSILON;
 
     // process the resonator bank
@@ -176,7 +142,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         for ch in 0..NUM_CHANNELS {
             fr[ch] =
                 audio.processors.pre_fx_dc_filter[ch].process_mono(fr[ch], ch);
-            if process_reso_bank {
+            if should_process_reso_bank {
                 fr[ch] =
                     audio.processors.resonator_bank.process_mono(fr[ch], ch);
             }
@@ -196,7 +162,7 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
     }
 
     for (i, fr) in buffer.frames_mut().enumerate() {
-        audio.update_post_fx_processors();
+        audio.update_post_processors();
 
         // because ping-pong delay requires cross-feeding channels, it has to
         // be out of the other two loops in the middle here.
@@ -227,11 +193,12 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
         .processors
         .spectral_filter
         .set_mix(audio.params.mask_mix.lr());
-
     audio.processors.spectral_filter.process_block(buffer);
 
     // process the post-fx spectrum analyser
     audio.compute_post_spectrum(buffer);
+
+    // UNUSED OVERSAMPLING LOOP 
 
     // // copy the audio buffer into the oversampling buffer so the channel layout
     // // is compatible with the oversamplers.
@@ -292,28 +259,3 @@ fn process_fx(audio: &mut AudioModel, buffer: &mut Buffer<f64>) {
 
     audio.data.is_processing = is_processing;
 }
-
-/* fn process_old(audio: &mut AudioModel, output: &mut Buffer) {
-    for f in output.frames_mut() {
-        let env_level = audio.envelope.next(audio.envelope_trigger);
-        let volume = audio.volume * (env_level);
-        let noise = || nannou::rand::random_f64().mul_add(2.0, -1.0) * volume;
-
-        audio.try_receive();
-        let freq = audio.filter_freq.current_value();
-
-        if audio.filter_freq.is_active() {
-            audio.set_filter_freq(freq);
-        }
-
-        let output = (noise(), noise());
-        let output = audio.process_filters(output); // peak filtering
-        let output = audio.process_distortion(output); // waveshaping
-        let output = audio.process_comb_filters(output); // main comb filters, which contain a
-                                                         // peak, highpass, and comb filter
-
-        let output = audio.process_post_peak_filters(output); // wide peak filtering
-        f[0] = output.0 as f32;
-        f[1] = output.1 as f32;
-    }
-} */

@@ -1,4 +1,5 @@
-//! "Utility" processor for basic amplitude control.
+//! "Utility" wrapper around an `impl `[`Effect`] for basic amplitude control.
+
 use super::Effect;
 use crate::prelude::*;
 use std::ops::{Deref, DerefMut};

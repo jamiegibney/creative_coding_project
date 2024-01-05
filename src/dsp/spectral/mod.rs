@@ -1,4 +1,5 @@
 //! Module for spectral (frequency domain) processing.
+
 use super::*;
 
 pub mod spectral_filter;

@@ -1,12 +1,11 @@
+//! Audio state.
+
 use crossbeam_channel::{Receiver as CCReceiver, Sender as CCSender};
 use std::time::Instant;
 
-use crate::dsp::filtering::{
-    comb::delay::Delay, resonator::resonator_bank::ResoBankData,
-};
-
 use super::*;
 
+/// All signal processors.
 #[derive(Default)]
 pub struct AudioProcessors {
     // FILTERS
@@ -38,12 +37,14 @@ pub struct AudioProcessors {
     pub oversamplers: Vec<Oversampler>,
 }
 
+/// Audio generation types.
 #[derive(Default)]
 pub struct AudioGeneration {
     pub amp_envelope: AdsrEnvelope,
     pub generator: Generator,
 }
 
+/// Audio-related data.
 pub struct AudioData {
     pub voice_gain: Smoother<f64>,
     // pub master_gain: Arc<SmootherAtomic<f64>>,
@@ -114,6 +115,7 @@ impl Default for AudioData {
     }
 }
 
+/// Audio-related buffers.
 #[derive(Default)]
 pub struct AudioBuffers {
     pub master_gain_buffer: Vec<f64>,
@@ -125,6 +127,7 @@ pub struct AudioBuffers {
     pub reso_bank_data: Option<triple_buffer::Output<ResoBankData>>,
 }
 
+/// Pre- and post-FX spectrograms.
 #[derive(Default)]
 pub struct AudioSpectrograms {
     pub pre_fx_spectrogram: Arc<Mutex<Option<SpectrumInput>>>,
@@ -138,7 +141,6 @@ pub struct AudioSpectrograms {
 /// with the audio thread.
 #[derive(Default)]
 pub struct AudioMessageReceivers {
-    // TODO change these to crossbeam channels
     pub note_event: Option<CCReceiver<NoteEvent>>,
 
     pub filter_freq: Option<CCReceiver<f64>>,
@@ -149,8 +151,8 @@ pub struct AudioMessageReceivers {
     pub spectral_mask_post_fx: Option<CCReceiver<()>>,
 }
 
+/// Audio message channel senders.
 pub struct AudioMessageSenders {
-    // TODO change these to crossbeam channels
     pub note_event: CCSender<NoteEvent>,
     pub filter_freq: CCSender<f64>,
     pub drive_amount: CCSender<f64>,

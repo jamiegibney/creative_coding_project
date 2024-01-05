@@ -1,3 +1,5 @@
+//! GUI-related traits and types.
+
 use crate::dsp::SpectralMask;
 use nannou::prelude::*;
 use std::sync::Arc;
@@ -6,7 +8,10 @@ use std::sync::Arc;
 ///
 /// - Mouse position
 /// - Mouse scroll delta
-/// - LMB down state
+/// - Mouse clicked state
+/// - Modifier keys
+/// - Frame delta time
+/// - Window focus state
 #[derive(Clone, Copy, Debug, Default)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct InputData {
@@ -38,7 +43,7 @@ pub struct InputData {
     pub is_win_focussed: bool,
 }
 
-/// Trait for UI components which can be drawn.
+/// Trait for UI components which can be drawn. See each method for more information.
 // NOTE: a required "new" method would be sensible, but in this situation
 // not all UI components have the same constructor requirements as some of them
 // need access to WGPU stuff upon construction.
@@ -98,6 +103,8 @@ pub trait UIDraw {
 
 /// Trait for UI components which act as spectral masks.
 pub trait DrawMask: UIDraw {
+    /// A method to map columnar data from `self` to a `SpectralMask`.
     fn column_to_mask(&self, mask: &mut SpectralMask, len: usize, x: f64) {}
+    /// A method to map tabular data from `self` to a `SpectralMask`.
     fn row_to_mask(&self, mask: &mut SpectralMask, len: usize, y: f64) {}
 }

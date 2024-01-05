@@ -1,3 +1,5 @@
+//! State used by the SmoothLife algorithms.
+
 use atomic::Atomic;
 
 use super::*;

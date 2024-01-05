@@ -1,3 +1,5 @@
+//! Bitwise rhythm representations. Unused in this device.
+
 pub trait BitwiseRhythm16 {
     fn is_beat(&self, idx: usize) -> bool;
 }

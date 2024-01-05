@@ -1,7 +1,7 @@
+//! The layout (positioning and size) of all GUI components.
+
 use super::*;
 use nannou::prelude::*;
-
-// god help me
 
 fn def_rect() -> Rect {
     Rect::from_xy_wh(pt2(-4000.0, 1000.0), pt2(300.0, 300.0))
@@ -638,6 +638,8 @@ impl Default for OtherUILayout {
     }
 }
 
+/// The layout of all GUI components. This is intended to only be used at the creation of
+/// [`UIComponents`], and not stored anywhere at runtime.
 #[derive(Default)]
 pub struct UILayout {
     pub mask_general: MaskUILayout,

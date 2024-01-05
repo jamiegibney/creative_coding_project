@@ -1,3 +1,4 @@
+//! Interpolation functions and types.
 use std::f64::consts::PI;
 
 /// Various interpolation types, including `NoInterp`.

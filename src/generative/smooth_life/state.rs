@@ -1,3 +1,5 @@
+//! State used by the SmoothLife algorithm.
+
 use super::*;
 use std::ops::{Add, Rem};
 

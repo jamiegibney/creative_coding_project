@@ -1,5 +1,6 @@
-use std::ops::RangeInclusive;
+//! Text value slider UI component.
 
+use std::ops::RangeInclusive;
 use super::*;
 use nannou::prelude::*;
 use nannou::text::Layout;

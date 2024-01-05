@@ -1,3 +1,5 @@
+//! 3-band EQ UI component.
+
 use super::*;
 use crate::dsp::{BiquadParams, Filter, FilterType};
 use crate::gui::rdp::rdp_in_place;
@@ -5,9 +7,6 @@ use crate::{app::UIParams, dsp::BiquadFilter};
 use atomic_float::AtomicF64;
 use std::f64::consts::SQRT_2;
 use std::sync::{atomic::AtomicBool, Arc};
-
-// apologies in advance — this module was put together last-minute to add the peak
-// filter and is quite messy in terms of the logic in the update loop!
 
 /// Used to determine the currently-clicked node.
 #[derive(Clone, Copy, Debug)]
@@ -400,8 +399,6 @@ impl UIDraw for EQDisplay {
     /// <https://www.desmos.com/calculator/ddgep83pq2>
     #[allow(clippy::too_many_lines)]
     fn update(&mut self, app: &App, input: &InputData) {
-        dbg!(self.spectrum_is_clicked, self.clicked_outside_of_spectrum);
-
         const Q_SCALE_FACTOR: f32 = 3.8206;
         let q_scale_tanh = -Q_SCALE_FACTOR.tanh();
 

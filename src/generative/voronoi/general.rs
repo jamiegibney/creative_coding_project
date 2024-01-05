@@ -1,3 +1,5 @@
+//! Voronoi noise algorithm computed on the GPU.
+
 use crate::dsp::SpectralMask;
 
 use super::compute::*;
@@ -5,6 +7,9 @@ use super::*;
 use std::mem::size_of;
 use std::sync::{Arc, Mutex};
 
+/// An implementation of Voronoi noise which is computed on the GPU.
+///
+/// This is designed to interface with `crate::generative::VectorField`.
 pub struct VoronoiGPU {
     rect: Rect,
     points: Points,
@@ -60,7 +65,7 @@ impl VoronoiGPU {
     }
 
     /// Copy the 2D points from `Vectors` into the `Voronoi` generator.
-    pub fn copy_from_vectors(&mut self, vectors: &Vectors) {
+    pub fn copy_from_vectors(&mut self, vectors: &VectorField) {
         self.state.active_cells = vectors.num_active_points as u32;
 
         self.points.copy_from_vectors(vectors);

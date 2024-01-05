@@ -1,3 +1,5 @@
+//! JUCE-based oversampling filters.
+
 use super::block::{OversamplingBlock, OversamplingBuffer};
 use super::*;
 use nannou_audio::Buffer;

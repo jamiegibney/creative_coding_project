@@ -1,4 +1,7 @@
 //! Filter design methods intended for oversampling. All based on the JUCE implementations.
+//!
+//! Unused in this project.
+
 use crate::prelude::*;
 use realfft::num_complex::ComplexFloat;
 use std::rc::Rc;

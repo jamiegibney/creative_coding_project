@@ -1,3 +1,5 @@
+//! Spectral filtering.
+
 use super::{
     stft::stft_trait::{StftInput, StftInputMut},
     *,

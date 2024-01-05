@@ -3,6 +3,7 @@
 use crate::prelude::*;
 use std::ops::{Deref, DerefMut};
 
+/// A "spectral mask" — essentially a wrapper around `Vec<f64>`.
 #[derive(Clone, Debug, Default)]
 pub struct SpectralMask {
     points: Vec<f64>,

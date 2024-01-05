@@ -1,10 +1,11 @@
 //! Module for a short-time Fourier transform "helper".
+//!
+//! Implementation based on the one found in [`nih-plug`](https://github.com/robbert-vdh/nih-plug).
 
 use super::stft_trait::*;
 use crate::prelude::*;
 
-// TODO: SIMD, vroom.
-
+/// A convenience struct for a short-time Fourier transform algorithm.
 pub struct StftHelper {
     /// These buffers store samples from the input *and* the output produced by summing
     /// overlapping windows. Whenever a new overlapping window is reached, the computed

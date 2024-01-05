@@ -1,3 +1,5 @@
+//! Project-wide exports for easy access.
+
 use crate::app::audio::NoteHandler;
 use std::sync::{Arc, Mutex};
 

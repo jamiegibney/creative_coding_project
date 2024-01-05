@@ -1,3 +1,5 @@
+//! JUCE-based oversampler.
+
 use super::block::*;
 use super::equiripple_fir::OversamplingEquiripple;
 use super::*;

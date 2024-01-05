@@ -1,3 +1,5 @@
+//! Asynchronous perlin noise contour line generator.
+
 use crate::dsp::SpectralMask;
 use crate::prelude::*;
 
@@ -11,7 +13,6 @@ use std::ops::RangeInclusive;
 use std::sync::{Arc, Mutex};
 
 pub mod contours_gpu;
-
 pub use contours_gpu::ContoursGPU;
 
 /// Perlin noise contour line generator. Supports multi-threading.

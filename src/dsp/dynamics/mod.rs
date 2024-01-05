@@ -1,4 +1,5 @@
 //! Module for dynamics processors.
+
 use super::filtering::simple::ballistics::{
     BallisticsFilter, BallisticsLevelType,
 };

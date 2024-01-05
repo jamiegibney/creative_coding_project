@@ -1,3 +1,5 @@
+//! Trait for enums which may be represented by a [`Menu`](super::Menu).
+
 use crate::app::*;
 use std::fmt::{Debug, Display};
 

@@ -1,3 +1,5 @@
+//! Pseudo-perlin noise contour line generator run on the GPU.
+
 use crate::dsp::SpectralMask;
 use crate::prelude::*;
 use atomic_float::AtomicF32;
@@ -26,7 +28,7 @@ struct ContoursParams {
     height: u32,
 }
 
-/// Atomic params so we don't need a mutex :)
+/// Atomic params so we don't need a Mutex!
 struct ContoursParamsAtomic {
     num_contours: Arc<AtomicU32>,
     upper: Arc<AtomicF32>,
@@ -39,6 +41,7 @@ impl ContoursParams {
     }
 }
 
+/// Data used for the GPU compute shader.
 struct Compute {
     image_buffer: wgpu::Buffer,
     image_buffer_size: wgpu::BufferAddress,
@@ -125,6 +128,7 @@ impl Compute {
     }
 }
 
+/// A pseudo-perlin noise contour line generator computed on the GPU.
 pub struct ContoursGPU {
     rect: Rect,
 

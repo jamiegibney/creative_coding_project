@@ -1,4 +1,5 @@
 //! Module for signal generation.
+
 use super::*;
 
 pub mod basic;

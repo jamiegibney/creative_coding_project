@@ -1,3 +1,5 @@
+//! Audio model constructor.
+
 use super::*;
 use crossbeam_channel::{bounded, unbounded};
 use std::cell::RefCell;

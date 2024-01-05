@@ -1,3 +1,5 @@
+//! Digital signal processors and utilities.
+
 use crate::prelude::*;
 
 pub mod delay;

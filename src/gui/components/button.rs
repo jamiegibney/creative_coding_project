@@ -1,3 +1,5 @@
+//! Button UI component.
+
 use super::*;
 use nannou::prelude::*;
 use nannou::text::Layout;

@@ -1,8 +1,10 @@
 //! All the custom UI parameter types.
+
 use super::*;
 use bytemuck::NoUninit;
 use std::fmt::{Display, Formatter, Result};
 
+/// The current algorithm used by the spectral filter.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum GenerativeAlgo {
     #[default]
@@ -26,6 +28,8 @@ impl Display for GenerativeAlgo {
 
 unsafe impl NoUninit for GenerativeAlgo {}
 
+// *** //
+
 #[derive(Clone, Copy, Debug, Default)]
 pub enum SmoothLifePreset {
     #[default]
@@ -45,6 +49,8 @@ impl Display for SmoothLifePreset {
 }
 
 unsafe impl NoUninit for SmoothLifePreset {}
+
+// *** //
 
 #[derive(Clone, Copy, Debug, Default)]
 pub enum SpectrogramView {
@@ -68,6 +74,8 @@ impl Display for SpectrogramView {
 }
 
 unsafe impl NoUninit for SpectrogramView {}
+
+// *** //
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum DistortionType {
@@ -99,6 +107,8 @@ impl Display for DistortionType {
 }
 
 unsafe impl NoUninit for DistortionType {}
+
+// *** //
 
 #[derive(Clone, Copy, Debug, Default)]
 pub enum SmoothLifeSize {
@@ -132,6 +142,8 @@ impl Display for SmoothLifeSize {
 
 unsafe impl NoUninit for SmoothLifeSize {}
 
+// *** //
+
 #[derive(Clone, Copy, Debug, Default)]
 pub enum SpectrogramSize {
     S1024,
@@ -160,6 +172,9 @@ impl Display for SpectrogramSize {
 
 unsafe impl NoUninit for SpectrogramSize {}
 
+// *** //
+
+/// The available block sizes for the spectral filter.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum SpectralFilterSize {
     S64,
@@ -198,6 +213,10 @@ impl Display for SpectralFilterSize {
 
 unsafe impl NoUninit for SpectralFilterSize {}
 
+// *** //
+
+
+/// The current oscillator used for each voice.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ExciterOscillator {
     Sine,

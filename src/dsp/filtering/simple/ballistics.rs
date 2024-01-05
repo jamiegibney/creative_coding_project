@@ -1,4 +1,5 @@
-//! Ballistics filter, most useful for dynamics processors.
+//! Ballistics filter, used for dynamics.
+
 use crate::dsp::Effect;
 use crate::prelude::*;
 use BallisticsLevelType as LT;

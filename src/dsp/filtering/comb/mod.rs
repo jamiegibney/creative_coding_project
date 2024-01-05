@@ -4,7 +4,9 @@
 mod filter;
 mod fir;
 mod iir;
-pub use crate::dsp::*;
+
+use crate::dsp::*;
+
 pub use fir::FirCombFilter;
 pub use iir::IirCombFilter;
 

@@ -1,3 +1,5 @@
+//! Audio parameters — attached to GUI controls.
+
 use super::*;
 use crate::prelude::*;
 use atomic::Atomic;

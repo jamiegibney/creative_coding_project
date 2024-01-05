@@ -1,3 +1,5 @@
+//! Two-pole resonator filter.
+
 use super::*;
 use crate::{dsp::Effect, prelude::*};
 

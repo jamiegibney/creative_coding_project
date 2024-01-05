@@ -1,3 +1,5 @@
+//! Types supported for use with `Smoother` and `SmootherAtomic`.
+
 use atomic_float::{AtomicF32, AtomicF64};
 use std::sync::atomic::{AtomicI32, Ordering};
 

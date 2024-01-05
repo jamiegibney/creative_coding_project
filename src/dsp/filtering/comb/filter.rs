@@ -1,3 +1,5 @@
+//! Base comb filter type.
+
 use super::*;
 use crate::util::interp::InterpolationType as InterpType;
 

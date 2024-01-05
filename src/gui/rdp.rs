@@ -1,3 +1,5 @@
+//! Point decimation via the Ramer-Douglas-Peucker algorithm.
+
 /// A struct for tracking the length of (and distance from) a line.
 struct LineDistance {
     a: f64,

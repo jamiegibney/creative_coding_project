@@ -1,6 +1,7 @@
-use crate::prelude::xfer::smooth_soft_clip;
+//! The app's audio state model.
 
 use super::*;
+use crate::prelude::xfer::smooth_soft_clip;
 use std::cell::RefCell;
 use std::sync::atomic::Ordering::Relaxed;
 
@@ -48,6 +49,7 @@ pub struct AudioModel {
 }
 
 impl AudioModel {
+    /// Computes the pre-fx spectrogram.
     pub fn compute_pre_spectrum(&mut self, buffer: &Buffer<f64>) {
         self.spectrograms
             .pre_fx_spectrogram_buffer
@@ -74,6 +76,7 @@ impl AudioModel {
         });
     }
 
+    /// Computes the post-fx spectrogram.
     pub fn compute_post_spectrum(&mut self, buffer: &Buffer<f64>) {
         self.spectrograms
             .post_fx_spectrogram_buffer
@@ -98,6 +101,7 @@ impl AudioModel {
         });
     }
 
+    /// Sets the DSP idle timer.
     pub fn set_idle_timer(&mut self, is_processing: bool) {
         self.data.idle_timer_samples = if is_processing {
             (self.data.sample_rate.load(Relaxed) * DSP_IDLE_HOLD_TIME_SECS)
@@ -111,6 +115,7 @@ impl AudioModel {
         };
     }
 
+    /// Determines whether the audio thread is idle or not.
     pub fn is_idle(&self) -> bool {
         !self.data.is_processing && self.data.idle_timer_samples == 0
     }
@@ -131,12 +136,12 @@ impl AudioModel {
 
     /// Returns the internal sample rate of the audio model.
     pub fn get_sample_rate(&self) -> f64 {
-        self.data.sample_rate.load(Relaxed)
+        self.data.sample_rate.lr()
     }
 
     /// Returns the internal upsampled rate of the audio model.
     pub fn get_upsampled_rate(&self) -> f64 {
-        self.data.upsampled_rate.load(Relaxed)
+        self.data.upsampled_rate.lr()
     }
 
     /// Returns the next available note event, if it exists.
@@ -159,6 +164,7 @@ impl AudioModel {
         }
     }
 
+    /// Updates the internal state of the spectral filter.
     pub fn update_spectral_filter(&mut self) {
         let param = self.params.mask_resolution.lr().value();
 
@@ -174,23 +180,10 @@ impl AudioModel {
             .set_mix(self.params.mask_mix.lr());
     }
 
-    pub fn update_spectral_filter_order(&mut self) -> bool {
-        let param = self.params.mask_is_post_fx.lr();
-
-        if param != self.data.spectral_mask_post_fx {
-            self.processors.spectral_filter.clear();
-            self.data.spectral_mask_post_fx = param;
-
-            return true;
-        }
-
-        false
-    }
-
+    /// Updates the internal state of the resonator bank.
     pub fn update_reso_bank(&mut self) {
         if let Some(bank_data) = &mut self.buffers.reso_bank_data {
             if bank_data.update() {
-                // println!("trying to update reso bank data");
                 self.processors
                     .resonator_bank
                     .set_state_from_data(bank_data.read());
@@ -250,8 +243,9 @@ impl AudioModel {
         );
     }
 
+    /// Updates the internal state of the post-processors.
     #[allow(clippy::too_many_lines)]
-    pub fn update_post_fx_processors(&mut self) {
+    pub fn update_post_processors(&mut self) {
         let AudioProcessors {
             filter_low,  // arr
             filter_peak, // arr
@@ -468,6 +462,7 @@ impl AudioModel {
         }
     }
 
+    /// Processes all filters.
     pub fn process_filters(&mut self, mut sample: f64, ch_idx: usize) -> f64 {
         sample = self.processors.filter_low[ch_idx].process(sample);
         sample = self.processors.filter_peak[ch_idx].process(sample);

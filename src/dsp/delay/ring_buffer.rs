@@ -1,6 +1,9 @@
+//! Ring buffer for creating delays.
+
 use crate::prelude::*;
 use crate::util::interp;
 
+// TODO this is a very high smoothing time for a default value...
 const DEFAULT_SMOOTHING_TIME: f64 = 500.0;
 
 /// A resizable ring buffer which supports interpolation and parameter

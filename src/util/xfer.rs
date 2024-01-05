@@ -1,3 +1,4 @@
+//! Transfer functions and types.
 use super::map;
 use crate::prelude::*;
 use std::f64::consts::PI;

@@ -1,3 +1,5 @@
+//! Polyphonic voice types and management.
+
 use atomic::Atomic;
 use nannou_audio::Buffer;
 use std::sync::{mpsc, Arc, Mutex};

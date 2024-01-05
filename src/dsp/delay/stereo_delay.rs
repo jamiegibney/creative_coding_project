@@ -1,5 +1,9 @@
+//! A simple stereo delay.
+
 use super::*;
 
+/// A stereo delay processor, capable of ping-pong effects via channel
+/// cross-feeding.
 #[derive(Clone, Debug, Default)]
 pub struct StereoDelay {
     buffer_l: RingBuffer,
@@ -9,6 +13,7 @@ pub struct StereoDelay {
 }
 
 impl StereoDelay {
+    /// Creates a new stereo delay with `max_delay_time_secs` maximum time allocated.
     pub fn new(max_delay_time_secs: f64, sample_rate: f64) -> Self {
         let buffer = RingBuffer::new(
             (max_delay_time_secs * sample_rate) as usize,
@@ -24,41 +29,50 @@ impl StereoDelay {
         }
     }
 
+    /// Sets the initial delay time of the stereo delay.
     pub fn with_delay_time(mut self, delay_secs: f64) -> Self {
         self.set_delay_time(delay_secs);
         self
     }
 
+    /// Sets the initial delay time of the stereo delay in samples.
     pub fn with_delay_time_samples(mut self, delay_samples: f64) -> Self {
         self.set_delay_time_samples(delay_samples);
         self
     }
 
+    /// Sets whether the stereo delay is initialized with ping-pong or not.
     pub fn with_ping_pong(self, use_ping_pong: bool) -> Self {
         Self { use_ping_pong, ..self }
     }
 
+    /// Sets the delay time of the delay in seconds.
     pub fn set_delay_time(&mut self, delay_secs: f64) {
         self.buffer_l.set_delay_time(delay_secs);
         self.buffer_r.set_delay_time(delay_secs);
     }
 
+    /// Sets the delay time of the delay in samples.
     pub fn set_delay_time_samples(&mut self, delay_samples: f64) {
         self.set_delay_time(delay_samples / self.get_sample_rate());
     }
 
+    /// Sets the feedback level of the delay.
     pub fn set_feedback_amount(&mut self, feedback: f64) {
         self.feedback_amount = feedback.clamp(0.0, 1.0);
     }
 
+    /// Returns the maximum delay time of the stereo delay.
     pub fn max_delay_time_secs(&self) -> f64 {
         self.buffer_l.max_delay_secs()
     }
 
+    /// Sets whether the stereo delay uses ping-pong or not.
     pub fn ping_pong(&mut self, use_ping_pong: bool) {
         self.use_ping_pong = use_ping_pong;
     }
 
+    /// Sets the smoothing time of the stereo delay.
     pub fn set_smoothing_time(&mut self, smoothing_time_secs: f64) {
         self.buffer_l
             .set_smoothing(delay::DEFAULT_DELAY_SMOOTHING, smoothing_time_secs);
@@ -66,6 +80,7 @@ impl StereoDelay {
             .set_smoothing(delay::DEFAULT_DELAY_SMOOTHING, smoothing_time_secs);
     }
 
+    /// Resets the sample rate of the stereo delay.
     pub fn set_sample_rate(&mut self, sample_rate: f64) {
         self.buffer_l.set_sample_rate(sample_rate);
         self.buffer_r.set_sample_rate(sample_rate);

@@ -1,3 +1,5 @@
+//! Primitive, non-anti-aliased oscillator types.
+
 use super::*;
 
 pub mod noise_osc;

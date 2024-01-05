@@ -1,3 +1,6 @@
+// Smoothlife algorithm implementation. Slightly broken, but that seems to make
+// for cool patterns!
+
 fn emod(value: u32, bound: u32) -> u32 {
     return (value % bound + bound) % bound;
 }

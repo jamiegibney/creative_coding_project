@@ -1,4 +1,5 @@
 //! Single-threaded SmoothLife generator.
+
 use super::*;
 
 pub struct SmoothLifeGenerator {

@@ -1,3 +1,4 @@
+//! Shorthand atomic load and store operations for common atomic types.
 use crate::app::params::*;
 use atomic::Atomic;
 use atomic_float::{AtomicF64, AtomicF32};

@@ -1,4 +1,4 @@
-#![allow(ambiguous_glob_reexports)]
+//! Audio state and processing.
 
 use super::*;
 use crate::dsp::*;
@@ -21,6 +21,3 @@ pub use process::process;
 pub use voice::*;
 
 pub const DSP_LOAD_AVERAGING_SAMPLES: usize = 32;
-
-// const MAX_OVERSAMPLING_FACTOR: usize = 4; // 16x oversampling
-// const DEFAULT_OVERSAMPLING_FACTOR: usize = 2; // 4x oversampling

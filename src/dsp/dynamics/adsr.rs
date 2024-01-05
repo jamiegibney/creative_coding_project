@@ -1,4 +1,5 @@
 //! Module for an ADSR envelope generator.
+
 #![allow(unused, clippy::should_implement_trait)]
 use crate::prelude::*;
 use AdsrStage as AS;

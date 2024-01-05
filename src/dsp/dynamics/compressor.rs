@@ -1,8 +1,12 @@
+//! Module for signal compression (dynamics compression).
+
 use super::*;
 
 const DEFAULT_ATTACK_TIME_MS: f64 = 100.0;
 const DEFAULT_RELEASE_TIME_MS: f64 = 100.0;
 
+/// A simple dynamics compressor. Supports a variable knee width,
+/// attack and release times, and ratio.
 #[derive(Clone, Debug)]
 pub struct Compressor {
     sample_rate: f64,

@@ -1,3 +1,5 @@
+//! Simple filter implementations.
+
 use super::*;
 
 pub mod ballistics;

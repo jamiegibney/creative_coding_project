@@ -1,3 +1,5 @@
+//! Value smoothers.
+
 /// Non-atomic linear segment generation. Internal system for `Smoother`.
 mod ramp;
 /// Atomic linear segment generation. Internal system for `SmootherAtomic`.

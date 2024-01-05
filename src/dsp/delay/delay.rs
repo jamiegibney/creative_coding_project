@@ -1,4 +1,5 @@
-//! Module for signal delays.
+//! Audio delay tap.
+
 use super::{Effect, RingBuffer};
 use crate::prelude::*;
 

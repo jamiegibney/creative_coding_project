@@ -1,3 +1,4 @@
+//! A basic general-purpose thread pool.
 use std::{
     io::{Error, Result as IoResult},
     sync::{

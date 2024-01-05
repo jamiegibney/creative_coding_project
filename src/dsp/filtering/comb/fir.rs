@@ -1,3 +1,5 @@
+//! Finite impulse response comb filter.
+
 use super::filter::*;
 use crate::dsp::Filter;
 use crate::prelude::*;

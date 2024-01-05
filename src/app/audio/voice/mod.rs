@@ -1,3 +1,5 @@
+//! Polyphonic voices.
+
 pub mod note;
 pub mod voice;
 

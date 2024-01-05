@@ -1,3 +1,5 @@
+//! All app-related state and logic.
+
 use crate::prelude::*;
 use nannou::prelude::*;
 use nannou::LoopMode::RefreshSync;

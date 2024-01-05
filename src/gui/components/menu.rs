@@ -1,3 +1,5 @@
+//! Menu UI component.
+
 #![allow(clippy::suboptimal_flops)]
 use super::*;
 

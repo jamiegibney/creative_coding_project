@@ -1,8 +1,10 @@
+//! Dry/wet mix wrapper for `impl `[`Effect`] types.
+
 use super::Effect;
 use crate::prelude::*;
 use std::ops::{Deref, DerefMut};
 
-/// A simple dry-wet wrapper around an Effect.
+/// A simple dry-wet wrapper around an `impl `[`Effect`].
 #[derive(Clone, Debug, Default)]
 pub struct DryWet<E: Effect> {
     dry: Smoother<f64>,

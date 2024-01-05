@@ -1,3 +1,5 @@
+//! Two-dimensional grid used by the SmoothLife algorithm.
+
 use rand::{self, Rng};
 use std::ops::{Deref, DerefMut};
 

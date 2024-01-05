@@ -1,3 +1,5 @@
+//! Statically-linked fonts used by the GUI.
+
 /// SF Mono Regular
 pub const REGULAR_FONT_MONO_BYTES: &[u8] = include_bytes!("../assets/fonts/SF-Mono-Regular.ttf");
 /// SF Mono Medium

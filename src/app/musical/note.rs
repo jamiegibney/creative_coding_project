@@ -1,7 +1,10 @@
+//! Musical note representation.
+
 use nannou::prelude::*;
 use std::fmt::Display;
 
-// this is OK - there is no intention of changing the variants of these enums.
+// there is no intention of changing the variants of these enums
+// so the wildcard import is fine.
 use Note::*;
 use Octave::*;
 

@@ -1,3 +1,5 @@
+//! JUCE-based filter design. Unused in this project.
+
 use super::*;
 use std::cell::RefCell;
 

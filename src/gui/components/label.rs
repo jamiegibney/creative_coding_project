@@ -1,6 +1,9 @@
+//! Text label UI component.
+
 use super::*;
 use nannou::{prelude::*, text::Layout};
 
+/// A simple text label component.
 pub struct Label {
     rect: Rect,
     text: String,

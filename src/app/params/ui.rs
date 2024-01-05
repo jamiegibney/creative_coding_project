@@ -14,6 +14,9 @@ use std::sync::{
 };
 
 /// All parameters controlled by the user interface.
+///
+/// All fields are thread-safe pointers, and may be cheaply cloned to wherever
+/// they are required. All types are atomic, thus may be mutated.
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct UIParams {
@@ -146,12 +149,10 @@ pub struct UIParams {
     pub pre_fx_gain: Arc<SmootherAtomic<f64>>,
     /// Master gain level in decibels.
     pub master_gain: Arc<SmootherAtomic<f64>>,
-    // // EQ
-    // /// The parameters for the three-band EQ.
-    // pub eq_params: EQParams,
 }
 
 impl Default for UIParams {
+    /// Default parameter values.
     fn default() -> Self {
         Self {
             mask_algorithm: Arc::new(Atomic::new(GenerativeAlgo::default())),
@@ -232,6 +233,7 @@ impl Default for UIParams {
     }
 }
 
+/// Default atomic value smoother with `val` initial value.
 fn smoother(val: f64) -> Arc<SmootherAtomic<f64>> {
     Arc::new(
         SmootherAtomic::new(70.0, val, unsafe { OVERSAMPLED_SAMPLE_RATE })

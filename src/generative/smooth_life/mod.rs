@@ -1,3 +1,5 @@
+//! Asynchronous SmoothLife algorithm.
+
 use crate::dsp::SpectralMask;
 use crate::prelude::*;
 use nannou::image::{ImageBuffer, Rgba};

@@ -1,3 +1,5 @@
+//! Colors used by the GUI.
+
 use nannou::prelude::*;
 use std::marker::PhantomData;
 

@@ -1,3 +1,5 @@
+//! JUCE-based filter design. Unused in this project.
+
 use crate::prelude::*;
 use realfft::num_complex::{Complex64, ComplexFloat};
 use std::cell::RefCell;

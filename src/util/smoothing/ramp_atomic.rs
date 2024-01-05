@@ -1,3 +1,5 @@
+//! Atomic linear segment generator.
+
 use super::smoothable_types::SmoothableAtomic;
 use crate::prelude::*;
 use atomic_float::AtomicF64;

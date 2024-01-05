@@ -1,3 +1,5 @@
+//! Spectrogram types and logic.
+
 pub mod analyzer;
 pub mod process;
 

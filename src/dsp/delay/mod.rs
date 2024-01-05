@@ -1,3 +1,5 @@
+//! Delay types and implementations.
+
 use super::*;
 
 pub mod delay;

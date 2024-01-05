@@ -1,4 +1,4 @@
-//! For processing spectral information for analysis.
+//! The spectral processing and enveloping for a spectrogram.
 
 use crate::dsp::StftHelper;
 use crate::prelude::*;

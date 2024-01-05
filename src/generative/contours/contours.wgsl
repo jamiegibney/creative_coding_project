@@ -1,3 +1,5 @@
+// Pseudo-perlin noise contour lines implementation.
+
 fn s_curve_round(in: f32, tension: f32) -> f32 {
     let x: f32 = clamp(in, -1.0, 1.0);
     let c: f32 = tension * 10.0;

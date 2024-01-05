@@ -1,4 +1,7 @@
 //! Oversampling methods and filtering. Based on the JUCE implementation.
+//!
+//! Unused in this project, but kept for future reference.
+
 use super::filters::filter_design::*;
 use super::*;
 

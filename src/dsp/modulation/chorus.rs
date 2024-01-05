@@ -1,3 +1,5 @@
+//! Unused chorus effect.
+
 use super::*;
 use crate::dsp::synthesis::*;
 
