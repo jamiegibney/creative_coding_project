@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["DistortionType","ExciterOscillator","GenerativeAlgo","SmoothLifePreset","SmoothLifeSize","SpectralFilterSize","SpectrogramSize","SpectrogramView"]};

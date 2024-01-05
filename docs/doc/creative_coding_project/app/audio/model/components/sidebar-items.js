@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["AudioBuffers","AudioData","AudioGeneration","AudioMessageReceivers","AudioMessageSenders","AudioProcessors","AudioSpectrograms"]};

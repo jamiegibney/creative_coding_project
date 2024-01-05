@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["resonator_bank","two_pole_resonator"]};

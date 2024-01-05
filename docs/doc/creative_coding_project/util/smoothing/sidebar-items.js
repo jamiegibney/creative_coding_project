@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["smoothable_types","smoother","smoother_atomic"]};

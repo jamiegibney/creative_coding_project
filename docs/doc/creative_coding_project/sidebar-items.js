@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["app","dsp","fonts","generative","gui","prelude","settings","simd","util"]};

@@ -1,1 +1,0 @@
-window.ALL_CRATES = ["creative_coding_project"];

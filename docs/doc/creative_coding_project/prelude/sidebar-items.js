@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["FRAC_PI_2","MINUS_INFINITY_DB","MINUS_INFINITY_GAIN","PI","TAU"],"fn":["random_f64","random_range"],"struct":["AtomicF64","DVec2","Vec2","f64x4"],"type":["NoteHandlerRef"]};

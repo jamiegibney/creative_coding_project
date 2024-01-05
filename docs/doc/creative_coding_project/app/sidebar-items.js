@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["run_app"],"mod":["audio","event","musical","params","update","view"],"struct":["Model"]};

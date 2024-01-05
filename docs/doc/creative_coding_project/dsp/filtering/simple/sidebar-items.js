@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["ballistics","dc_filter","one_pole_lowpass"]};

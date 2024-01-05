@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["CompressionUILayout","ContourUILayout","DelayUILayout","DistortionUILayout","HighFilterUILayout","LowFilterUILayout","MaskUILayout","OtherUILayout","PeakFilterUILayout","ResoBankUILayout","SmoothLifeUILayout","SpectrogramUILayout","UILayout","VoronoiUILayout"]};

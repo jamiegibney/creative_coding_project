@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["dry_wet","effect_trait","stereo_wrapper","utility"]};

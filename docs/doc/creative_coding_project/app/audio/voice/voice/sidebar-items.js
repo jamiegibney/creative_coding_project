@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["VoiceEvent"],"struct":["Voice","VoiceHandler"]};

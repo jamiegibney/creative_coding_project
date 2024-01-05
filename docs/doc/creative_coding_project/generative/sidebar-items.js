@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["contours","smooth_life","vectors","voronoi"]};

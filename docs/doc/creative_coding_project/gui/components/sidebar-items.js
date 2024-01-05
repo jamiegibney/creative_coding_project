@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["UIComponentState"],"fn":["default_text_layout","str_to_option"],"mod":["button","eq_display","label","menu","menu_trait","text_slider"]};

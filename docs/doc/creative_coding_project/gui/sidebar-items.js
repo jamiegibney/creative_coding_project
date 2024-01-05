@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["colors","components","draw_traits","rdp","spectrum","ui"]};

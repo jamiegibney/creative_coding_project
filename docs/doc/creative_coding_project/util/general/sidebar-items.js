@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["db_to_level","dot","epsilon_eq","freq_lin_from_log","freq_log_norm","freq_to_note","interleave_dvec2_to_f64","interleave_vec2_to_f32","lanczos_kernel","level_to_db","map","map_f32","normalize","normalize_f32","note_to_freq","sample_length","scale","scale_f32","sinc","within_tolerance"]};
