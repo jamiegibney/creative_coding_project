@@ -38,6 +38,8 @@ pub struct AudioSystem {
 
 /// Builds the audio stream, audio message channel senders, and input note handler.
 pub fn build_audio_system(params: &UIParams) -> AudioSystem {
+    set_sample_rate();
+
     // setup audio structs
     let note_handler = Arc::new(Mutex::new(NoteHandler::new()));
     let (spectral_mask, spectral_mask_output) =
@@ -65,6 +67,9 @@ pub fn build_audio_system(params: &UIParams) -> AudioSystem {
         voice_event_receiver: Some(voice_event_receiver),
     };
 
+    // setup audio stream
+    let audio_host = nannou_audio::Host::new();
+
     let AudioPackage {
         model: audio_model,
         spectrum_outputs: (pre_spectrum, post_spectrum),
@@ -72,9 +77,6 @@ pub fn build_audio_system(params: &UIParams) -> AudioSystem {
         sample_rate_ref,
         message_channels: senders,
     } = build_audio_model(audio_context, params);
-
-    // setup audio stream
-    let audio_host = nannou_audio::Host::new();
 
     let stream = audio_host
         .new_output_stream(audio_model)
@@ -146,12 +148,10 @@ pub fn build_gui_elements(
     let line_weight = 2.0;
     let mut pre_spectrum_analyzer =
         SpectrumAnalyzer::new(pre_spectrum, spectrum_rect);
-    pre_spectrum_analyzer
-        .set_line_color(pre_spectrum_line_color);
+    pre_spectrum_analyzer.set_line_color(pre_spectrum_line_color);
     let mut post_spectrum_analyzer =
         SpectrumAnalyzer::new(post_spectrum, spectrum_rect);
-    post_spectrum_analyzer
-        .set_mesh_color(post_spectrum_mesh_color);
+    post_spectrum_analyzer.set_mesh_color(post_spectrum_mesh_color);
 
     GuiElements {
         bank_rect,
@@ -196,4 +196,17 @@ pub fn build_pressed_keys_map() -> HashMap<Key, bool> {
 
 pub fn build_ui_parameters() -> UIParams {
     UIParams::default()
+}
+
+fn set_sample_rate() {
+    unsafe {
+        SAMPLE_RATE = nannou_audio::Host::new().default_output_device().map_or(
+            SAMPLE_RATE,
+            |device| {
+                // TODO(jamiegibney) - this should find the *lowest* sample rate in the future...
+                device.default_output_config()
+                    .map_or(SAMPLE_RATE, |cfg| cfg.sample_rate().0 as f64)
+            },
+        );
+    }
 }
