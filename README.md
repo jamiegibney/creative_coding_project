@@ -1,5 +1,5 @@
 # Creative Coding Project
-![](./assets/images/ccp_showcase_short.mov)
+![](./assets/images/ccp_short_demo.mp4)
 
 This is my Creative Coding submission for University. The project is written in Rust, as well as some shaders written in WGSL.
 
