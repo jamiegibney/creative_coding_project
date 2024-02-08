@@ -1,5 +1,6 @@
 # Creative Coding Project
-![](./assets/images/ccp_short_demo.mp4)
+
+https://github.com/jamiegibney/creative_coding_project/assets/123845103/62722907-4bea-4fff-9017-36a8cbc11e80
 
 This is my Creative Coding submission for University. The project is written in Rust, as well as some shaders written in WGSL.
 
