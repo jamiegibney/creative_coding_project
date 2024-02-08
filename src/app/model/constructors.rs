@@ -203,9 +203,14 @@ fn set_sample_rate() {
         SAMPLE_RATE = nannou_audio::Host::new().default_output_device().map_or(
             SAMPLE_RATE,
             |device| {
-                // TODO(jamiegibney) - this should find the *lowest* sample rate in the future...
-                device.default_output_config()
-                    .map_or(SAMPLE_RATE, |cfg| cfg.sample_rate().0 as f64)
+                device
+                    .supported_output_configs()
+                    .map_or(SAMPLE_RATE, |cfg| {
+                        cfg.map(|x| x.min_sample_rate().0)
+                            .min()
+                            .unwrap_or(SAMPLE_RATE as u32)
+                            as f64
+                    })
             },
         );
     }
