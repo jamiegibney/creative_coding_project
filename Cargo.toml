@@ -1,6 +1,6 @@
 [package]
 name = "creative_coding_project"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2021"
 authors = ["jamiegibney <jamiegibneyuk@gmail.com>"]
 rust-version = "1.74.0"
@@ -11,7 +11,7 @@ repository = "https://github.com/jamiegibney/creative_coding_project"
 [package.metadata.bundle]
 name = "Creative Coding Project"
 identifier = "com.jamiegibney.ccp"
-version = "1.0.0"
+version = "1.1.1"
 icon = [
     "./assets/icons/icon_128.png",
     "./assets/icons/icon_256.png",
