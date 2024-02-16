@@ -5,8 +5,8 @@
 // https://www.shadertoy.com/view/ldl3W8
 //
 // This version is adapted to cover points at arbitrary positions. In this example, an
-// array of 2-dimensional vectors are passed to the shader from the CPU, and the shader 
-// computes the stable Voronoi borders and so-called "isolines" from those points.
+// array of 2-dimensional vectors is passed to the shader from the CPU, and the 
+// shader computes the Voronoi borders and isolines from those points.
 
 
 /// *** *** STATE *** *** ///
