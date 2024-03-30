@@ -77,10 +77,7 @@ impl SpectrumInput {
             // TODO does this need to be compensated?
             window_function: sine(SPECTRUM_WINDOW_SIZE),
 
-            complex_buffer: vec![
-                Complex64::default();
-                SPECTRUM_WINDOW_SIZE / 2 + 1
-            ],
+            complex_buffer: vec![Complex64::default(); RESULT_BUFFER_SIZE],
         };
 
         input.update_timing();

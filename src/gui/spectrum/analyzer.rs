@@ -1,9 +1,14 @@
 //! Spectrogram GUI component.
 
 use super::{process::RESULT_BUFFER_SIZE, *};
-use crate::{dsp::*, gui::rdp::rdp_in_place, prelude::*};
+use crate::{
+    dsp::*,
+    gui::rdp::{rdp, rdp_parallel},
+    prelude::*,
+};
 use nannou::prelude::*;
 use std::ptr::{addr_of, copy_nonoverlapping};
+use std::sync::Arc;
 
 const NUM_SPECTRUM_AVERAGES: usize = 10;
 
@@ -47,8 +52,8 @@ pub struct SpectrumAnalyzer {
     mesh_points: Vec<DVec2>,
     /// All the indices of the mesh.
     mesh_indices: Vec<usize>,
-    /// The indices used to decimate the spectrum line.
-    indices: Vec<usize>,
+    // /// The indices used to decimate the spectrum line.
+    // indices: Vec<usize>,
 }
 
 impl SpectrumAnalyzer {
@@ -101,8 +106,7 @@ impl SpectrumAnalyzer {
                 v
             },
             mesh_indices: (0..vec.len()).collect(),
-            indices: (0..vec.len()).collect(),
-
+            // indices: (0..vec.len()).collect(),
             filter,
         }
     }
@@ -180,25 +184,27 @@ impl SpectrumAnalyzer {
 
         // point decimation is performed here to remove unneeded points, speeding up
         // the rendering process.
-        rdp_in_place(&self.interpolated, &mut self.indices, 0.01);
+        let s = std::time::Instant::now();
+        let indices = rdp(&self.interpolated, 0.01);
+        let elapsed = s.elapsed().as_secs_f64() * 1e6;
+
         // we need to truncate the length of this buffer so we ignore the unused elements.
         unsafe {
-            self.spectrum_line.set_len(self.indices.len());
+            self.spectrum_line.set_len(indices.len());
         }
-        for (i, &idx) in self.indices.iter().enumerate() {
-            self.spectrum_line[i] = {
-                let point = self.interpolated[idx];
 
-                let x = point[0];
-                let y = self.gain_to_ypos(point[1]);
+        for (i, &idx) in indices.iter().enumerate() {
+            self.spectrum_line[i] = {
+                let [x, mut y] = self.interpolated[idx];
+                y = self.gain_to_ypos(y);
 
                 dvec2(x, y)
             };
         }
 
-        self.indices.clear();
-
-        self.compute_mesh();
+        if self.mesh_color.is_some() {
+            self.compute_mesh();
+        }
     }
 
     fn draw_line(&self, draw: &Draw, color: Rgba, weight: f32) {
