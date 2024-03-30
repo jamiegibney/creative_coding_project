@@ -1,11 +1,7 @@
 //! Spectrogram GUI component.
 
 use super::{process::RESULT_BUFFER_SIZE, *};
-use crate::{
-    dsp::*,
-    gui::rdp::{rdp, rdp_parallel},
-    prelude::*,
-};
+use crate::{dsp::*, gui::rdp::rdp, prelude::*};
 use nannou::prelude::*;
 use std::ptr::{addr_of, copy_nonoverlapping};
 use std::sync::Arc;

@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::dsp::{BiquadParams, Filter, FilterType};
-use crate::gui::rdp::rdp_in_place;
+use crate::gui::rdp::rdp;
 use crate::{app::UIParams, dsp::BiquadFilter};
 use atomic_float::AtomicF64;
 use std::f64::consts::SQRT_2;
@@ -58,8 +58,6 @@ pub struct EQDisplay {
 
     /// The raw x-pos and mangitude points.
     filter_raw_points: Vec<[f64; 2]>,
-    /// Buffer for indices generated for decimating points.
-    filter_decimation_indices: Vec<usize>,
     /// The filter points to be drawn.
     filter_points: Vec<Vec2>,
 
@@ -158,7 +156,6 @@ impl EQDisplay {
                     [x_pos, mid as f64]
                 })
                 .collect(),
-            filter_decimation_indices: vec![0; len],
             filter_points: vec![Vec2::ZERO; len],
 
             spectrum_is_clicked: false,
@@ -219,21 +216,15 @@ impl EQDisplay {
 
         // decimate redundant points — this reduces the number of points to be drawn by
         // over 10 times.
-        rdp_in_place(
-            self.filter_raw_points.as_slice(),
-            &mut self.filter_decimation_indices,
-            0.2,
-        );
-
-        let len = self.filter_decimation_indices.len();
+        let indices = rdp(self.filter_raw_points.as_slice(), 0.2);
+        let len = indices.len();
 
         unsafe {
             self.filter_points.set_len(len);
         }
 
         for i in 0..len {
-            let point =
-                self.filter_raw_points[self.filter_decimation_indices[i]];
+            let point = self.filter_raw_points[indices[i]];
             self.filter_points[i] =
                 Vec2::from([point[0] as f32, point[1] as f32]);
         }
