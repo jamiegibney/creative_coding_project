@@ -23,7 +23,7 @@ doctest = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.75"           # Error handling
+# anyhow = "1.0.75"           # Error handling
 async-std = "1.12.0"        # Async standard library
 atomic = "0.6.0"            # Atomic wrapper around types
 atomic_float = "0.1.0"      # Atomic floating-point types
@@ -35,9 +35,9 @@ nannou = "0.18.1"           # Creative coding library
 nannou_audio = "0.18.0"     # Audio-related for the above
 noise = "0.8.2"             # Noise algorithms
 rand = "0.8.5"              # Random number generation
-rayon = "1.8.0"             # Parallel iterators
+# rayon = "1.8.0"             # Parallel iterators
 realfft = "3.3.0"           # Fast Fourier transform
-serde = "1.0.188"           # (De)serialisation
+# serde = "1.0.188"           # (De)serialisation
 triple_buffer = "7.0.0"     # Triple buffer channel
 wide = "0.7.12"             # SIMD types
 
