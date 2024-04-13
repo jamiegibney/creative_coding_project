@@ -55,9 +55,7 @@ impl AudioModel {
             .pre_fx_spectrogram_buffer
             .try_lock()
             .map_or((), |mut guard| {
-                for i in 0..buffer.len() {
-                    guard[i] = buffer[i];
-                }
+                guard.copy_from_slice(buffer);
             });
 
         let spectrum = Arc::clone(&self.spectrograms.pre_fx_spectrogram);
@@ -82,9 +80,7 @@ impl AudioModel {
             .post_fx_spectrogram_buffer
             .try_lock()
             .map_or((), |mut guard| {
-                for i in 0..buffer.len() {
-                    guard[i] = buffer[i];
-                }
+                guard.copy_from_slice(buffer);
             });
 
         let spectrum = Arc::clone(&self.spectrograms.post_fx_spectrogram);
