@@ -40,3 +40,6 @@ realfft = "3.3.0"           # Fast Fourier transform
 serde = "1.0.188"           # (De)serialisation
 triple_buffer = "7.0.0"     # Triple buffer channel
 wide = "0.7.12"             # SIMD types
+
+[profile.release]
+codegen-units = 1
