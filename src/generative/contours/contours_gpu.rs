@@ -151,7 +151,7 @@ impl ContoursGPU {
         let device = win.device();
 
         let cs_desc = wgpu::include_wgsl!("./contours.wgsl");
-        let cs_mod = device.create_shader_module(&cs_desc);
+        let cs_mod = unsafe { device.create_shader_module_unchecked(&cs_desc) };
 
         Self {
             rect,
